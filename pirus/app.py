@@ -140,7 +140,7 @@ class PipelineHandler:
 		pass
 
 	def get(self, request):
-		return fmk_rest_success({"plugins" : plugins_available()})
+		return fmk_rest_success({"plugins" : [i for i in fmk_plugins_available()]})
 
 	async def post(self, request):
 		# 1- Retrieve pirus package from post request
