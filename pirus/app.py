@@ -129,7 +129,8 @@ class WebsiteHandler:
 		return {
 			"cl" : list([ws[1] for ws in app['websockets']]), 
 			"pr" : fmk_last_runs(), 
-			"pa" : fmk_plugins_available()
+			"pa" : fmk_plugins_available(),
+			"hostname" : HOSTNAME
 		}
 
 
