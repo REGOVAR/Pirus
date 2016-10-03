@@ -195,7 +195,7 @@ class RunHandler:
                         return rest_error("Unknow pipeline id " + str(pipe_id))
                 # 3- Enqueue run of the pipeline with celery
                 try:
-                        cw = execute_plugin.delay(pipeline.path, config)
+                        cw = run_pipeline.delay(pipeline.path, config)
                 except:
                         # TODO : clean filesystem
                         return rest_error("Unable to run the pipeline with celery " + str(pipe_id))

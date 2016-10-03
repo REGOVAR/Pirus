@@ -2,15 +2,6 @@
 # coding: utf-8
 
 import os
-import json
-import aiohttp
-import aiohttp_jinja2
-import jinja2
-import zipfile
-import shutil
-import datetime
-import time
-import uuid
 
 from aiohttp import web, MultiDict
 from mongoengine import *
@@ -36,16 +27,32 @@ connect('pirus')
 
 
 # CHECK filesystem
-if not os.path.exists(RUN_DIR):
-	os.makedirs(RUN_DIR)
+if not os.path.exists(RUNS_DIR):
+	os.makedirs(RUNS_DIR)
 if not os.path.exists(PIPELINES_DIR):
 	os.makedirs(PIPELINES_DIR)
+if not os.path.exists(INPUTS_DIR):
+	os.makedirs(INPUTS_DIR)
+if not os.path.exists(INPUTS_TEMP):
+	os.makedirs(INPUTS_TEMP)
+if not os.path.exists(OUTPUTS_DIR):
+	os.makedirs(OUTPUTS_DIR)
+if not os.path.exists(DATABASES_DIR):
+	os.makedirs(DATABASES_DIR)
+
 if not os.path.exists(TEMPLATE_DIR):
 	print("ERROR : Templates directory doesn't exists.", TEMPLATE_DIR)
 
 
 
+
+# CHECK consistensy between database and filesystem
+
+
+
+
+
 # Start the pirus server
 if __name__ == '__main__':
-	web.run_app(app)
+	web.run_app(app, host=HOST, port=PORT)
 

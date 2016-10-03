@@ -6,6 +6,8 @@ import shutil
 import requests
 import logging
 import json
+import pylxd
+
 from celery import Celery, Task
 from pluginloader import PluginLoader
 
@@ -122,38 +124,63 @@ def execute_plugin(self, fullpath, config):
 
 
 
-@app.task(base=Task, queue='PirusQueue', bind=True)
+@app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def run_pipeline(self, run_id, config):
     self.run_id = str(self.request.id)
     self.run_path   = os.path.join(RUN_DIR, self.run_id)
-    # self.notify_url = NOTIFY_URL + str(self.request.id)
-    # self.notify_status("INIT")
+    self.notify_url = NOTIFY_URL + str(self.request.id)
+    lxd_client = pylxd.Client()
 
-    # clone original container. This new container will be used for the run
-    client = pylxd.Client()
-    c_org  = client.containers.get("pirus")
-    c_run  = c_org.snapshots.create("run_" + self.run_id)
-    cc     = c_run.container
 
-    cc.start()
-    cc.sync()
+    # Check database, to see how many container are running and if we can create a new one for this run
+    # TODO => STATE : WAITING SERVER DISPONIBILTY
+    self.notify_status("Waiting server disponibility")
+    while len(lxd_client.containers.all()) > 2:
+        time.sleep(1)
+	break # FIXME to remove 
 
-    
 
-    # create I/O directories on the host that will be used by the container
-    input_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name),"rootfs/home/ubuntu/inputs")
-    output_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name), "rootfs/home/ubuntu/outputs")
-    databases_lxc_path =  os.path.join(os.path.dirname(c_run.config_file_name), "rootfs/home/ubuntu/databases")
-    logs_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name), "rootfs/home/ubuntu/logs")
-    pipe_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name), "rootfs/home/ubuntu/pipe")
+    # Register job in database 
+    # TODO => STATE : INITIALIZING (Db registration)
+    self.notify_status("Init (Db registration)")
 
-    # edit config file of the lxc container to mount good directories
-    #with open(c_run.config_file_name, "a") as cfgfile:
-    #    cfgfile.write("lxc.mount.entry = " + self.run_path + "/inputs " + input_lxc_path + " none bind,ro 0 0\n")
-    #    cfgfile.write("lxc.mount.entry = " + self.run_path + "/outputs " + output_lxc_path + " none bind 0 0\n")
-    #    cfgfile.write("lxc.mount.entry = " + self.run_path + " " + pipe_lxc_path + " none bind 0 0\n")
-    #    cfgfile.write("lxc.mount.entry = " + self.run_path + "/logs " + logs_lxc_path + " none bind 0 0\n")
-    #    cfgfile.write("lxc.mount.entry = /home/olivier/databases " + databases_lxc_path + " none bind,ro 0 0\n")
+    # Create run's folders on the pirus server
+    # TODO => STATE : INITIALIZING (Filesystem creation)
+    runpath = os.path.join(RUNS_DIR, self.run_id)
+    ipath = os.path.join(runpath, "inputs")
+    opath = os.path.join(runpath, "outputs")
+    lpath = os.path.join(runpath, "logs")
+    rpath = os.path.join(runpath, "run")
+
+
+    # Create lxd container and bind it on run repositories
+    # TODO => STATE : INITIALIZING (LXC Container creation)
+    c = lxd_client.container.get("pirus")
+    c.devices.update(
+        {
+            'pirus_inputs': {'limits.write': '0iops', 'path': 'pipeline/inputs','source': ipath, 'type': 'disk'},
+            'pirus_ouputs': {'path': 'pipeline/outputs','source': opath, 'type': 'disk'},
+            'pirus_logs'  : {'path': 'pipeline/logs', 'source': lpath, 'type': 'disk'},
+            'pirus_db'    : {'path': 'pipeline/db', 'source': DATABASES_DIR, 'type': 'disk'},
+            'pirus_run'   : {'path': 'pipeline/run', 'source': rpath, 'type': 'disk'}
+        })
+    c.save()
+    c.start()
+
+    # Run the pipe !
+    # TODO => STATE : RUNNING
+    c.start()
+    c.execute([rpath + "/run.sh"])
+
+    # Stop container execution to release hdw resource
+    # TODO => STATE : STOPING
+    c.stop()
+
+    # Delete container
+    # TODO => STATE : DONE
+    c.delete()
+
+
 
     # edit env variable of the lxc container with "well known" path for the pipeline
     #envfile = os.path.dirname(c_run.config_file_name) + "/rootfs/etc/environment"

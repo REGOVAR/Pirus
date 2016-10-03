@@ -15,7 +15,7 @@ INPUTS_TEMP   = "/var/tmp/pirus_" + VERSION + "/downloads"
 OUTPUTS_DIR   = "/var/tmp/pirus_" + VERSION + "/outputs"
 DATABASES_DIR = "/var/tmp/pirus_" + VERSION + "/databases"
 PIPELINES_DIR = "/var/tmp/pirus_" + VERSION + "/pipelines"
-RUN_DIR       = "/var/tmp/pirus_" + VERSION + "/runs"
+RUNS_DIR      = "/var/tmp/pirus_" + VERSION + "/runs"
 
 
 # AUTOCOMPUTED VALUES
@@ -25,3 +25,6 @@ ERROR_ROOT_URL = "api.pirus.org/errorcode/"
 NOTIFY_URL     = "http://" + HOSTNAME + "/run/notify/"
 
 
+# LXD
+LXD_MAX        = 2
+LXD_PREFIX     = "pirus_"
