@@ -1,45 +1,11 @@
 #!env/python3
 # coding: utf-8
-import os.path
 
+import os.path
 
 from mongoengine import *
 from bson.objectid import ObjectId
 
-
-
-
-class User(Document):
-	firstname = StringField(max_length=255)
-	lastname  = StringField(max_length=255)
-	email     = EmailField(max_length=255)
-	is_admin  = BooleanField()
-
-	def export_data(self):
-		return {
-			"firstname": self.firstname,
-			"lastname" : self.lastname, 
-			"is_admin" : self.is_admin,
-			"email"    : self.email,
-			"id": str(self.pk)
-		}
-
-	def import_data(self, data):
-		try:
-			self.firstname = data['firstname']
-			self.lastname  = data['lastname']
-			self.email     = data['email']
-			self.is_admin  = data['is_admin']
-		except KeyError as e:
-			raise ValidationError('Invalid user: missing ' + e.args[0])
-		return self
-
-	@staticmethod
-	def from_id(user_id):
-		if not ObjectId.is_valid(user_id):
-			return None;
-		user = User.objects.get(pk=user_id)
-		return user
 
 
 
@@ -53,7 +19,7 @@ class Pipeline(Document):
 	license       = StringField(max_length=50)
 	input_allowed = ListField(StringField(max_length=10))
 	developer     = StringField(max_length=100)
-	
+
 	def __str__(self):
 		return self.path
 
@@ -66,7 +32,7 @@ class Pipeline(Document):
 			"license" : self.license,
 			"developer" : self.developer,
 			"input_allowed" : self.input_allowed,
-			"path": self.path, 
+			"path": self.path,
 			"id": str(self.id)
 		}
 
@@ -82,7 +48,7 @@ class Pipeline(Document):
 			self.path          = data['path']
 		except KeyError as e:
 			raise ValidationError('Invalid pipeline: missing ' + e.args[0])
-		return self 
+		return self
 
 	def get_qml(self):
 		qml = None
@@ -133,7 +99,7 @@ class Run(Document):
 			"pipe_id" : str(self.pipe_id),
 			"pipe_name" : self.pipe_name,
 			"celery_id" : self.celery_id,
-			"user_id": str(self.user_id), 
+			"user_id": str(self.user_id),
 			"start": self.start,
 			"end": self.end,
 			"status": self.status,

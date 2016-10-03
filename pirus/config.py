@@ -2,12 +2,26 @@
 # coding: utf-8 
 import os
 
-HOSTNAME = "dev1.absolumentg.fr:8080" # "localhost:8080"
+# HOST
+HOST           = "dev1.absolumentg.fr"
+PORT           = "8080"
+VERSION        = "v1"
+HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
+
+# FILESYSTEM
+INPUTS_DIR    = "/var/tmp/pirus_" + VERSION + "/inputs"
+INPUTS_TEMP   = "/var/tmp/pirus_" + VERSION + "/downloads"
+OUTPUTS_DIR   = "/var/tmp/pirus_" + VERSION + "/outputs"
+DATABASES_DIR = "/var/tmp/pirus_" + VERSION + "/databases"
+PIPELINES_DIR = "/var/tmp/pirus_" + VERSION + "/pipelines"
+RUN_DIR       = "/var/tmp/pirus_" + VERSION + "/runs"
+
+
+# AUTOCOMPUTED VALUES
+PIRUS_DIR      = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_DIR   = os.path.join(PIRUS_DIR, "templates/")
 ERROR_ROOT_URL = "api.pirus.org/errorcode/"
-PIRUS_API_V  = "1.0.0"
-PIPELINES_DIR  = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipelines/")
-TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates/")
-RUN_DIR      = os.path.join(os.path.dirname(os.path.abspath(__file__)), "runs/") 
+NOTIFY_URL     = "http://" + HOSTNAME + "/run/notify/"
 
-NOTIFY_URL   = 'http://' + HOSTNAME + '/run/notify/'
+

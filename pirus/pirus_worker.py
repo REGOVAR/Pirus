@@ -18,7 +18,7 @@ from config import *
 
 
 
-app = Celery('tasks_manager')
+app = Celery('pirus_worker')
 app.conf.update(
     BROKER_URL = 'amqp://guest@localhost',
     CELERY_RESULT_BACKEND = 'rpc',
@@ -28,7 +28,7 @@ app.conf.update(
     CELERY_ACCEPT_CONTENT = ['json'],
     CELERY_RESULT_SERIALIZER = 'json',
     CELERY_INCLUDE = [
-    'tasks_manager'
+    'pirus_worker'
     ],
     CELERY_TIMEZONE = 'Europe/Paris',
     CELERY_ENABLE_UTC = True,
@@ -78,7 +78,7 @@ class PirusTask(Task):
 
 
 
-@app.task(base=PirusTask, queue='MyPluginQueue', bind=True)
+@app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def execute_plugin(self, fullpath, config):
     self.run_path   = os.path.join(RUN_DIR, str(self.request.id))
     self.notify_url = NOTIFY_URL + str(self.request.id)
@@ -122,16 +122,24 @@ def execute_plugin(self, fullpath, config):
 
 
 
-@app.task(base=Task, queue='MyPluginQueue', bind=True)
-def execute_lxc(self, run_id, config):
-    self.run_path   = os.path.join(RUN_DIR, str(self.request.id))
+@app.task(base=Task, queue='PirusQueue', bind=True)
+def run_pipeline(self, run_id, config):
+    self.run_id = str(self.request.id)
+    self.run_path   = os.path.join(RUN_DIR, self.run_id)
     # self.notify_url = NOTIFY_URL + str(self.request.id)
     # self.notify_status("INIT")
-    
+
     # clone original container. This new container will be used for the run
-    c_org = lxc.Container("pirus_w1")
-    c_run = c_org.clone("pirus_run_" + str(self.request.id))
+    client = pylxd.Client()
+    c_org  = client.containers.get("pirus")
+    c_run  = c_org.snapshots.create("run_" + self.run_id)
+    cc     = c_run.container
+
+    cc.start()
+    cc.sync()
+
     
+
     # create I/O directories on the host that will be used by the container
     input_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name),"rootfs/home/ubuntu/inputs")
     output_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name), "rootfs/home/ubuntu/outputs")
@@ -140,12 +148,12 @@ def execute_lxc(self, run_id, config):
     pipe_lxc_path = os.path.join(os.path.dirname(c_run.config_file_name), "rootfs/home/ubuntu/pipe")
 
     # edit config file of the lxc container to mount good directories
-    with open(c_run.config_file_name, "a") as cfgfile:
-        cfgfile.write("lxc.mount.entry = " + self.run_path + "/inputs " + input_lxc_path + " none bind,ro 0 0\n")
-        cfgfile.write("lxc.mount.entry = " + self.run_path + "/outputs " + output_lxc_path + " none bind 0 0\n")
-        cfgfile.write("lxc.mount.entry = " + self.run_path + " " + pipe_lxc_path + " none bind 0 0\n")
-        cfgfile.write("lxc.mount.entry = " + self.run_path + "/logs " + logs_lxc_path + " none bind 0 0\n")
-        cfgfile.write("lxc.mount.entry = /home/olivier/databases " + databases_lxc_path + " none bind,ro 0 0\n")
+    #with open(c_run.config_file_name, "a") as cfgfile:
+    #    cfgfile.write("lxc.mount.entry = " + self.run_path + "/inputs " + input_lxc_path + " none bind,ro 0 0\n")
+    #    cfgfile.write("lxc.mount.entry = " + self.run_path + "/outputs " + output_lxc_path + " none bind 0 0\n")
+    #    cfgfile.write("lxc.mount.entry = " + self.run_path + " " + pipe_lxc_path + " none bind 0 0\n")
+    #    cfgfile.write("lxc.mount.entry = " + self.run_path + "/logs " + logs_lxc_path + " none bind 0 0\n")
+    #    cfgfile.write("lxc.mount.entry = /home/olivier/databases " + databases_lxc_path + " none bind,ro 0 0\n")
 
     # edit env variable of the lxc container with "well known" path for the pipeline
     #envfile = os.path.dirname(c_run.config_file_name) + "/rootfs/etc/environment"
@@ -161,10 +169,10 @@ def execute_lxc(self, run_id, config):
     #os.chmod(envfile, 644)
 
     # run the container
-    c_run.start()
+    # c_run.start()
 
     # run the pipeline in the container :)
-    c_run.attach_wait(lxc.attach_run_command, ["/run_pipe.sh"])
+    # c_run.attach_wait(lxc.attach_run_command, ["/run_pipe.sh"])
 
 
 
