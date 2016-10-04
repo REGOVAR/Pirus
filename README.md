@@ -25,10 +25,18 @@ You can then clone the repository and install requirements.
 	pip install -r requirements.txt 
 
 
-Create your first lxd container for pirus (all pirus container shall have a name that begin with "pirus_")
+Create your first lxd container for pirus (all pirus container shall have a name that begin with "pirus", prefix can be set in config.py of the server)
 
-	lxc launch images:ubuntu/xenial pirus_main
-	lxc stop pirus_main
+	lxc launch images:ubuntu/xenial pirus
+	lxc exec pirusC1 -- mkdir /pipeline
+	lxc exec pirusC1 -- mkdir /pipeline/run
+	lxc exec pirusC1 -- mkdir /pipeline/inputs
+	lxc exec pirusC1 -- mkdir /pipeline/outputs
+	lxc exec pirusC1 -- mkdir /pipeline/outputs/results
+	lxc exec pirusC1 -- mkdir /pipeline/outputs/logs
+	lxc exec pirusC1 -- mkdir /pipeline/db
+	lxc exec pirusC1 -- apt install curl
+	lxc stop pirus
 	
 	
 
