@@ -15,10 +15,12 @@ produces:
   - application/json
 
 #=============================================
-# =============== ENDPOINT ====================
+# =============== ENDPOINT ===================
 #=============================================
 
 paths:
+# CONFIG HANDLER------------------------------
+
   /config:
     get:
       summary: return api information
@@ -27,9 +29,46 @@ paths:
           description: api information 
           schema:
             $ref: "#/definitions/Config"
-          
-          
-          
+ 
+ # PIPELINE HANDLER---------------------------           
+  /pipelines:
+    get:
+      responses:
+        200:
+          description: list of pipelines
+          schema:
+            type: array 
+            items:
+              $ref: "#/definitions/Pipeline"
+# -- 
+
+    post:
+      responses:
+        200:
+          description: list of pipelines
+          schema:
+            type: array 
+            items:
+              $ref: "#/definitions/Pipeline"
+
+# -- 
+              
+  /pipelines/{id}:
+    post:
+      parameters: 
+        - name: id
+          in: path
+          description: ID of pipeline
+          required: true
+          type: integer
+          format: int64
+        
+      responses:
+        200:
+          description: list of pipelines
+          schema:
+              $ref: "#/definitions/Pipeline"
+
           
 #=============================================
 # ============ MODEL ========================= 
