@@ -26,5 +26,7 @@ NOTIFY_URL     = "http://" + HOSTNAME + "/run/notify/"
 
 
 # LXD
+LXD_UID        = 165537
+LXD_GID        = LXD_UID
 LXD_MAX        = 2
 LXD_PREFIX     = "pirus_"

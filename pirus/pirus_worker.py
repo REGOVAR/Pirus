@@ -134,51 +134,79 @@ def run_pipeline(self, run_id, config):
 
     # Check database, to see how many container are running and if we can create a new one for this run
     # TODO => STATE : WAITING SERVER DISPONIBILTY
-    self.notify_status("Waiting server disponibility")
-    while len(lxd_client.containers.all()) > 2:
+    self.notify_status("WAITING")
+
+    c_name = None
+    while 1: # len(lxd_client.containers.all()) >= LXD_MAX:
+        for c in lxd_client.containers.all():
+            if c.name.startswith(LXD_PREFIX) and c.status == 'Stopped':
+                c_name = c.name
+                break
+        if c_name is not None:
+            break
+        # wait a little before checking again
         time.sleep(1)
-	break # FIXME to remove 
 
 
     # Register job in database 
     # TODO => STATE : INITIALIZING (Db registration)
-    self.notify_status("Init (Db registration)")
+    self.notify_status("INIT")
 
     # Create run's folders on the pirus server
     # TODO => STATE : INITIALIZING (Filesystem creation)
-    runpath = os.path.join(RUNS_DIR, self.run_id)
-    ipath = os.path.join(runpath, "inputs")
-    opath = os.path.join(runpath, "outputs")
-    lpath = os.path.join(runpath, "logs")
-    rpath = os.path.join(runpath, "run")
+    ipath = INPUTS_DIR
+    opath = os.path.join(OUTPUTS_DIR, self.run_id, "results")
+    lpath = os.path.join(OUTPUTS_DIR, self.run_id, "logs")
+    rpath = os.path.join(RUNS_DIR, self.run_id)
 
 
     # Create lxd container and bind it on run repositories
     # TODO => STATE : INITIALIZING (LXC Container creation)
-    c = lxd_client.container.get("pirus")
+    c = lxd_client.containers.get(c_name)
+    old_config = c.config.copy()
+    old_devices= c.devices.copy()
+    c.config.update(
+        {
+            'environment.DATABASES': '/pipeline/db',
+            'environment.INPUTS': '/pipeline/inputs',
+            'environment.LOGS': '/pipeline/outputs/logs',
+            'environment.OUTPUTS': '/pipeline/outputs/results',
+            'environment.RUN': '/pipeline/run',
+            'environment.NOTIFY': 'http://' + HOSTNAME + '/run/notify/' + self.run_id + '/'
+        })
     c.devices.update(
         {
             'pirus_inputs': {'limits.write': '0iops', 'path': 'pipeline/inputs','source': ipath, 'type': 'disk'},
-            'pirus_ouputs': {'path': 'pipeline/outputs','source': opath, 'type': 'disk'},
-            'pirus_logs'  : {'path': 'pipeline/logs', 'source': lpath, 'type': 'disk'},
-            'pirus_db'    : {'path': 'pipeline/db', 'source': DATABASES_DIR, 'type': 'disk'},
+            'pirus_outputs': {'path': 'pipeline/outputs/results','source': opath, 'type': 'disk'},
+            'pirus_logs'  : {'path': 'pipeline/outputs/logs', 'source': lpath, 'type': 'disk'},
+            'pirus_db'    : {'limits.write': '0iops','path': 'pipeline/db', 'source': DATABASES_DIR, 'type': 'disk'},
             'pirus_run'   : {'path': 'pipeline/run', 'source': rpath, 'type': 'disk'}
         })
     c.save()
-    c.start()
 
     # Run the pipe !
     # TODO => STATE : RUNNING
+    self.notify_status("RUN")
     c.start()
-    c.execute([rpath + "/run.sh"])
+    c.execute(["/pipeline/run/run.sh"], stderr="$LOGS/err.log", stdout="$LOGS/out.log")
 
     # Stop container execution to release hdw resource
     # TODO => STATE : STOPING
+    self.notify_status("STOP")
     c.stop()
+    c.devices.clear()
+    c.devices.update(old_devices)
+    c.config.clear()
+    c.config.update(old_config)
+    c.save()
+
 
     # Delete container
     # TODO => STATE : DONE
-    c.delete()
+    self.notify_status("DONE")
+
+
+#c.delete()
 
 
 
