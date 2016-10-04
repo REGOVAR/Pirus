@@ -1,0 +1,87 @@
+---
+swagger: '2.0'
+host: api.pirus.org 
+basePath: /v1 
+
+info:
+  version: 0.0.1
+  title: Pirus API
+  description: Pirus API documentation
+
+schemes: 
+  - https
+
+produces:
+  - application/json
+
+#=============================================
+# =============== ENDPOINT ====================
+#=============================================
+
+paths:
+  /config:
+    get:
+      summary: return api information
+      responses:
+        200:
+          description: api information 
+          schema:
+            $ref: "#/definitions/Config"
+          
+          
+          
+          
+#=============================================
+# ============ MODEL ========================= 
+#=============================================
+
+# OBJECT CONFIG ------------------------------
+definitions:
+  Config: 
+    type: object 
+    properties: 
+      version:  
+        type: string 
+        description: api version 
+    
+# OBJECT PIPELINE ----------------------------:
+  Pipeline: 
+    type: object 
+    properties: 
+      name:  
+        type: string 
+        description: pipeline name
+      version:
+        type: string 
+        description: pipeline version 
+      description:
+        type: string 
+      path:
+        type: string 
+      license:
+        type: string 
+      developer:
+        type: string 
+        
+# OBJECT Run ----------------------------:
+  Run: 
+    type: object 
+    properties: 
+      pipeline_id:
+        type: string
+      celery_id:
+        type: string
+      start:
+        type: string
+        description: date of start 
+      end:
+        type: string 
+        description: date of end 
+      status:
+        type: string 
+      
+    
+          
+        
+        
+        
