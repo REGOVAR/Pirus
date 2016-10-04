@@ -227,13 +227,13 @@ class RunHandler:
                 return rest_success(run.export_data())
 
 
-        def download_file(self, run_id, filename):
+        def download_file(self, run_id, filename, location=OUTPUTS_DIR):
                 if run_id == -1:
                         return rest_error("Id not found")
                 run = Run.from_id(run_id)
                 if run == None:
                         return rest_error("Unable to find the run with id " + str(run_id))
-                path = os.path.join(RUN_DIR, run.celery_id, filename)
+                path = os.path.join(location, run.celery_id, filename)
 
                 if not os.path.exists(path):
                         return rest_error("File not found. " + filename + " doesn't exists for the run " + str(run_id))
@@ -247,11 +247,11 @@ class RunHandler:
 
         def get_log(self, request):
                 run_id = request.match_info.get('run_id', -1)
-                return self.download_file(run_id, "out.log")
+                return self.download_file(run_id, "logs/out.log")
 
         def get_err(self, request):
                 run_id = request.match_info.get('run_id', -1)
-                return self.download_file(run_id, "err.log")
+                return self.download_file(run_id, "logs/err.log")
 
 
         def get_files(self, request):

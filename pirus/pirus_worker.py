@@ -125,39 +125,59 @@ def execute_plugin(self, fullpath, config):
 
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def run_pipeline(self, run_id, config):
+def run_pipeline(self, pipe_fullpath, config):
     self.run_id = str(self.request.id)
-    self.run_path   = os.path.join(RUN_DIR, self.run_id)
     self.notify_url = NOTIFY_URL + str(self.request.id)
     lxd_client = pylxd.Client()
-
 
     # Check database, to see how many container are running and if we can create a new one for this run
     # TODO => STATE : WAITING SERVER DISPONIBILTY
     self.notify_status("WAITING")
 
     c_name = None
-    while 1: # len(lxd_client.containers.all()) >= LXD_MAX:
-        for c in lxd_client.containers.all():
-            if c.name.startswith(LXD_PREFIX) and c.status == 'Stopped':
-                c_name = c.name
-                break
-        if c_name is not None:
-            break
+    while len(lxd_client.containers.all()) >= LXD_MAX:
+        #for c in lxd_client.containers.all():
+        #    if c.name.startswith(LXD_PREFIX) and c.status == 'Stopped':
+        #        c_name = c.name
+        #        break
+        #if c_name is not None:
+        #    break
         # wait a little before checking again
         time.sleep(1)
 
+    c_name = LXD_PREFIX + "-" + self.run_id
 
     # Register job in database 
     # TODO => STATE : INITIALIZING (Db registration)
     self.notify_status("INIT")
-
+    print("open", c_name, "container from image mypirus")
+    c = cl.containers.create({'name':c_name, 'source':{'type':'image', 'alias':'mypirus'}})
     # Create run's folders on the pirus server
     # TODO => STATE : INITIALIZING (Filesystem creation)
     ipath = INPUTS_DIR
     opath = os.path.join(OUTPUTS_DIR, self.run_id, "results")
     lpath = os.path.join(OUTPUTS_DIR, self.run_id, "logs")
     rpath = os.path.join(RUNS_DIR, self.run_id)
+
+    #if not os.path.exists(rpath):
+    #    os.makedirs(rpath)
+    #    os.chmod(rpath, 0o777)
+    if not os.path.exists(opath):
+        os.makedirs(opath)
+        os.chmod(opath, 0o777)
+    if not os.path.exists(lpath):
+        os.makedirs(lpath)
+        os.chmod(lpath, 0o777)
+
+    try:
+        print("copy", pipe_fullpath, "to", rpath)
+        shutil.copytree(pipe_fullpath, rpath)
+    except:
+        print ("Failed to create pipeline running environment.")
+        self.notify_status("FAILED")
+        return 1
+
+
 
 
     # Create lxd container and bind it on run repositories
@@ -188,18 +208,20 @@ def run_pipeline(self, run_id, config):
     # TODO => STATE : RUNNING
     self.notify_status("RUN")
     c.start()
-    c.execute(["/pipeline/run/run.sh"], stderr="$LOGS/err.log", stdout="$LOGS/out.log")
+    c.sync()
+    print("start container")
+    stdout, stderr = c.execute(["/pipeline/run/run.sh"])
+    print("execute done", stdout)
+    with open(lpath + "/out.log", 'w') as f:
+        f.write(stdout)
+    with open(lpath + '/err.log', 'w') as f:
+        f.write(stderr)
 
     # Stop container execution to release hdw resource
     # TODO => STATE : STOPING
     self.notify_status("STOP")
     c.stop()
-    c.devices.clear()
-    c.devices.update(old_devices)
-    c.config.clear()
-    c.config.update(old_config)
-    c.save()
-
+    c.delete()
 
     # Delete container
     # TODO => STATE : DONE
