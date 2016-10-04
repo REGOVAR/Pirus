@@ -9,6 +9,12 @@ You need to have [MongoDB](https://docs.mongodb.com/manual/tutorial/install-mong
 
         sudo apt install rabbitmq-server
         sudo apt install mongodb
+        sudo apt install lxd
+	
+You may need also to install
+
+	sudo apt install build-essential libssl-dev libffi-dev python3-dev virtualenv
+	
         
 You can then clone the repository and install requirements.
 
@@ -18,16 +24,32 @@ You can then clone the repository and install requirements.
 	source venv/bin/activate
 	pip install -r requirements.txt 
 
+
+Create your first lxd container for pirus (all pirus container shall have a name that begin with "pirus", prefix can be set in config.py of the server)
+
+	lxc launch images:ubuntu/xenial pirus
+	lxc exec pirusC1 -- mkdir /pipeline
+	lxc exec pirusC1 -- mkdir /pipeline/run
+	lxc exec pirusC1 -- mkdir /pipeline/inputs
+	lxc exec pirusC1 -- mkdir /pipeline/outputs
+	lxc exec pirusC1 -- mkdir /pipeline/outputs/results
+	lxc exec pirusC1 -- mkdir /pipeline/outputs/logs
+	lxc exec pirusC1 -- mkdir /pipeline/db
+	lxc exec pirusC1 -- apt install curl
+	lxc stop pirus
+	
+	
+
 ## Run pirus 
 
 Your need first to run celery 
 
 	cd pirus/
-	celery worker -A tasks_manager --loglevel=info -Q MyPluginQueue
+	celery worker -A pirus_worker --loglevel=info -Q PirusQueue
 
 So you can run pirus 
 
 	python app.y 
 
-Check if pirus is working there : http://localhost:8080/www
+Check if pirus is working there : http://localhost:8080/v1/www
 	
