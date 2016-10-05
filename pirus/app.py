@@ -33,10 +33,8 @@ if not os.path.exists(PIPELINES_DIR):
 	os.makedirs(PIPELINES_DIR)
 if not os.path.exists(INPUTS_DIR):
 	os.makedirs(INPUTS_DIR)
-if not os.path.exists(INPUTS_TEMP):
+if not os.path.exists(TEMP_DIR):
 	os.makedirs(INPUTS_TEMP)
-if not os.path.exists(OUTPUTS_DIR):
-	os.makedirs(OUTPUTS_DIR)
 if not os.path.exists(DATABASES_DIR):
 	os.makedirs(DATABASES_DIR)
 

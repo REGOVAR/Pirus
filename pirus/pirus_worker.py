@@ -133,16 +133,7 @@ def run_pipeline(self, pipe_fullpath, config):
     # Check database, to see how many container are running and if we can create a new one for this run
     # TODO => STATE : WAITING SERVER DISPONIBILTY
     self.notify_status("WAITING")
-
-    c_name = None
     while len(lxd_client.containers.all()) >= LXD_MAX:
-        #for c in lxd_client.containers.all():
-        #    if c.name.startswith(LXD_PREFIX) and c.status == 'Stopped':
-        #        c_name = c.name
-        #        break
-        #if c_name is not None:
-        #    break
-        # wait a little before checking again
         time.sleep(1)
 
     c_name = LXD_PREFIX + "-" + self.run_id
@@ -150,18 +141,18 @@ def run_pipeline(self, pipe_fullpath, config):
     # Register job in database 
     # TODO => STATE : INITIALIZING (Db registration)
     self.notify_status("INIT")
-    print("open", c_name, "container from image mypirus")
-    c = cl.containers.create({'name':c_name, 'source':{'type':'image', 'alias':'mypirus'}})
+    print("create", c_name, "container from image PirusSimple")
+    c = lxd_client.containers.create({'name':c_name, 'source':{'type':'image', 'alias':'PirusSimple'}})
     # Create run's folders on the pirus server
     # TODO => STATE : INITIALIZING (Filesystem creation)
-    ipath = INPUTS_DIR
-    opath = os.path.join(OUTPUTS_DIR, self.run_id, "results")
-    lpath = os.path.join(OUTPUTS_DIR, self.run_id, "logs")
     rpath = os.path.join(RUNS_DIR, self.run_id)
+    ipath = os.path.join(rpath, "inputs")
+    opath = os.path.join(rpath, "outputs")
+    lpath = os.path.join(rpath, "logs")
 
-    #if not os.path.exists(rpath):
-    #    os.makedirs(rpath)
-    #    os.chmod(rpath, 0o777)
+    if not os.path.exists(ipath):
+        os.makedirs(ipath)
+        # don't chmod it... keep readonly
     if not os.path.exists(opath):
         os.makedirs(opath)
         os.chmod(opath, 0o777)
@@ -169,13 +160,8 @@ def run_pipeline(self, pipe_fullpath, config):
         os.makedirs(lpath)
         os.chmod(lpath, 0o777)
 
-    try:
-        print("copy", pipe_fullpath, "to", rpath)
-        shutil.copytree(pipe_fullpath, rpath)
-    except:
-        print ("Failed to create pipeline running environment.")
-        self.notify_status("FAILED")
-        return 1
+    # TODO => create symlink in ipath directory
+    # TODO => copy config file of the run in the ipath directory
 
 
 
@@ -187,30 +173,24 @@ def run_pipeline(self, pipe_fullpath, config):
     old_devices= c.devices.copy()
     c.config.update(
         {
-            'environment.DATABASES': '/pipeline/db',
-            'environment.INPUTS': '/pipeline/inputs',
-            'environment.LOGS': '/pipeline/outputs/logs',
-            'environment.OUTPUTS': '/pipeline/outputs/results',
-            'environment.RUN': '/pipeline/run',
             'environment.NOTIFY': 'http://' + HOSTNAME + '/run/notify/' + self.run_id + '/'
         })
     c.devices.update(
         {
             'pirus_inputs': {'limits.write': '0iops', 'path': 'pipeline/inputs','source': ipath, 'type': 'disk'},
-            'pirus_outputs': {'path': 'pipeline/outputs/results','source': opath, 'type': 'disk'},
-            'pirus_logs'  : {'path': 'pipeline/outputs/logs', 'source': lpath, 'type': 'disk'},
+            'pirus_outputs': {'path': 'pipeline/outputs','source': opath, 'type': 'disk'},
+            'pirus_logs'  : {'path': 'pipeline/logs', 'source': lpath, 'type': 'disk'},
             'pirus_db'    : {'limits.write': '0iops','path': 'pipeline/db', 'source': DATABASES_DIR, 'type': 'disk'},
-            'pirus_run'   : {'path': 'pipeline/run', 'source': rpath, 'type': 'disk'}
         })
     c.save()
 
     # Run the pipe !
     # TODO => STATE : RUNNING
     self.notify_status("RUN")
-    c.start()
     c.sync()
+    c.start()
     print("start container")
-    stdout, stderr = c.execute(["/pipeline/run/run.sh"])
+    c.execute(["/pipeline/run/run.sh"])
     print("execute done", stdout)
     with open(lpath + "/out.log", 'w') as f:
         f.write(stdout)
@@ -221,6 +201,7 @@ def run_pipeline(self, pipe_fullpath, config):
     # TODO => STATE : STOPING
     self.notify_status("STOP")
     c.stop()
+    c.sync()
     c.delete()
 
     # Delete container
