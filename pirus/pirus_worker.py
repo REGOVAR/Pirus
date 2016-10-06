@@ -57,8 +57,12 @@ def setup_logger(logger_name, log_file, level=logging.INFO):
 def execute(cmd, olog, elog):
     with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
         # TODO FIXME => logging realtime not working :( ...
-        olog.info(proc.stdout.read())
-        elog.info(proc.stderr.read())
+        out = str(proc.stdout.read())
+        err = str(proc.stderr.read())
+        if out != "":
+            olog.info(out)
+        if err != "":
+            elog.info(err)
 
 
 
@@ -133,7 +137,7 @@ def run_pipeline(self, pipe_image_alias, config):
         plog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
         c_name = LXD_PREFIX + "-" + self.run_id
     except:
-        plog.info('FAILLED | Unexpected error ' + sys.exc_info()[0])
+        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
 
@@ -154,7 +158,7 @@ def run_pipeline(self, pipe_image_alias, config):
         # TODO => create symlink in ipath directory
         # TODO => copy config file of the run in the ipath directory
     except:
-        plog.info('FAILLED | Unexpected error ' + sys.exc_info()[0])
+        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
 
@@ -165,7 +169,7 @@ def run_pipeline(self, pipe_image_alias, config):
         execute(["lxc", "start", c_name], olog, elog)
         execute(["lxc", "exec", c_name, "/pipeline/run/run.sh"], olog, elog)
     except:
-        plog.info('FAILLED | Unexpected error ' + sys.exc_info()[0])
+        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
 
@@ -175,15 +179,16 @@ def run_pipeline(self, pipe_image_alias, config):
     try:
         # Force the container to change results files owner to allow the server to use them
         plog.info('STOP    |  - chown ' +  str(os.getuid()) + ":" + str(os.getgid()) + ' on outputs and logs files produced by the container')
-        execute(["lxc", "exec", c_name, "--", "chown", str(os.getuid()) + ":" + str(os.getgid()), "-Rf", "/pipeline"])
+        execute(["useradd", "-u", str(os.getuid()), "-g", str(os.getgid()), "lxd"], olog, elog)
+        execute(["lxc", "exec", c_name, "--", "chown", str(os.getuid()) + ":" + str(os.getgid()), "-Rf", "/pipeline"], olog, elog)
 
         plog.info('STOP    |  - chmod 775 on outputs and logs files produced by the container')
-        execute(["lxc", "exec", c_name, "--", "chmode", "775", "-Rf", "/pipeline"])
+        execute(["lxc", "exec", c_name, "--", "chmode", "775", "-Rf", "/pipeline"], olog, elog)
 
         plog.info('STOP    |  - closing and deleting the lxc container : ' + c_name)
         execute(["lxc", "delete", c_name, "--force"], olog, elog)
     except:
-        plog.info('FAILLED | Unexpected error ' + sys.exc_info()[0])
+        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
     
