@@ -21,7 +21,7 @@ from mongoengine import *
 from config import *
 from framework import *
 from pirus_worker import run_pipeline
-from .model import *
+from api_v1.model import *
 
 
 

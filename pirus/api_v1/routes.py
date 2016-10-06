@@ -4,7 +4,7 @@
 
 from framework import *
 from config import *
-from .handlers import *
+from api_v1.handlers import *
 
 
 
