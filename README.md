@@ -4,8 +4,7 @@ Pirus is an application launcher service which allow user to run pipeline code f
 
 
 ## Installation 
-You need to have [MongoDB](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/)
- and [RabbitMQ](https://www.rabbitmq.com/install-debian.html) installed on your system. 
+You need to have [MongoDB](https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/) and [RabbitMQ](https://www.rabbitmq.com/install-debian.html) installed on your system. 
 
         sudo apt install rabbitmq-server
         sudo apt install mongodb
