@@ -1,9 +1,0 @@
-#!env/python3
-# coding: utf-8
-
-
-from model import *
-from handlers import han
-from v1 import routes
-
-from .pirus_framework import *
