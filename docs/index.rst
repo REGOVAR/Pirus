@@ -10,7 +10,17 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-
+   
+   
+   presentation
+   installation
+   userguide
+   devguide
+   
+   
+   restapi
+   architecture
+   
 
 
 Indices and tables
