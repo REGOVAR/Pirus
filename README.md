@@ -25,18 +25,35 @@ You can then clone the repository and install requirements.
 	pip install -r requirements.txt 
 
 
-Create your first lxd container for pirus (all pirus container shall have a name that begin with "pirus", prefix can be set in config.py of the server)
+Create your first lxd pipeline for pirus.
 
+	# create a container
 	lxc launch images:ubuntu/xenial pirus
-	lxc exec pirusC1 -- mkdir /pipeline
-	lxc exec pirusC1 -- mkdir /pipeline/run
-	lxc exec pirusC1 -- mkdir /pipeline/inputs
-	lxc exec pirusC1 -- mkdir /pipeline/outputs
-	lxc exec pirusC1 -- mkdir /pipeline/outputs/results
-	lxc exec pirusC1 -- mkdir /pipeline/outputs/logs
-	lxc exec pirusC1 -- mkdir /pipeline/db
-	lxc exec pirusC1 -- apt install curl
+	# configure it
+	lxc exec pirus -- /bin/bash
+	
+	# following directories are mandatory
+	mkdir /pipeline/run
+	mkdir /pipeline/inputs
+	mkdir /pipeline/outputs
+	mkdir /pipeline/logs
+	mkdir /pipeline/db
+	
+	# need curl if you want to notify server with the progress of your run
+	apt install curl
+	
+	# the script run.sh is the "entry point" of your run
+	echo "curl ${NOTIFY}50" > /pipeline/run/run.sh
+	echo "ls -l /pipeline/database/db > /pipeline/outputs/result.txt" >> /pipeline/run/run.sh
+	chmod +x /pipeline/run/run.sh
+	
+	# exit the container
+	exit
+	
+	# stop it and create an image
 	lxc stop pirus
+	lxc publish pirus --alias=PirusSimple
+	
 	
 	
 
