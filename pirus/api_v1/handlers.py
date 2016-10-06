@@ -195,7 +195,7 @@ class RunHandler:
             return rest_error("Unknow pipeline id " + str(pipe_id))
         # 3- Enqueue run of the pipeline with celery
         try:
-            cw = run_pipeline.delay(pipeline.path, config)
+            cw = run_pipeline.delay("PirusSimple", config) # pipeline.path, config)
         except:
             # TODO : clean filesystem
             return rest_error("Unable to run the pipeline with celery " + str(pipe_id))
@@ -245,14 +245,17 @@ class RunHandler:
             body=str.encode(content)
         )
 
-    def get_log(self, request):
+    def get_olog(self, request):
         run_id = request.match_info.get('run_id', -1)
         return self.download_file(run_id, "logs/out.log")
 
-    def get_err(self, request):
+    def get_elog(self, request):
         run_id = request.match_info.get('run_id', -1)
         return self.download_file(run_id, "logs/err.log")
 
+    def get_plog(self, request):
+        run_id = request.match_info.get('run_id', -1)
+        return self.download_file(run_id, "logs/pirus.log")
 
     def get_files(self, request):
         run_id  = request.match_info.get('run_id',  -1)
