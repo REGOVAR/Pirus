@@ -73,7 +73,7 @@
                         <span style="display:inline-block; width:350px;">{{ p["id"] }}</span> 
                         <div class="cssProgress">
                             <div class="progress3">
-                                <div class="cssProgress-bar cssProgress-active" data-percent="{{ p["prog_val"] }}" style="width:{{ p["prog_val"] }}%;">
+                                <div class="cssProgress-bar {{ p["status"] }} {% if p["status"] == "RUN" %}cssProgress-active{% endif -%}"  data-percent="{{ p["prog_val"] }}" style="width:{{ p["prog_val"] }}%;">
                                     <span class="cssProgress-label">{{ p["prog_val"] }}%</span> 
                                 </div>
                             </div>
@@ -236,11 +236,17 @@
                 var uTxt = ""
                 $.each(json["data"], function (idx, val)
                 {
+                    style="cssProgress-bar " + val["status"]
+                    if (val["status"] == "RUN" )
+                    {
+                        style+=" cssProgress-active";
+                    }
+
                     uTxt += "<li>\
                         <span style='display:inline-block; width:350px;'>" + val["id"] + "</span>\
                         <div class='cssProgress'>\
                             <div class='progress3'>\
-                                <div class='cssProgress-bar cssProgress-active' data-percent='" + val["prog_val"] + "' style='width:" + val["prog_val"] + "%;'>\
+                                <div class='" + style + "' data-percent='" + val["prog_val"] + "' style='width:" + val["prog_val"] + "%;'>\
                                     <span class='cssProgress-label'>" + val["prog_val"] + "%</span>\
                                 </div>\
                             </div>\

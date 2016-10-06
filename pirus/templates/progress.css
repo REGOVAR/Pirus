@@ -33,13 +33,13 @@
   text-shadow: 0px 1px rgba(0,0,0,0.3)
 }
 
-.cssProgress .cssProgress-info { background-color: #9575cd !important }
+.cssProgress .cssProgress-info{ background-color: #9575cd !important }
 
-.cssProgress .cssProgress-danger { background-color: #ef5350 !important }
+.cssProgress .cssProgress-danger, .cssProgress .FAILLED { background-color: #ef5350 !important }
 
-.cssProgress .cssProgress-success { background-color: #66bb6a !important }
+.cssProgress .cssProgress-success, .cssProgress .DONE { background-color: #66bb6a !important }
 
-.cssProgress .cssProgress-warning { background-color: #ffb74d !important }
+.cssProgress .cssProgress-warning, .cssProgress .WAITING { background-color: #ffb74d !important }
 
 .cssProgress .cssProgress-right { float: right !important }
 
