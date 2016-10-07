@@ -1,6 +1,6 @@
 ---
 swagger: '2.0'
-host: api.pirus.org 
+host: dev1.absolumentg.fr:8080
 basePath: /v1 
 
 info:
@@ -9,7 +9,7 @@ info:
   description: Pirus API documentation
 
 schemes: 
-  - https
+  - http
 
 produces:
   - application/json
@@ -20,56 +20,169 @@ produces:
 
 paths:
 # CONFIG HANDLER------------------------------
-
   /config:
     get:
-      summary: return api information
+      summary: Information about the api and the server configuration.
       responses:
         200:
-          description: api information 
+          description: success
           schema:
-            $ref: "#/definitions/Config"
- 
+            type: object
+            properties:
+              success:
+                type: bool
+                description: True in case of success
+              data:
+                $ref: "#/definitions/Config"
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
+                
+
+
  # PIPELINE HANDLER---------------------------           
-  /pipelines:
+  /pipelines?{inline_parameters}:
     get:
+      summary: List of pipelines. By default return the 20 last pipelines installed.
+      parameters:
+        - name: inline_parameters
+          in: path
+          description: see api documentation to see all available parameters 
+          required: false
+          type: string
       responses:
         200:
-          description: list of pipelines
           schema:
-            type: array 
-            items:
-              $ref: "#/definitions/Pipeline"
-# -- 
+            type: object
+            properties:
+              success:
+                type: bool
+                description: True in case of success, False otherwise
+              data:
+                type: array
+                items:
+                  $ref: "#/definitions/Pipeline"
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
 
+  /pipelines:
     post:
+      summary: Install a new pipeline on the server.
+      consumes:
+        - application/json
+      produces:
+        - application/json
+        - application/xml
+      parameters:
+        - name: package
+          in: body
+          description: The pirus pipeline package to install
+          type: binary
+          required: true
       responses:
         200:
-          description: list of pipelines
           schema:
-            type: array 
-            items:
-              $ref: "#/definitions/Pipeline"
+            type: object
+            properties:
+              success:
+                type: bool
+                description: True in case of success, False otherwise
+              data:
+                $ref: "#/definitions/Pipeline"
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
 
-# -- 
-              
   /pipelines/{id}:
-    post:
+    get:
+      summary: Return the pipeline with the povided id.
       parameters: 
         - name: id
           in: path
-          description: ID of pipeline
+          description: Id of pipeline
           required: true
-          type: integer
-          format: int64
-        
+          type: string
       responses:
         200:
-          description: list of pipelines
           schema:
-              $ref: "#/definitions/Pipeline"
+            $ref: "#/definitions/Pipeline"
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
 
-          
+    delete:
+      summary: Delete the pipeline with the povided id.
+      parameters: 
+        - name: id
+          in: path
+          description: Id of pipeline
+          required: true
+          type: string
+      responses:
+        200:
+          schema:
+            type: object
+            properties:
+              success:
+                type: bool
+                description: True in case of success, False otherwise
+              data:
+                $ref: "#/definitions/Pipeline"
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
+
+  /pipelines/{id}/form:
+    get:
+      summary: Return a json file that describe the form to configure a run for the pipeline with the provided id.
+      parameters: 
+        - name: id
+          in: path
+          description: Id of pipeline
+          required: true
+          type: string
+      responses:
+        200:
+          schema:
+            type: file
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
+
+  /pipelines/{id}/config:
+    get:
+      summary: Return the default json config file used to configure a run for the pipeline with the provided id.
+      parameters: 
+        - name: id
+          in: path
+          description: Id of pipeline
+          required: true
+          type: string
+      responses:
+        200:
+          schema:
+            type: file
+        202:
+          description: error
+          schema:
+            $ref: "#/definitions/Error"
+
+
+
+
+
+
+
+
+
+
 #=============================================
 # ============ MODEL ========================= 
 #=============================================
@@ -79,30 +192,81 @@ definitions:
   Config: 
     type: object 
     properties: 
+      host:
+        type: string
+        description: server hostname
+      port:
+        type: integer
+        description: server port
+      basepath:
+        type: string
+        description: the basepath to prefix all call to the api (by example http://<host>:<port>/<basepath>/config)
       version:  
         type: string 
-        description: api version 
-    
-# OBJECT PIPELINE ----------------------------:
+        description: the version of the api 
+      run:
+        $ref: "#/definitions/RunConfig"
+      contacts: 
+        type: array
+        description: the list of (admin) emails that could be contacted in case of problem with the server
+        items:
+          type: string
+          description: contact email
+
+# OBJECT RUNCONFIG ------------------------------
+  RunConfig:
+    type: object
+    description: hardware configuration of virtual environment in which run will be executed
+    properties:
+      max:
+        type: integer
+        description: the maximum of run that the server allow to execute at the same time
+      cpu_freq:
+        type: string
+        description: the mac cpu frequence allocated to the run
+      cpu_core:
+        type: integer
+        description: the number of core allocated to the run
+      ram:
+        type: string
+        description: the total RAM size allocated to the run (in human readable format)
+      disk:
+        type: string
+        description: the disk space (in human readable format) allocated to the run to write it's outputs (logs and results)
+      
+
+# OBJECT PIPELINE ----------------------------
   Pipeline: 
     type: object 
     properties: 
+      id:
+        type: string
+        description: Id of the pipeline.
       name:  
         type: string 
-        description: pipeline name
+        description: Pipeline name.
+      description:
+        type: string
+        description: Short text that describe what do the pipeline.
+      logo:
+        type: string
+        description: Url to the logo of the pipeline if exists.
       version:
         type: string 
-        description: pipeline version 
-      description:
-        type: string 
-      path:
-        type: string 
+        description: Version of the pipeline.
+      api_version:
+        type: string
+        description: Version of the Pirus api for which the pipeline is designed.
       license:
         type: string 
-      developer:
-        type: string 
-        
-# OBJECT Run ----------------------------:
+        description: License of the pipeline.
+      authors:
+        type: array
+        description: List of authors of the pipeline.
+        items:
+          type: string
+
+# OBJECT Run ----------------------------
   Run: 
     type: object 
     properties: 
@@ -118,9 +282,26 @@ definitions:
         description: date of end 
       status:
         type: string 
-      
+        
+        
+# OObject Error response -------------------
+  Error:
+    type: object
+    properties:
+      success:
+        type: boolean
+        description: False in case of error managed by the server
+      msg: 
+        type: string
+        description: A human readable message that explain the error
+      error_code:
+        type: string
+        description: The generic code of the error. (by example E0001 for "missing argument")
+      error_url:
+        type: string
+        description: An url that redirect to a Help/Faq page to get details about the error.
+      error_id:
+        type: string
+        description: the unique id of this error. Allow an admin to retrieve where/when exactly this error occure in logs.
     
-          
-        
-        
-        
+
