@@ -12,6 +12,7 @@ import subprocess
 
 from celery import Celery, Task
 from config import *
+from framework import *
 
 
 
@@ -43,17 +44,7 @@ lxd_client = pylxd.Client()
 
 
 
-def setup_logger(logger_name, log_file, level=logging.INFO):
-    l = logging.getLogger(logger_name)
-    formatter = logging.Formatter('%(asctime)s | %(message)s')
-    fileHandler = logging.FileHandler(log_file, mode='w')
-    fileHandler.setFormatter(formatter)
-    streamHandler = logging.StreamHandler()
-    streamHandler.setFormatter(formatter)
 
-    l.setLevel(level)
-    l.addHandler(fileHandler)
-    l.addHandler(streamHandler)
 
 def execute(cmd, olog=None, elog=None):
     subprocess.call(cmd)
@@ -114,38 +105,38 @@ def run_pipeline(self, pipe_image_alias, config):
 
     # Init logs
     print(os.path.join(lpath, "pirus.log"))
-    setup_logger('pirus_worker', os.path.join(lpath, "pirus.log"))
+    setup_logger('pirus_worker', os.path.join(lpath, "pirus_worker.log"))
     setup_logger('run_out', os.path.join(lpath, "out.log"))
     setup_logger('run_err', os.path.join(lpath, "err.log"))
-    plog = logging.getLogger('pirus_worker')
+    wlog = logging.getLogger('pirus_worker')
     # olog = logging.getLogger('run_out')
     # elog = logging.getLogger('run_err')
     
-    plog.info('INIT    | Pirus worker initialisation : ')
-    plog.info('INIT    |  - Pipe ID : ' + pipe_image_alias)
-    plog.info('INIT    |  - Run ID  : ' + self.run_id)
-    plog.info('INIT    | Directory created : ')
-    plog.info('INIT    |  - inputs  : ' + ipath)
-    plog.info('INIT    |  - outputs : ' + opath)
-    plog.info('INIT    |  - logs    : ' + lpath)
-    plog.info('INIT    |  - db      : ' + DATABASES_DIR)
+    wlog.info('INIT    | Pirus worker initialisation : ')
+    wlog.info('INIT    |  - Pipe ID : ' + pipe_image_alias)
+    wlog.info('INIT    |  - Run ID  : ' + self.run_id)
+    wlog.info('INIT    | Directory created : ')
+    wlog.info('INIT    |  - inputs  : ' + ipath)
+    wlog.info('INIT    |  - outputs : ' + opath)
+    wlog.info('INIT    |  - logs    : ' + lpath)
+    wlog.info('INIT    |  - db      : ' + DATABASES_DIR)
 
     # Check database, to see how many container are running and if we can create a new one for this run
-    plog.info('WAITING | Looking for lxc container creation ...')
+    wlog.info('WAITING | Looking for lxc container creation ...')
     self.notify_status("WAITING")
     try:
         while len(lxd_client.containers.all()) >= LXD_MAX:
             time.sleep(1)
-        plog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
+        wlog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
         c_name = LXD_PREFIX + "-" + self.run_id
     except:
-        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
+        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
 
 
     # Setting up the lxc container for the run
-    plog.info('SETUP   | Creation of the LXC container from image "' + pipe_image_alias + '"')
+    wlog.info('SETUP   | Creation of the LXC container from image "' + pipe_image_alias + '"')
     self.notify_status("BUILDING")
     try:
         # create container
@@ -160,12 +151,12 @@ def run_pipeline(self, pipe_image_alias, config):
         # TODO => create symlink in ipath directory
         # TODO => copy config file of the run in the ipath directory
     except:
-        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
+        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
 
     # Run the pipe !
-    plog.info('RUN     | Run the pipe !')
+    wlog.info('RUN     | Run the pipe !')
     self.notify_status("RUN")
     try:
         execute(["lxc", "start", c_name])
@@ -173,27 +164,27 @@ def run_pipeline(self, pipe_image_alias, config):
         # execute(["chmod", '+x',  ">", "/pipeline/run/runcontainer.sh"])
         subprocess.call(["lxc", "exec", c_name, "/pipeline/run/run.sh"], stdout=open(lpath+"/out.log", "w"), stderr=open(lpath+"/err.log", "w"))
     except:
-        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
+        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
 
     # Stop container and clear resource
-    plog.info('STOP    | Run ending')
+    wlog.info('STOP    | Run ending')
     self.notify_status("STOP")
     try:
         # Clean outputs
-        plog.info('STOP    |  - chmod 775 on outputs and logs files produced by the container')
+        wlog.info('STOP    |  - chmod 775 on outputs and logs files produced by the container')
         execute(["lxc", "exec", c_name, "--", "chmod", "755", "-Rf", "/pipeline"])
 
-        plog.info('STOP    |  - closing and deleting the lxc container : ' + c_name)
+        wlog.info('STOP    |  - closing and deleting the lxc container : ' + c_name)
         execute(["lxc", "delete", c_name, "--force"])
     except:
-        plog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
+        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
     
     # It's done :)
     self.notify_status("DONE")
-    plog.info('STOP    | All is done. Bye.')
+    wlog.info('STOP    | All is done. Bye.')
 
 

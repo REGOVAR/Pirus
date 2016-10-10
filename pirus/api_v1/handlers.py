@@ -7,7 +7,7 @@ import json
 import aiohttp
 import aiohttp_jinja2
 import jinja2
-import zipfile
+import tarfile
 import shutil
 import datetime
 import time
@@ -37,13 +37,13 @@ def check_pipeline_package(path:str):
     pass
 
 
-def plugins_available():
+def pipelines_available():
     return Pipeline.objects.all() 
 
 
 
 def last_runs():
-    return [r.export_data() for r in Run.objects.all().order_by('-start')[0:10]]
+    return [r.export_client_data() for r in Run.objects.all().order_by('-start')[0:10]]
 
 
 def plugin_running_task(task_id):
@@ -77,9 +77,34 @@ class WebsiteHandler:
         return {
             "cl" : list([ws[1] for ws in app['websockets']]), 
             "pr" : last_runs(), 
-            "pa" : plugins_available(),
+            "pa" : pipelines_available(),
             "hostname" : HOSTNAME
         }
+
+
+
+
+class FileHandler:
+    def __init__(self):
+        pass
+
+    def get(self, request):
+        return rest_success({})
+
+    async def post(self, request):
+        return rest_success({})
+
+    def delete(self, request):
+        return rest_success({})
+
+    def get_file_details(self, request):
+        return rest_success({})
+
+    def get_file_by_name(self, request):
+        return rest_success({})
+
+    def get_file_by_id(self, request):
+        return rest_success({})
 
 
 
@@ -94,36 +119,33 @@ class PipelineHandler:
     async def post(self, request):
         # 1- Retrieve pirus package from post request
         data = await request.post()
-        print ("salue", data['pipepck'])
         ppackage = data['pipepck']
-        # 2- save file into server plugins directory (with a random name to avoid problem if filename already exists)
-        ppackage_name = str(uuid.uuid4())
-        ppackage_path = os.path.join(PIPELINES_DIR, ppackage_name)
-        ppackage_file = ppackage_path + ".zip"
-        with open(ppackage_file, 'bw+') as f:
-            f.write(ppackage.file.read())
-        # 3- Unzip pipeline package
-        os.makedirs(ppackage_path)
-        zip_ref = zipfile.ZipFile(ppackage_file, 'r')
-        zip_ref.extractall(ppackage_path)
-        zip_ref.close()
-        # 4- Check and clean module
-        pdir  = ppackage_path
-        if len(os.listdir(ppackage_path)) == 1 :
-            pdir = os.path.join(ppackage_path, os.listdir(ppackage_path)[0])
-        check_pipeline_package(pdir)
-        data = json.load(open(os.path.join(pdir, 'manifest.json')))
-        data.update({"path":os.path.join(PIPELINES_DIR, get_pipeline_forlder_name(data["name"]) + "_" + get_pipeline_forlder_name(data["version"]))})
-        shutil.move(pdir, data["path"])
-        # 5- Save pipeline into database
-        pipeline = Pipeline()
-        pipeline.import_data(data)
-        pipeline.save()
-        # 6- Clean directory and send OK response
-        if (os.path.exists(ppackage_path)):
-            shutil.rmtree(ppackage_path)
-        os.remove(ppackage_file)
-        return rest_success({"results": pipeline.export_data()})
+        # 2- save pirus package on the server plugins directory (with a random name to avoid problem if filename already exists)
+        try:
+            ppackage_name = str(uuid.uuid4())
+            ppackage_path = os.path.join(PIPELINES_DIR, ppackage_name)
+            ppackage_file = os.path.join(ppackage_path, "PirusPipeline.tar.gz")
+            os.makedirs(ppackage_path)
+            with open(ppackage_file, 'bw+') as f:
+                f.write(ppackage.file.read())
+                os.chmod(ppackage_file, 0o777)
+        except:
+            # TODO : manage error
+            return rest_error("Server Error : Unable to write on server disk (no space ? no right ?).")
+        # 3- Handle nstall process done by model
+        pipeline = None
+        try:
+            pipeline = Pipeline.install(ppackage_name, ppackage_path, ppackage_file)
+        except Exception as error:
+            # TODO : manage error
+            return rest_error("Server Error : The following occure during installation of the pipeline. " + error.msg)
+        os.chmod(ppackage_file, 0o664)
+        # 4- Answer to te client
+        if pipeline == None:
+            # TODO : manage error
+            rest_error("Server Error : Unexpected error occured while installing the pipeline.")
+
+        return rest_success({"results": pipeline.export_client_data()})
 
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
@@ -137,42 +159,41 @@ class PipelineHandler:
         # 5- Remove pipeline informations in database
         print ("DELETE pipeline/<id=" + str(pipe_id) + ">")
         return rest_success("Uninstall of pipeline " + str(pipe_id) + " success.")
-
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         if pipe_id == -1:
             return rest_error("Unknow pipeline id " + str(pipe_id))
-        return rest_success(Pipeline.objects.get(pk=pipe_id).export_data())
+        return rest_success(Pipeline.objects.get(pk=pipe_id).export_client_data())
 
-    async def get_qml(self, request):
-        pipe_id = request.match_info.get('pipe_id', -1)
-        if pipe_id == -1:
-            return rest_error("Id not found")
-        pipeline = Pipeline.from_id(pipe_id)
-        if pipeline is None:
-            return rest_error("Unknow pipeline id " + str(pipe_id))
-        qml = pipeline.get_qml()
-        if qml is None:
-            return rest_error("QML not found for the plugin " + str(pipe_id))
-        return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment'}),
-            body=str.encode(qml)
-        )
+    # async def get_qml(self, request):
+    #     pipe_id = request.match_info.get('pipe_id', -1)
+    #     if pipe_id == -1:
+    #         return rest_error("Id not found")
+    #     pipeline = Pipeline.from_id(pipe_id)
+    #     if pipeline is None:
+    #         return rest_error("Unknow pipeline id " + str(pipe_id))
+    #     qml = pipeline.get_qml()
+    #     if qml is None:
+    #         return rest_error("QML not found for the plugin " + str(pipe_id))
+    #     return web.Response(
+    #         headers=MultiDict({'Content-Disposition': 'Attachment'}),
+    #         body=str.encode(qml)
+    #     )
 
-    def get_config(self, request):
-        pipe_id = request.match_info.get('pipe_id', -1)
-        if pipe_id == -1:
-            return rest_error("Id not found")
-        pipeline = Pipeline.from_id(pipe_id)
-        if pipeline is None:
-            return rest_error("Unknow pipeline id " + str(pipe_id))
-        conf = pipeline.get_config()
-        if conf is None:
-            return rest_error("Config not found for the plugin " + str(pipe_id))
-        return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment'}),
-            body=str.encode(conf)
-        )
+    # def get_config(self, request):
+    #     pipe_id = request.match_info.get('pipe_id', -1)
+    #     if pipe_id == -1:
+    #         return rest_error("Id not found")
+    #     pipeline = Pipeline.from_id(pipe_id)
+    #     if pipeline is None:
+    #         return rest_error("Unknow pipeline id " + str(pipe_id))
+    #     conf = pipeline.get_config()
+    #     if conf is None:
+    #         return rest_error("Config not found for the plugin " + str(pipe_id))
+    #     return web.Response(
+    #         headers=MultiDict({'Content-Disposition': 'Attachment'}),
+    #         body=str.encode(conf)
+    #     )
 
 
 
@@ -181,7 +202,7 @@ class RunHandler:
         pass
 
     def get(self, request):
-        return rest_success([r.export_data() for r in Run.objects.all().limit(10)])
+        return rest_success([r.export_client_data() for r in Run.objects.all().limit(10)])
 
 
     async def post(self, request):
@@ -196,6 +217,7 @@ class RunHandler:
         # 3- Enqueue run of the pipeline with celery
         try:
             cw = run_pipeline.delay("PirusSimple", config) # pipeline.path, config)
+            plog.info('RUNNING | New Run start : ' + str(cw.id))
         except:
             # TODO : clean filesystem
             return rest_error("Unable to run the pipeline with celery " + str(pipe_id))
@@ -212,19 +234,19 @@ class RunHandler:
         })
         run.save()
         # 5- return result
-        return rest_success(run.export_data())
+        return rest_success(run.export_client_data())
 
     def delete(self, request):
         run_id = request.match_info.get('run_id', -1)
         print ("DELETE run/<id=" + str(run_id) + ">")
         return web.Response(body=b"DELETE run/<id>")
 
-    def get_status(self, request):
+    def get_details(self, request):
         run_id = request.match_info.get('run_id', -1)
         run = Run.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
-        return rest_success(run.export_data())
+        return rest_success(run.export_client_data())
 
 
     def download_file(self, run_id, filename, location=RUNS_DIR):
@@ -254,6 +276,18 @@ class RunHandler:
         return self.download_file(run_id, "logs/err.log")
 
     def get_plog(self, request):
+        run_id = request.match_info.get('run_id', -1)
+        return self.download_file(run_id, "logs/pirus.log")
+
+    def get_olog_tail(self, request):
+        run_id = request.match_info.get('run_id', -1)
+        return self.download_file(run_id, "logs/out.log")
+
+    def get_elog_tail(self, request):
+        run_id = request.match_info.get('run_id', -1)
+        return self.download_file(run_id, "logs/err.log")
+
+    def get_plog_tail(self, request):
         run_id = request.match_info.get('run_id', -1)
         return self.download_file(run_id, "logs/pirus.log")
 
@@ -290,6 +324,18 @@ class RunHandler:
         msg = '{"action":"run_progress", "data" : ' + json.dumps(last_runs()) + '}'
         notify_all(None, msg)
         return web.Response()
+
+    def get_pause(self, request):
+        # Todo
+        pass
+
+    def get_play(self, request):
+        # Todo
+        pass
+
+    def get_stop(self, request):
+        # Todo
+        pass
 
 
 

@@ -29,3 +29,16 @@ LXD_UID        = 165537
 LXD_GID        = LXD_UID
 LXD_MAX        = 2
 LXD_PREFIX     = "pirus"
+
+# MANIFEST MANDATORY
+MANIFEST_MANDATORY = {
+	"name"        : "The displayed name of the pirus pipeline", 
+	"version_api" : "The version of the pirus api used by the pipeline", 
+	"inputs"      : "The absolute path in the pipeline lxd container to the directory where input files have to be mount.", 
+	"outputs"     : "The absolute path in the pipeline lxd container to the directory where output files will be write.", 
+	"logs"        : "The absolute path in the pipeline lxd container to the directory where logs files will be write. Note that out.log, err.log and pirus.log will be automatically created in this directory.",
+	"run"         : "The absolute path in the pipeline lxd container to the executable file to run the pipeline.", 
+	"databases"   : "The absolute path in the pipeline lxd container to the directory where common databases have to be mount.",
+	"config.json" : "The absolute path in the pipeline lxd container to the json file use as default config for the run.",
+	"form.json"   : "The absolute path in the pipeline lxd container to the json file use to describe the form that will be used by the user to configure the run."
+}
