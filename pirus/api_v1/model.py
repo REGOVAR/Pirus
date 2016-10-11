@@ -86,9 +86,9 @@ class PirusFile(Document):
     def from_id(ifile_id):
         if not ObjectId.is_valid(ifile_id):
             return None;
-        file = InputFile.objects.get(pk=ifile_id)
+        file = PirusFile.objects.get(pk=ifile_id)
         return file
-        
+
 
 
 
@@ -146,9 +146,9 @@ class Pipeline(Document):
             "inputs_allowed" : self.inputs_allowed,
             "license"        : self.license,
             "authors"        : self.authors,
-            "config_json"    : "http://" + HOSTNAME + "/dl/" + str(self.id) + "/config.json",
-            "form_json"      : "http://" + HOSTNAME + "/dl/" + str(self.id) + "/form.json",
-            "logo"           : "http://" + HOSTNAME + "/dl/" + str(self.id) + "/" + os.path.basename(self.lfile)
+            "config_json"    : "http://" + HOSTNAME + "/dl/p/" + str(self.id) + "/config.json",
+            "form_json"      : "http://" + HOSTNAME + "/dl/p/" + str(self.id) + "/form.json",
+            "logo"           : "http://" + HOSTNAME + "/dl/p/" + str(self.id) + "/" + os.path.basename(self.lfile)
         }
 
     def import_data(self, data):

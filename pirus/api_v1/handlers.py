@@ -64,6 +64,7 @@ def notify_all(src, msg):
 
 
 
+
 # API HANDLERS
 
 class WebsiteHandler:
@@ -94,6 +95,9 @@ class WebsiteHandler:
         return rest_success({
             "TODO" : "url to the swagger and the doc for this version of the api"
         })
+
+    def get_db(self, request):
+        return rest_success([f for f in os.listdir(DATABASES_DIR) if os.path.isfile(os.path.join(DATABASES_DIR, f))])
 
 
 
@@ -153,11 +157,49 @@ class FileHandler:
             return rest_error("Unknow file id " + str(file_id))
         return rest_success(PirusFile.objects.get(pk=file_id).export_client_data())
 
-    def get_file_by_name(self, request):
+
+    async def dl_file(self, request):        
+        # 1- Retrieve request parameters
+        file_id = request.match_info.get('file_id', -1)
+        if file_id == -1:
+            return rest_error("No file id provided")
+        pirus_file = PirusFile.from_id(file_id)
+        if pirus_file == None:
+            return rest_error("File with id " + str(file_id) + "doesn't exits.")
+        file = None
+        if os.path.isfile(pirus_file.file_path):
+            with open(path, 'br') as content_file:
+                file = content_file.read()
+        return web.Response(
+            headers=MultiDict({'Content-Disposition': 'Attachment'}),
+            body=file
+        )
+
+
+    async def dl_pipe_file(self, request):
+        # 1- Retrieve request parameters
+        pipe_id = request.match_info.get('pipe_id', -1)
+        filename = request.match_info.get('filename', None)
+        if pipe_id == -1:
+            return rest_error("Unknow pipeline id " + str(pipe_id))
+        pipeline = Pipeline.from_id(pipe_id)
+        if filename == None:
+            return rest_error("No filename provided")
+        path = os.path.join(pipeline.path, filename)
+        file = None
+        if os.path.isfile(path):
+            with open(path, 'br') as content_file:
+                file = content_file.read()
+        return web.Response(
+            headers=MultiDict({'Content-Disposition': 'Attachment'}),
+            body=file
+        )
+
+
+    async def dl_run_file(self, request):
         return rest_success({})
 
-    def get_file_by_id(self, request):
-        return rest_success({})
+
 
 
 

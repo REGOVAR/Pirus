@@ -4,10 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Pirus</title>
+    <!-- Base -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-migrate-3.0.0.js"></script>
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/base-min.css">
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+
+    <!-- Form generator -->
+    <link rel="stylesheet" href='/assets/brutusin/css/brutusin-json-forms.min.css'/>
+    <script src="/assets/brutusin/js/brutusin-json-forms.min.js"></script>
+
+    <!-- Pirus specific -->
     <link rel="stylesheet" href="/assets/blog.css"/>
     <link rel="stylesheet" href="/assets/progress.css"/>
     <link rel="stylesheet" href="/assets/font-awesome-4.6.3/css/font-awesome.min.css"/>
@@ -144,14 +151,47 @@
 
                 <br />
                 <h1 class="content-subhead"><i class="fa fa-play" aria-hidden="true"></i> Run a pipeline</h1>
-                {% if pa|length ==0 %}
+                {% if pipes|length ==0 %}
                     <p><i>You need to install first a pipeline.</i></p>
                 {% else %}
                 <form id="runPipeForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
                 <fieldset>
-                    <
-                    <div class="fileUpload pure-button">
-                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select an input file for the run</span>
+                    <div class="step1">
+                        <h2> Select a Pipeline</h2>
+                        <select name="pipeSlt">
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic - v1.0.0</option>
+                        </select>
+                    </div>
+                    <div class="step2">
+                        <h2> Select input files for the run</h2>
+                        <select name="inputsSlt" multiple="multiple" size="10">
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 1</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 2</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 3</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 4</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 5</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 6</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 7</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 8</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 9</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 10</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 11</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 12</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 13</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 14</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 15</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 16</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 17</option>
+                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 18</option>
+                        </select>
+                    </div>
+                    <div class="step3">
+                        <h2> Configure your pipe</h2>
+                        <div id="runFormContainer">
+                        </div>
+                    </div>
+                    <div class="step2 fileUpload pure-button">
+                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> </span>
                         <input type="file" multiple="" type="file" name="pipepck" id="pipepck" class="upload" />
                         <ul id="inputFileList"></ul>
                     </div>
@@ -182,6 +222,34 @@
   <script>
     var ws = new WebSocket('ws://{{ hostname }}/ws');
     var $message = $('#message');
+    var BrutusinForms = brutusin["json-forms"];
+
+    var schema = {
+        "$schema": "http://json-schema.org/draft-03/schema#",
+        "type": "object",
+        "properties": 
+        {
+            "prop1": 
+            {
+                "type": "string",
+                "title": "A short string",
+                "description": "A short string property whose input is rendered as `input`"
+            },
+            "prop2": 
+            {
+                "type": "string",
+                "title": "A long text",
+                "format": "text",
+                "description": "A long text property whose input is rendered as `textarea`"
+            }
+        }
+    }
+    var data = {
+        "prop1" : "Salut Olivier",
+    }
+
+
+    
 
     $( "#username" ).change(function()
     {
@@ -222,6 +290,10 @@
 
     $(document).ready(function()
     {
+        var bf = BrutusinForms.create(schema);
+        var container = document.getElementById('runFormContainer');
+        bf.render(container, data);
+    
         $('#installPackageForm').on('submit', function(e)
         {
             e.preventDefault(); 
