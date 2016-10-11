@@ -65,9 +65,8 @@
                     {% endif %}
                     {% for f in files %}
                         <li><span style="display:inline-block; width:200px;">{{ f["file_name"] }}</span> 
-                        <span style="display:inline-block; width:100px;">{{ f["file_type"] }}</span>
                         <span style="display:inline-block; width:100px;">{{ f["file_size"] }}</span>
-                        <span style="display:inline-block; width:100px;">{{ f["create_date"] }}</span>
+                        <span style="display:inline-block; width:100px;">{{ f["status"] }}</span>
                         <a class="pure-button" title="Information about the file" href="http://{{ hostname }}/file/{{f["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
                         <a class="pure-button" title="Download the file"          href="http://{{ hostname }}/dl/{{f["id"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"></i></a>
                         </li>

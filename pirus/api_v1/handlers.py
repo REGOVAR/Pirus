@@ -42,7 +42,7 @@ def list_pipelines():
 
 
 def list_files():
-    return InputFile.objects.all().order_by('-create_date')
+    return PirusFile.objects.all().order_by('-create_date')
 
 
 def list_runs(start=0, limit=10):
@@ -148,7 +148,10 @@ class FileHandler:
         return rest_success({})
 
     def get_file_details(self, request):
-        return rest_success({})
+        file_id = request.match_info.get('file_id', -1)
+        if file_id == -1:
+            return rest_error("Unknow file id " + str(file_id))
+        return rest_success(PirusFile.objects.get(pk=file_id).export_client_data())
 
     def get_file_by_name(self, request):
         return rest_success({})
