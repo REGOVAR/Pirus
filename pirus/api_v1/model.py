@@ -18,17 +18,18 @@ from config import *
 from framework import *
 
 
-class InputFile(Document):
+class PirusFile(Document):
     file_name    = StringField(required=True)
     file_type    = StringField()
     file_path    = StringField()
     file_size    = StringField()
+    status       = StringField()
     comments     = StringField()
     owner        = StringField()
     create_date  = StringField()
     tags         = ListField(StringField())
-    runs_input   = ListField(StringField())
-    run_output   = StringField()
+    runs_stats   = DynamicField()
+    md5sum       = StringField()
 
     def __str__(self):
         return "<InputFile " + self.file_name + " (" + self.file_size + ") : " + self.path + ">"
@@ -39,12 +40,13 @@ class InputFile(Document):
             "file_type"    : self.file_type,
             "file_path"    : self.file_path,
             "file_size"    : self.file_size,
+            "status"       : self.status,
             "comments"     : self.comments,
             "owner"        : self.owner,
             "create_date"  : self.create_date,
             "tags"         : self.tags,
-            "runs_input"   : self.runs_input,
-            "run_output"   : self.run_output,
+            "runs_stats"   : self.runs_stats,
+            "md5sum"       : self.md5sum,
             "id": str(self.id)
         }
 
@@ -53,27 +55,29 @@ class InputFile(Document):
             "file_name"    : self.file_name,
             "file_type"    : self.file_type,
             "file_size"    : self.file_size,
+            "status"       : self.status,
             "comments"     : self.comments,
             "owner"        : self.owner,
             "create_date"  : self.create_date,
             "tags"         : self.tags,
-            "runs_input"   : self.runs_input,
-            "run_output"   : self.run_output,
+            "runs_stats"   : self.runs_stats,
+            "md5sum"       : self.md5sum,
             "id": str(self.id)
         }
 
     def import_data(self, data):
         try:
-            self.file_type    = data['file_type']
+            self.file_name    = data['file_name']
             self.file_type    = data["file_type"]
             self.file_path    = data['file_path']
             self.file_size    = data["file_size"]
+            self.status       = data["status"]
             self.comments     = data["comments"]
             self.owner        = data["owner"]
             self.create_date  = data["create_date"]
             self.tags         = data['tags']
-            self.runs_input   = data['runs_input']
-            self.run_output   = data['run_output']
+            self.runs_stats   = data['runs_stats']
+            self.md5sum       = data['md5sum']
         except KeyError as e:
             raise ValidationError('Invalid input file: missing ' + e.args[0])
         return self
@@ -84,6 +88,7 @@ class InputFile(Document):
             return None;
         file = InputFile.objects.get(pk=ifile_id)
         return file
+        
 
 
 
@@ -340,8 +345,7 @@ class Run(Document):
     status    = StringField()
     inputs    = ListField(StringField())
     outputs   = StringField()
-    prog_val  = StringField(required=True)
-    prog_msg  = StringField()
+    progress  = DynamicField(required=True)
 
     def __str__(self):
         return "<Run " + str(self.id) + ">"
@@ -359,8 +363,7 @@ class Run(Document):
             "status"    : self.status,
             "inputs"    : self.inputs,
             "outputs"   : self.outputs,
-            "prog_val"  : self.prog_val,
-            "prog_msg"  : self.prog_msg
+            "progress"  : self.progress
         }
 
     def export_client_data(self):
@@ -376,8 +379,7 @@ class Run(Document):
             "status"    : self.status,
             "inputs"    : self.inputs,
             "outputs"   : self.outputs,
-            "prog_val"  : self.prog_val,
-            "prog_msg"  : self.prog_msg
+            "progress"  : self.progress
         }
 
     def import_data(self, data):
@@ -386,18 +388,16 @@ class Run(Document):
             self.pipe_name = data['pipe_name']
             self.celery_id = data['celery_id']
             self.username  = data['username']
-            self.config     = data['config']
+            self.config    = data['config']
             self.start     = data['start']
             self.status    = data['status']
-            self.prog_val  = data['prog_val']
+            self.progress  = data['progress']
             if "end" in data:
                 self.end = data['end']
             if "inputs" in data:
                 self.inputs = data["inputs"]
             if "outputs" in data:
                 self.outputs = data["outputs"]
-            if "prog_msg" in data:
-                self.prog_msg = data["prog_msg"]
         except KeyError as e:
             raise ValidationError('Invalid plugin: missing ' + e.args[0])
         return self 

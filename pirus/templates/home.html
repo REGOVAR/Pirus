@@ -46,17 +46,24 @@
                     <li>You are : <input type="text" name="username" id="username" placeholder="John Snow" /> </li>
                 </ul>-->
                 <ul id="userList">
-                    {% for u in users %}
-                        <li>{{ u["username"] }} : {{ u["data"] }}</li>
-                    {% endfor %}
                 </ul>
 
                 <h1 class="content-subhead"> <i class="fa fa-file-o" aria-hidden="true"></i> Files</h1>
+                <form id="uploadFileForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form">
+                <fieldset>
+                    <div class="fileUpload pure-button">
+                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select an input file for the run</span>
+                        <input type="file" multiple="" type="file" name="uploadFile" id="uploadFile" class="upload" />
+                        <ul id="inputFileList"></ul>
+                    </div>
+                    <input type="submit" value="Upload the file on the server" class="pure-button pure-button-primary"/>
+                </fieldset>
+                </form>
                 <ul id="fileList">
-                    {% if fs|length ==0 %}
+                    {% if files|length ==0 %}
                     <i>No file available.</i>
                     {% endif %}
-                    {% for f in fs %}
+                    {% for f in files %}
                         <li><span style="display:inline-block; width:200px;">{{ f["file_name"] }}</span> 
                         <span style="display:inline-block; width:100px;">{{ f["file_type"] }}</span>
                         <span style="display:inline-block; width:100px;">{{ f["file_size"] }}</span>
@@ -69,10 +76,10 @@
 
                 <h1 class="content-subhead"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipelines</h1>
                 <ul id="pipesList">
-                    {% if pa|length ==0 %}
+                    {% if pipes|length ==0 %}
                     <i>No pipeline installed.</i>
                     {% endif %}
-                    {% for p in pa %}
+                    {% for p in pipes %}
                         <li><span style="display:inline-block; width:200px;">{{ p["name"] }}</span> 
                         <span style="display:inline-block; width:100px;">{{ p["version"] }}</span>
                         <a class="pure-button" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 
@@ -86,10 +93,10 @@
 
                 <h1 class="content-subhead"><i class="fa fa-tasks" aria-hidden="true"></i> Runs</h1>
                 <ul id="runsList">
-                    {% if pr|length ==0 %}
+                    {% if runs|length ==0 %}
                     <i>No run in progress.</i>
                     {% endif %}
-                    {% for p in pr %}
+                    {% for p in runs %}
                         <li>
                         <span style="display:inline-block; width:350px;">{{ p["id"] }}</span> 
                         <div class="cssProgress">
@@ -216,15 +223,15 @@
 
     $(document).ready(function()
     {
-        $('#installPackage').on('submit', function(e)
+        $('#installPackageForm').on('submit', function(e)
         {
             e.preventDefault(); 
 
             
             $.ajax({
-                url: $this.attr('action'),  // Le nom du fichier indiqué dans le formulaire
-                type: $this.attr('method'), // La méthode indiquée dans le formulaire (get ou post)
-                data: $this.serialize()     // Je sérialise les données (j'envoie toutes les valeurs présentes dans le formulaire)
+                url: $(this).attr('action'),  // Le nom du fichier indiqué dans le formulaire
+                type: $(this).attr('method'), // La méthode indiquée dans le formulaire (get ou post)
+                data: $(this).serialize()     // Je sérialise les données (j'envoie toutes les valeurs présentes dans le formulaire)
             }).fail(function()
             {
                 alert( "error" );
@@ -235,9 +242,31 @@
                 
 
             //ws.send( "{\"action\" : \"user_info\", \"data\" : { \"username\" : \"" + $( this ).val() + "\"}}" );
+        });
 
+        $('#uploadFile').on('submit', function(e)
+        {
+            e.preventDefault(); 
+
+            
+            $.ajax({
+                url: $(this).attr('action'),  // Le nom du fichier indiqué dans le formulaire
+                type: $(this).attr('method'), // La méthode indiquée dans le formulaire (get ou post)
+                data: $(this).serialize()     // Je sérialise les données (j'envoie toutes les valeurs présentes dans le formulaire)
+            }).fail(function()
+            {
+                alert( "error" );
+            }).done(function(txt) 
+            {
+                alert( "second success" + txt);
+            })
+                
+
+            //ws.send( "{\"action\" : \"user_info\", \"data\" : { \"username\" : \"" + $( this ).val() + "\"}}" );
         });
     });
+
+
 
 
 

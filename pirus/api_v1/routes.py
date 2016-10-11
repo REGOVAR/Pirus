@@ -30,6 +30,8 @@ app.on_shutdown.append(on_shutdown)
 
 # Routes
 app.router.add_route('GET',    "/v1/www", website.home)
+app.router.add_route('GET',    "/v1/config", website.get_config)
+app.router.add_route('GET',    "/v1/api", website.get_api)
 app.router.add_route('GET',    "/v1/ws", websocket.get)
 
 app.router.add_route('GET',    "/v1/pipeline", pipeHdl.get)
@@ -51,7 +53,8 @@ app.router.add_route('GET',    "/v1/run/{run_id}/play", runHdl.get_play)
 app.router.add_route('GET',    "/v1/run/{run_id}/stop", runHdl.get_stop)
 
 app.router.add_route('GET',    "/v1/file", fileHdl.get)
-app.router.add_route('POST',   "/v1/file", fileHdl.post)
+app.router.add_route('POST',   "/v1/file", fileHdl.upload_simple)
+app.router.add_route('PATCH',  "/v1/bigfile", fileHdl.upload_resumable)
 app.router.add_route('DELETE', "/v1/file/{file_id}", fileHdl.delete)
 app.router.add_route('GET',    "/v1/file/{file_id}", fileHdl.get_file_details)
 app.router.add_route('GET',    "/v1/dl/{run_or_pipe_id}/{filename}", fileHdl.get_file_by_name)

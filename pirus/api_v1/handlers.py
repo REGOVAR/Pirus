@@ -37,18 +37,16 @@ def check_pipeline_package(path:str):
     pass
 
 
-def pipelines_available():
-    return Pipeline.objects.all() 
+def list_pipelines():
+    return Pipeline.objects.all().order_by('-name')
 
 
+def list_files():
+    return InputFile.objects.all().order_by('-create_date')
 
-def last_runs():
-    return [r.export_client_data() for r in Run.objects.all().order_by('-start')[0:10]]
 
-
-def plugin_running_task(task_id):
-    result = execute_plugin.AsyncResult(task_id)
-    return result.get()
+def list_runs(start=0, limit=10):
+    return [r.export_client_data() for r in Run.objects.all().order_by('-start')[start:start+limit]]
 
 
 def notify_all(src, msg):
@@ -75,11 +73,27 @@ class WebsiteHandler:
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
         return {
-            "cl" : list([ws[1] for ws in app['websockets']]), 
-            "pr" : last_runs(), 
-            "pa" : pipelines_available(),
+            "runs"     : list_runs(), 
+            "pipes"    : list_pipelines(),
+            "files"    : list_files(),
             "hostname" : HOSTNAME
         }
+
+    def get_config(self, request):
+        return rest_success({
+            "host" : HOST,
+            "port" : PORT,
+            "version" : VERSION,
+            "base_url" : "http://" + HOSTNAME,
+            "run_max" : LXD_MAX,
+            "run_conf" : LXD_HDW_CONF,
+            "manifest_mandatory" : MANIFEST_MANDATORY
+        })
+
+    def get_api(self, request):
+        return rest_success({
+            "TODO" : "url to the swagger and the doc for this version of the api"
+        })
 
 
 
@@ -91,8 +105,44 @@ class FileHandler:
     def get(self, request):
         return rest_success({})
 
-    async def post(self, request):
-        return rest_success({})
+    async def upload_simple(self, request):
+        file_name = str(uuid.uuid4())
+        file_path = os.path.join(TEMP_DIR, file_name)
+        plog.info('I: Start file uploading : ' + file_path)
+        # 1- Retrieve file from post request
+        data = await request.post()
+        uploadFile = data['uploadFile']
+        # 2- save file on the server 
+        try:
+            with open(file_path, 'bw+') as f:
+                f.write(uploadFile.file.read())
+        except:
+            # TODO : manage error
+            raise PirusException("XXXX", "Bad pirus pipeline format : Manifest file corrupted.")
+        plog.info('I: File uploading done : ' + file_path)
+        # 3- save file on the database
+        pirusfile = PirusFile()
+        pirusfile.import_data({
+                "file_name"    : uploadFile.filename,
+                "file_type"    : os.path.splitext(file_name)[1],
+                "file_path"    : file_path,
+                "file_size"    : humansize(os.path.getsize(file_path)),
+                "status"       : "OK",
+                "comments"     : "",
+                "owner"        : "",
+                "create_date"  : str(datetime.datetime.now().timestamp()),
+                "tags"         : [os.path.splitext(uploadFile.filename)[0]],
+                "runs_stats"   : {},
+                "md5sum"       : md5(file_path),
+            })
+        pirusfile.save()
+        plog.info('I: File ' + file_name + ' (' + pirusfile.file_size + ') available at ' + file_path)
+        return rest_success(pirusfile.export_client_data())
+
+
+    def upload_resumable(self, request):
+        # do something else
+        return 'End of upload'
 
     def delete(self, request):
         return rest_success({})
@@ -145,7 +195,8 @@ class PipelineHandler:
             # TODO : manage error
             rest_error("Server Error : Unexpected error occured while installing the pipeline.")
 
-        return rest_success({"results": pipeline.export_client_data()})
+        return rest_success(pipeline.export_client_data())
+
 
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
@@ -159,6 +210,8 @@ class PipelineHandler:
         # 5- Remove pipeline informations in database
         print ("DELETE pipeline/<id=" + str(pipe_id) + ">")
         return rest_success("Uninstall of pipeline " + str(pipe_id) + " success.")
+
+
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         if pipe_id == -1:

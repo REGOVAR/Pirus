@@ -188,3 +188,11 @@ def run_pipeline(self, pipe_image_alias, config):
     wlog.info('STOP    | All is done. Bye.')
 
 
+@app.task(base=PirusTask, queue='PirusQueue', bind=True)
+def start_run(self, run_id, config):
+    pass
+
+
+@app.task(base=PirusTask, queue='PirusQueue', bind=True)
+def freeze_run(self, run_id):
+    pass

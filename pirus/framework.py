@@ -7,6 +7,7 @@ import aiohttp_jinja2
 import jinja2
 import logging
 import uuid
+import hashlib
 
 
 from aiohttp import web
@@ -85,6 +86,32 @@ def plugin_running_task(task_id):
 
 
 
+
+
+
+
+def humansize(nbytes):
+    suffixes = ['b', 'Ko', 'Mo', 'Go', 'To', 'Po']
+    if nbytes == 0: return '0 B'
+    i = 0
+    while nbytes >= 1024 and i < len(suffixes)-1:
+        nbytes /= 1024.
+        i += 1
+    f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
+    return '%s %s' % (f, suffixes[i])
+
+
+def md5(file_path):
+    hash_md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+
+
+
 class PirusException(Exception):
     msg  = "Unknow error :/"
     code = "0000"
@@ -114,7 +141,7 @@ plog.info('I:    HOST           : ' + HOST)
 plog.info('I:    PORT           : ' + PORT)
 plog.info('I:    VERSION        : ' + VERSION)
 plog.info('I:    HOSTNAME       : ' + HOSTNAME)
-plog.info('I:    INPUTS_DIR     : ' + INPUTS_DIR)
+plog.info('I:    FILES_DIR      : ' + FILES_DIR)
 plog.info('I:    TEMP_DIR       : ' + TEMP_DIR)
 plog.info('I:    DATABASES_DIR  : ' + DATABASES_DIR)
 plog.info('I:    PIPELINES_DIR  : ' + PIPELINES_DIR)
@@ -132,3 +159,4 @@ plog.info('I:    LXD_PREFIX     : ' + LXD_PREFIX)
 app = web.Application()
 plog.info('I: iaoHTTP server started')
 aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(TEMPLATE_DIR))
+
