@@ -1,5 +1,7 @@
 #!env/python3
 # coding: utf-8
+import ipdb; 
+
 
 import os
 import sys
@@ -286,19 +288,34 @@ class Pipeline(Document):
             print(err)
             plog.info('E:    [FAILLED] Save pipeline information in database.')
             raise PirusException("XXXX", "Failed to save pipeling info into the database.")
-        plog.info('I:    [OK     ] Save pipeline information in database.')
+        plog.info('I:    [OK     ] Save pipeline information in database with id='+ str(pipeline.id))
 
         # 6- Install lxd container
         cmd = ["lxc", "image", "import", ppackage_file, "--alias", "pirus-pipe-" + ppackage_name]
         try:
-            subprocess.call(cmd)
-            # TODO : retrieve stdout and stderr, and check if no stderr.
+            out_tmp = '/tmp/' + ppackage_name + '-out'
+            err_tmp = '/tmp/' + ppackage_name + '-err'
+            subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
+
         except Exception as err:
             # TODO : manage error
             print(err)
             plog.info('E:    [FAILLED] Installation of the lxd image. ($: ' + " ".join(cmd) + ")")
-            raise PirusException("XXXX", "Bad pirus pipeline format : Failed to install pipeline lxd image.")
-        plog.info('I:    [OK     ] Installation of the lxd image.')
+            raise PirusException("XXXX", "Failed to install pipeline lxd image.")
+
+
+        err = open(err_tmp, "r").read()
+        if err != "":
+            # TODO : manage error
+            plog.info('E:    [FAILLED] Lxd image. ($: ' + " ".join(cmd) + ")")
+            plog.info('--------------------------')
+            plog.info(err)
+            plog.info('--------------------------')
+            pipeline.delete()
+            shutil.rmtree(ppackage_path)
+            raise PirusException("XXXX", "Failed to install pipeline lxd image (" + err + ")")
+        else:
+            plog.info('I:    [OK     ] Installation of the lxd image.')
 
         # 7- Clean directory
         try:

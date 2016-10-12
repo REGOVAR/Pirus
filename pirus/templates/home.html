@@ -4,15 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Pirus</title>
+
+
+    <!-- Form generator -->
+    <link rel="stylesheet" href='/assets/brutusin/css/brutusin-json-forms.min.css'/>
+    <script src="/assets/brutusin/js/brutusin-json-forms.min.js"></script>
+
     <!-- Base -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-migrate-3.0.0.js"></script>
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/base-min.css">
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
-
-    <!-- Form generator -->
-    <link rel="stylesheet" href='/assets/brutusin/css/brutusin-json-forms.min.css'/>
-    <script src="/assets/brutusin/js/brutusin-json-forms.min.js"></script>
 
     <!-- Pirus specific -->
     <link rel="stylesheet" href="/assets/blog.css"/>
@@ -60,7 +62,7 @@
                 <fieldset>
                     <div class="fileUpload pure-button">
                         <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select an input file for the run</span>
-                        <input type="file" multiple="" type="file" name="uploadFile" id="uploadFile" class="upload" />
+                        <input type="file" name="uploadFile" id="uploadFile" class="upload" />
                         <ul id="inputFileList"></ul>
                     </div>
                     <input type="submit" value="Upload the file on the server" class="pure-button pure-button-primary"/>
@@ -138,6 +140,7 @@
 
                 <br />
                 <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
+
                 <form id="installPackageForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
                 <fieldset>
                     <div class="fileUpload pure-button">
@@ -293,48 +296,6 @@
         var bf = BrutusinForms.create(schema);
         var container = document.getElementById('runFormContainer');
         bf.render(container, data);
-    
-        $('#installPackageForm').on('submit', function(e)
-        {
-            e.preventDefault(); 
-
-            
-            $.ajax({
-                url: $(this).attr('action'),  // Le nom du fichier indiqué dans le formulaire
-                type: $(this).attr('method'), // La méthode indiquée dans le formulaire (get ou post)
-                data: $(this).serialize()     // Je sérialise les données (j'envoie toutes les valeurs présentes dans le formulaire)
-            }).fail(function()
-            {
-                alert( "error" );
-            }).done(function(txt) 
-            {
-                alert( "second success" + txt);
-            })
-                
-
-            //ws.send( "{\"action\" : \"user_info\", \"data\" : { \"username\" : \"" + $( this ).val() + "\"}}" );
-        });
-
-        $('#uploadFile').on('submit', function(e)
-        {
-            e.preventDefault(); 
-
-            
-            $.ajax({
-                url: $(this).attr('action'),  // Le nom du fichier indiqué dans le formulaire
-                type: $(this).attr('method'), // La méthode indiquée dans le formulaire (get ou post)
-                data: $(this).serialize()     // Je sérialise les données (j'envoie toutes les valeurs présentes dans le formulaire)
-            }).fail(function()
-            {
-                alert( "error" );
-            }).done(function(txt) 
-            {
-                alert( "second success" + txt);
-            })
-                
-
-            //ws.send( "{\"action\" : \"user_info\", \"data\" : { \"username\" : \"" + $( this ).val() + "\"}}" );
-        });
     });
 
 
