@@ -34,7 +34,7 @@ class PirusFile(Document):
     md5sum       = StringField()
 
     def __str__(self):
-        return "<InputFile " + self.file_name + " (" + self.file_size + ") : " + self.path + ">"
+        return "<InputFile " + self.file_name + " (" + self.file_size + ") : " + self.file_path + ">"
 
     def export_server_data(self):
         return {
@@ -353,8 +353,8 @@ class Pipeline(Document):
 
 class Run(Document):
     pipe_id   = ObjectIdField(required=True)
-    pipe_name = StringField(requiered=True)
     celery_id = StringField(required=True)
+    runname   = StringField(requiered=True)
     username  = StringField()
     config    = DynamicField(required=True)
     start     = StringField(required=True)
@@ -371,8 +371,8 @@ class Run(Document):
         return {
             "id"        : str(self.id),
             "pipe_id"   : str(self.pipe_id),
-            "pipe_name" : self.pipe_name,
             "celery_id" : self.celery_id,
+            "runname"   : self.runname,
             "username"  : self.username,
             "config"    : self.config,
             "start"     : self.start,
@@ -387,8 +387,8 @@ class Run(Document):
         return {
             "id"        : str(self.id),
             "pipe_id"   : str(self.pipe_id),
-            "pipe_name" : self.pipe_name,
             "celery_id" : self.celery_id,
+            "runname"   : self.runname,
             "username"  : self.username,
             "config"    : self.config,
             "start"     : self.start,
@@ -402,13 +402,14 @@ class Run(Document):
     def import_data(self, data):
         try:
             self.pipe_id   = data['pipe_id']
-            self.pipe_name = data['pipe_name']
             self.celery_id = data['celery_id']
-            self.username  = data['username']
+            self.runname   = data['runname']
             self.config    = data['config']
             self.start     = data['start']
             self.status    = data['status']
             self.progress  = data['progress']
+            if "username" in data:
+                self.username  = data['username']
             if "end" in data:
                 self.end = data['end']
             if "inputs" in data:

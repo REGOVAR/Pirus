@@ -39,11 +39,11 @@ def check_pipeline_package(path:str):
 
 
 def list_pipelines():
-    return Pipeline.objects.all().order_by('-name')
+    return [f.export_client_data() for f in Pipeline.objects.all().order_by('-name')]
 
 
 def list_files():
-    return PirusFile.objects.all().order_by('-create_date')
+    return [p.export_client_data() for p in PirusFile.objects.all().order_by('-create_date')]
 
 
 def list_runs(start=0, limit=10):
@@ -313,6 +313,8 @@ class RunHandler:
         pipeline = Pipeline.from_id(pipe_id)
         if pipeline is None:
             return rest_error("Unknow pipeline id " + str(pipe_id))
+        if config is None:
+            return rest_error("Config is empty")
         # 3- Enqueue run of the pipeline with celery
         try:
             cw = run_pipeline.delay("PirusSimple", config) # pipeline.path, config)
@@ -324,12 +326,12 @@ class RunHandler:
         run = Run()
         run.import_data({
             "pipe_id" : pipe_id,
-            "pipe_name" : pipeline.name + " (" + pipeline.version + ") toto",
+            "runname" : config["runname"],
             "celery_id" : str(cw.id),
-            "user_id" : pipe_id, # TODO : user id ?
             "start" : str(datetime.datetime.now().timestamp()),
             "status" : "INIT",
-            "prog_val" : "0"
+            "config" : json.dumps(config),
+            "progress" : '{"value" : 0, "label" : "0%", "message" : ""}'
         })
         run.save()
         # 5- return result

@@ -6,15 +6,17 @@
     <title>Pirus</title>
 
 
-    <!-- Form generator -->
-    <link rel="stylesheet" href='/assets/brutusin/css/brutusin-json-forms.min.css'/>
-    <script src="/assets/brutusin/js/brutusin-json-forms.min.js"></script>
-
     <!-- Base -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-migrate-3.0.0.js"></script>
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/base-min.css">
     <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+
+
+    <!-- Form generator -->
+    <link rel="stylesheet" href='/assets/brutusin/css/brutusin-json-forms.min.css'/>
+    <script src="/assets/brutusin/js/brutusin-json-forms.min.js"></script>
+
 
     <!-- Pirus specific -->
     <link rel="stylesheet" href="/assets/blog.css"/>
@@ -139,6 +141,7 @@
                     <p><i>You need to install first a pipeline.</i></p>
                 {% else %}
                     <p id="runFormContainer" style="width:500px"><i>Click on the play button of a pipeline to start</i></p>
+                    <p id="runButtonContainer"></p>
                 {% endif %}
             </div>
 
@@ -152,7 +155,7 @@
     var ws = new WebSocket('ws://{{ hostname }}/ws');
     var $message = $('#message');
     var BrutusinForms = brutusin["json-forms"];
-
+    var bf, schema
     function init_run(pipe_id)
     {
         // 1- retrieve pipe-config
@@ -185,7 +188,11 @@
                 // get list of database
                 $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
                 {
-                    json_files = jsonFile["data"];
+                    data = jsonFile["data"];
+                    for (var i=0; i<data.length; i++)
+                    {
+                        json_files[i] = data[i]["file_name"] + " [" + data[i]["id"] + "]"
+                    }
                 })
                 json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
             }
@@ -196,13 +203,22 @@
                 config = json["data"];
             })
 
-            var schema = JSON.parse(json_final)
-            alert(json_final)
-
-            var bf = BrutusinForms.create(schema);
+            
+            schema = JSON.parse(json_final);
+            schema["properties"]["runname"] = {
+                    "title": "Nom du run",
+                    "description": "Le nom qui sera affiché pour ce run.",
+                    "type": "string",
+                    "required": true
+                }
+            
+            bf = BrutusinForms.create(schema);
             var container = document.getElementById('runFormContainer');
             container.innerText = ""
-            bf.render(container, config);
+            bf.render(container, null);
+
+            var container = document.getElementById('runButtonContainer');
+            container.innerHTML = '<a class="pure-button" title="Run the pipeline" onclick="javascript:post_run('+ "'" + pipe_id + "'" + ')"><i class="fa fa-play" aria-hidden="true"></i></a>'
         })
     }
 
@@ -232,18 +248,21 @@
     }
     function post_run(pipe_id)
     {
-        $.ajax(
+        if (bf.validate())
         {
-            url: "http://{{ hostname }}/run",
-            type: "POST",
-            data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : {}}"
-        }).fail(function()
-        {
-            alert( "ERROR" );
-        }).done(function(txt) 
-        {
-            alert( "SUCCESS\n" + txt);
-        })
+            $.ajax(
+            {
+                url: "http://{{ hostname }}/run",
+                type: "POST",
+                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + JSON.stringify(bf.getData(), null, 4) + "}"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(txt) 
+            {
+                alert( "SUCCESS\n" + txt);
+            })
+        }
     }
 
 
