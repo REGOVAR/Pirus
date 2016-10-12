@@ -108,7 +108,7 @@ class FileHandler:
         pass
 
     def get(self, request):
-        return rest_success({})
+        return rest_success([i for i in list_files()])
 
     async def upload_simple(self, request):
         file_name = str(uuid.uuid4())
@@ -169,10 +169,10 @@ class FileHandler:
             return rest_error("File with id " + str(file_id) + "doesn't exits.")
         file = None
         if os.path.isfile(pirus_file.file_path):
-            with open(path, 'br') as content_file:
+            with open(pirus_file.file_path, 'br') as content_file:
                 file = content_file.read()
         return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment'}),
+            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file.file_name}),
             body=file
         )
 
@@ -192,7 +192,7 @@ class FileHandler:
             with open(path, 'br') as content_file:
                 file = content_file.read()
         return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment'}),
+            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+ filename}),
             body=file
         )
 
@@ -210,7 +210,7 @@ class PipelineHandler:
         pass
 
     def get(self, request):
-        return rest_success({"plugins" : [i for i in plugins_available()]})
+        return rest_success([i for i in list_pipelines()])
 
     async def post(self, request):
         # 1- Retrieve pirus package from post request

@@ -50,20 +50,16 @@
 
             <!-- A wrapper for all the blog posts -->
             <div>
-                <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i>  User online</h1>
-                <!--<ul>
-                    <li>You are : <input type="text" name="username" id="username" placeholder="John Snow" /> </li>
-                </ul>-->
-                <ul id="userList">
-                </ul>
+                <h1 class="content-subhead"><i class="fa fa-retweet" aria-hidden="true"></i> WS [ <span id="message"></span> ]</h1>
+                <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i> Online</h1>
+                <ul id="userList"></ul>
 
-                <h1 class="content-subhead"> <i class="fa fa-file-o" aria-hidden="true"></i> Files</h1>
+                <h1 class="content-subhead"><i class="fa fa-file-o" aria-hidden="true"></i> Files</h1>
                 <form id="uploadFileForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form">
                 <fieldset>
                     <div class="fileUpload pure-button">
-                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select an input file for the run</span>
+                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
                         <input type="file" name="uploadFile" id="uploadFile" class="upload" />
-                        <ul id="inputFileList"></ul>
                     </div>
                     <input type="submit" value="Upload the file on the server" class="pure-button pure-button-primary"/>
                 </fieldset>
@@ -73,11 +69,11 @@
                     <i>No file available.</i>
                     {% endif %}
                     {% for f in files %}
-                        <li><span style="display:inline-block; width:200px;">{{ f["file_name"] }}</span> 
+                        <li><span style="display:inline-block; width:400px;">{{ f["file_name"] }}</span> 
                         <span style="display:inline-block; width:100px;">{{ f["file_size"] }}</span>
                         <span style="display:inline-block; width:100px;">{{ f["status"] }}</span>
                         <a class="pure-button" title="Information about the file" href="http://{{ hostname }}/file/{{f["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
-                        <a class="pure-button" title="Download the file"          href="http://{{ hostname }}/dl/{{f["id"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"></i></a>
+                        <a class="pure-button" title="Download the file"          href="http://{{ hostname }}/dl/f/{{f["id"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"></i></a>
                         </li>
                     {% endfor %}
                 </ul>
@@ -92,9 +88,9 @@
                         <span style="display:inline-block; width:100px;">{{ p["version"] }}</span>
                         <a class="pure-button" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 
                         <a class="pure-button" title="Information about the pipeline" href="http://{{ hostname }}/pipeline/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
-                        <a class="pure-button" title="Get QML files information"      href="http://{{ hostname }}/pipeline/{{p["id"]}}/qml" target="_blanck"><i class="fa fa-file" aria-hidden="true"> qml</i></a> 
-                        <a class="pure-button" title="Get Config files information"   href="http://{{ hostname }}/pipeline/{{p["id"]}}/config" target="_blanck"><i class="fa fa-file" aria-hidden="true"> conf</i></a> 
-                        <a class="pure-button" title="Run the pipeline"               onclick="javascript:post_run('{{p["id"]}}')"><i class="fa fa-play" aria-hidden="true"></i></a> 
+                        <a class="pure-button" title="Get Formular files information" href="http://{{ hostname }}/dl/p/{{p["id"]}}/form.json" target="_blanck"><i class="fa fa-file" aria-hidden="true"> form</i></a> 
+                        <a class="pure-button" title="Get Config files information"   href="http://{{ hostname }}/dl/p/{{p["id"]}}/config.json" target="_blanck"><i class="fa fa-file" aria-hidden="true"> conf</i></a> 
+                        <a class="pure-button" title="Run the pipeline"               onclick="javascript:init_run('{{p["id"]}}')"><i class="fa fa-play" aria-hidden="true"></i></a> 
                         </li>
                     {% endfor %}
                 </ul>
@@ -123,21 +119,6 @@
                     {% endfor %}
                 </ul>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                 <br />
                 <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
 
@@ -157,64 +138,8 @@
                 {% if pipes|length ==0 %}
                     <p><i>You need to install first a pipeline.</i></p>
                 {% else %}
-                <form id="runPipeForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
-                <fieldset>
-                    <div class="step1">
-                        <h2> Select a Pipeline</h2>
-                        <select name="pipeSlt">
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic - v1.0.0</option>
-                        </select>
-                    </div>
-                    <div class="step2">
-                        <h2> Select input files for the run</h2>
-                        <select name="inputsSlt" multiple="multiple" size="10">
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 1</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 2</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 3</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 4</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 5</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 6</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 7</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 8</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 9</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 10</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 11</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 12</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 13</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 14</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 15</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 16</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 17</option>
-                            <option value="57fcc62f0e95cb6312c9516a" selected>PirusBasic 18</option>
-                        </select>
-                    </div>
-                    <div class="step3">
-                        <h2> Configure your pipe</h2>
-                        <div id="runFormContainer">
-                        </div>
-                    </div>
-                    <div class="step2 fileUpload pure-button">
-                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> </span>
-                        <input type="file" multiple="" type="file" name="pipepck" id="pipepck" class="upload" />
-                        <ul id="inputFileList"></ul>
-                    </div>
-                    <input type="submit" value="Install a new pipeline" class="pure-button pure-button-primary"/>
-                </fieldset>
-                </form>
+                    <p id="runFormContainer" style="width:500px"><i>Click on the play button of a pipeline to start</i></p>
                 {% endif %}
-                <!--
-                <i class="fa fa-ban" aria-hidden="true"></i>
-                <i class="fa fa-chevron-right" aria-hidden="true"></i>
-                <i class="fa fa-percent" aria-hidden="true"></i>
-                <i class="fa fa-check" aria-hidden="true"></i>
-                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-                <i class="fa fa-bars" aria-hidden="true"></i>
-                
-                -->
-                <br />
-                <h1 class="content-subhead"><i class="fa fa-retweet" aria-hidden="true"></i> Websocket message</h1>
-                <p id="message"></p>
-                        
             </div>
 
             
@@ -223,33 +148,64 @@
 </div>
 
   <script>
+
     var ws = new WebSocket('ws://{{ hostname }}/ws');
     var $message = $('#message');
     var BrutusinForms = brutusin["json-forms"];
 
-    var schema = {
-        "$schema": "http://json-schema.org/draft-03/schema#",
-        "type": "object",
-        "properties": 
+    function init_run(pipe_id)
+    {
+        // 1- retrieve pipe-config
+        $.ajax(
         {
-            "prop1": 
+            url: "http://{{ hostname }}/dl/p/" + pipe_id + "/form.json",
+            type: "GET"
+        }).fail(function()
+        {
+            alert( "ERROR" );
+        }).done(function(json) 
+        {
+            var json_final = json
+            var json_db = []
+            var json_files = []
+
+            if (json.indexOf("__PIRUS_DB_ALL__") != -1)
             {
-                "type": "string",
-                "title": "A short string",
-                "description": "A short string property whose input is rendered as `input`"
-            },
-            "prop2": 
-            {
-                "type": "string",
-                "title": "A long text",
-                "format": "text",
-                "description": "A long text property whose input is rendered as `textarea`"
+
+                // get list of database
+                $.ajax({ url: "http://{{ hostname }}/db", type: "GET", async: false}).done(function(jsonDB)
+                {
+                    json_db = jsonDB["data"];
+                })
+                json_final = json_final.replace(/"__PIRUS_DB_ALL__"/g, JSON.stringify(json_db))
             }
-        }
+            if (json.indexOf("__PIRUS_INPUT_FILES__") != -1)
+            {
+
+                // get list of database
+                $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                {
+                    json_files = jsonFile["data"];
+                })
+                json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
+            }
+            
+            var config = {}
+            $.ajax({ url: "http://{{ hostname }}/dl/p/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
+            {
+                config = json["data"];
+            })
+
+            var schema = JSON.parse(json_final)
+            alert(json_final)
+
+            var bf = BrutusinForms.create(schema);
+            var container = document.getElementById('runFormContainer');
+            container.innerText = ""
+            bf.render(container, config);
+        })
     }
-    var data = {
-        "prop1" : "Salut Olivier",
-    }
+
 
 
     
@@ -293,9 +249,7 @@
 
     $(document).ready(function()
     {
-        var bf = BrutusinForms.create(schema);
-        var container = document.getElementById('runFormContainer');
-        bf.render(container, data);
+        
     });
 
 
