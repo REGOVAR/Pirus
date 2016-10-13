@@ -191,7 +191,7 @@
                     data = jsonFile["data"];
                     for (var i=0; i<data.length; i++)
                     {
-                        json_files[i] = data[i]["file_name"] + " [" + data[i]["id"] + "]"
+                        json_files[i] = "('" + data[i]["id"] + "', '" + data[i]["file_name"] + "')'"
                     }
                 })
                 json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
@@ -249,12 +249,24 @@
     function post_run(pipe_id)
     {
         if (bf.validate())
-        {
+        {   
+            var inputs = []
+            var config = bf.getData()
+            // create input list with all available files
+            $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+            {
+                data = jsonFile["data"];
+                for (var i=0; i<data.length; i++)
+                {
+                    inputs[i] = "('" + data[i]["id"] + "', '" + data[i]["file_name"] + "')'"
+                }
+            })
+
             $.ajax(
             {
                 url: "http://{{ hostname }}/run",
                 type: "POST",
-                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + JSON.stringify(bf.getData(), null, 4) + "}"
+                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + JSON.stringify(config, null, 4) + ", \"inputs\" : " + JSON.stringify(inputs, null, 4) + "}"
             }).fail(function()
             {
                 alert( "ERROR" );

@@ -129,15 +129,11 @@ class FileHandler:
         pirusfile = PirusFile()
         pirusfile.import_data({
                 "file_name"    : uploadFile.filename,
-                "file_type"    : os.path.splitext(file_name)[1],
+                "file_type"    : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
                 "file_path"    : file_path,
                 "file_size"    : humansize(os.path.getsize(file_path)),
-                "status"       : "OK",
-                "comments"     : "",
-                "owner"        : "",
+                "status"       : "TMP", # DOWNLOADING, TMP, OK
                 "create_date"  : str(datetime.datetime.now().timestamp()),
-                "tags"         : [os.path.splitext(uploadFile.filename)[0]],
-                "runs_stats"   : {},
                 "md5sum"       : md5(file_path),
             })
         pirusfile.save()
@@ -309,15 +305,18 @@ class RunHandler:
         data = await request.json()
         pipe_id = data["pipeline_id"]
         config = data["config"]
+        inputs = data["inputs"]
+
         # 2- Load pipeline from database
         pipeline = Pipeline.from_id(pipe_id)
         if pipeline is None:
             return rest_error("Unknow pipeline id " + str(pipe_id))
         if config is None:
             return rest_error("Config is empty")
+            
         # 3- Enqueue run of the pipeline with celery
         try:
-            cw = run_pipeline.delay("PirusSimple", config) # pipeline.path, config)
+            cw = run_pipeline.delay(pipeline.lxd_alias, config, inputs)
             plog.info('RUNNING | New Run start : ' + str(cw.id))
         except:
             # TODO : clean filesystem

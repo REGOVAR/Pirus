@@ -24,13 +24,13 @@ class PirusFile(Document):
     file_name    = StringField(required=True)
     file_type    = StringField()
     file_path    = StringField()
-    file_size    = StringField()
-    status       = StringField()
+    file_size    = StringField() 
+    status       = StringField() # DL, TMP, OK
     comments     = StringField()
     owner        = StringField()
+    locations    = DynamicField() # dic {key=Run_ID : val="in"|"out"} #empty mean not used
     create_date  = StringField()
     tags         = ListField(StringField())
-    runs_stats   = DynamicField()
     md5sum       = StringField()
 
     def __str__(self):
@@ -45,9 +45,9 @@ class PirusFile(Document):
             "status"       : self.status,
             "comments"     : self.comments,
             "owner"        : self.owner,
+            "locations"    : self.locations,
             "create_date"  : self.create_date,
             "tags"         : self.tags,
-            "runs_stats"   : self.runs_stats,
             "md5sum"       : self.md5sum,
             "id": str(self.id)
         }
@@ -60,26 +60,30 @@ class PirusFile(Document):
             "status"       : self.status,
             "comments"     : self.comments,
             "owner"        : self.owner,
+            "locations"    : self.locations,
             "create_date"  : self.create_date,
             "tags"         : self.tags,
-            "runs_stats"   : self.runs_stats,
             "md5sum"       : self.md5sum,
             "id": str(self.id)
         }
 
     def import_data(self, data):
         try:
-            self.file_name    = data['file_name']
-            self.file_type    = data["file_type"]
-            self.file_path    = data['file_path']
-            self.file_size    = data["file_size"]
-            self.status       = data["status"]
-            self.comments     = data["comments"]
-            self.owner        = data["owner"]
-            self.create_date  = data["create_date"]
-            self.tags         = data['tags']
-            self.runs_stats   = data['runs_stats']
-            self.md5sum       = data['md5sum']
+            self.file_name     = data['file_name']
+            self.file_type     = data["file_type"]
+            self.file_path     = data['file_path']
+            self.file_size     = data["file_size"]
+            self.status        = data["status"]
+            self.create_date   = data["create_date"]
+            self.md5sum        = data['md5sum']
+            if "locations" in data.keys():
+                self.locations = data["locations"]
+            if "tags" in data.keys():
+                self.tags      = data['tags']
+            if "comments" in data.keys():
+                self.comments  = data["comments"]
+            if "owner" in data.keys():
+                self.owner     = data["owner"]
         except KeyError as e:
             raise ValidationError('Invalid input file: missing ' + e.args[0])
         return self
@@ -97,6 +101,7 @@ class PirusFile(Document):
 
 class Pipeline(Document):
     name           = StringField(required=True)
+    lxd_alias      = StringField()
     description    = StringField()
     version        = StringField(required=True)
     version_api    = StringField(required=True)
@@ -121,6 +126,7 @@ class Pipeline(Document):
         return {
             "id"             : str(self.id),
             "name"           : self.name,
+            "lxd_alias"      : self.lxd_alias,
             "description"    : self.description,
             "version"        : self.version,
             "version_api"    : self.version_api,
@@ -165,6 +171,8 @@ class Pipeline(Document):
             self.dpath          = data['dpath']
             self.cfile          = data['cfile']
             self.ffile          = data['ffile']
+            if "lxd_alias" in data.keys():
+                self.lxd_alias = data["lxd_alias"]
             if "description" in data.keys():
                 self.description = data["description"]
             if "version" in data.keys():
@@ -276,7 +284,8 @@ class Pipeline(Document):
             "dpath" : manifest_data["databases"],
             "cfile" : cfile_dst,
             "ffile" : ffile_dst,
-            "lfile" : lfile_dst
+            "lfile" : lfile_dst,
+            "lxd_alias" : "pirus-pipe-" + ppackage_name
             })
 
         pipeline = Pipeline()
@@ -291,7 +300,7 @@ class Pipeline(Document):
         plog.info('I:    [OK     ] Save pipeline information in database with id='+ str(pipeline.id))
 
         # 6- Install lxd container
-        cmd = ["lxc", "image", "import", ppackage_file, "--alias", "pirus-pipe-" + ppackage_name]
+        cmd = ["lxc", "image", "import", ppackage_file, "--alias", pipeline.lxd_alias]
         try:
             out_tmp = '/tmp/' + ppackage_name + '-out'
             err_tmp = '/tmp/' + ppackage_name + '-err'

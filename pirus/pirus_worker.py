@@ -1,5 +1,6 @@
 #!env/python3
 # coding: utf-8 
+import ipdb; 
 
 import os
 import sys
@@ -83,7 +84,7 @@ class PirusTask(Task):
 
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def run_pipeline(self, pipe_image_alias, config):
+def run_pipeline(self, pipe_image_alias, config, inputs):
     self.run_id = str(self.request.id)
     self.notify_url = NOTIFY_URL + str(self.request.id)
 
@@ -113,13 +114,30 @@ def run_pipeline(self, pipe_image_alias, config):
     # elog = logging.getLogger('run_err')
     
     wlog.info('INIT    | Pirus worker initialisation : ')
-    wlog.info('INIT    |  - Pipe ID : ' + pipe_image_alias)
+    wlog.info('INIT    |  - LXD alias : ' + pipe_image_alias)
     wlog.info('INIT    |  - Run ID  : ' + self.run_id)
     wlog.info('INIT    | Directory created : ')
     wlog.info('INIT    |  - inputs  : ' + ipath)
     wlog.info('INIT    |  - outputs : ' + opath)
     wlog.info('INIT    |  - logs    : ' + lpath)
     wlog.info('INIT    |  - db      : ' + DATABASES_DIR)
+
+
+
+    # Init inputs
+    cfile = os.path.join(ipath, "config.json")
+    with open(cfile, 'w') as f:
+        f.write(json.dumps(config))
+        os.chmod(cfile, 0o777)
+
+    #for ifile in inputs:
+        #pirusfile = PirusFile.from_id(ifile[0])
+        #if pirusfile is None:
+        #    pass
+        #else:
+            # Todo : manage case when different file having same file_name.
+    os.symlink("/var/tmp/pirus_v1/downloads/6d8b51ae-bf0f-4cc8-9165-9517dfb2a70f", os.path.join(ipath, "0031.jpg"))
+
 
     # Check database, to see how many container are running and if we can create a new one for this run
     wlog.info('WAITING | Looking for lxc container creation ...')
@@ -140,7 +158,7 @@ def run_pipeline(self, pipe_image_alias, config):
     self.notify_status("BUILDING")
     try:
         # create container
-        execute(["lxc", "init", "PirusBasic", c_name])
+        execute(["lxc", "init", pipe_image_alias, c_name])
         # set up env
         execute(["lxc", "config", "set", c_name, "environment.NOTIFY", 'http://' + HOSTNAME + '/run/notify/' + self.run_id + '/'])
         # set up devices
@@ -163,6 +181,7 @@ def run_pipeline(self, pipe_image_alias, config):
         # execute(["echo", '"/pipeline/run/run.sh > /pipeline/logs/out.log 2> /pipeline/logs/err.log"',  ">", "/pipeline/run/runcontainer.sh"])
         # execute(["chmod", '+x',  ">", "/pipeline/run/runcontainer.sh"])
         subprocess.call(["lxc", "exec", c_name, "/pipeline/run/run.sh"], stdout=open(lpath+"/out.log", "w"), stderr=open(lpath+"/err.log", "w"))
+
     except:
         wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
