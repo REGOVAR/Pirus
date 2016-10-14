@@ -64,5 +64,6 @@ app.router.add_route('GET',    "/v1/dl/r/{run_id}/{filename}", fileHdl.dl_run_fi
 
 app.router.add_route('GET',    "/v1/run/notify/{run_id}/p/{complete}", runHdl.up_progress)
 app.router.add_route('GET',    "/v1/run/notify/{run_id}/s/{status}", runHdl.up_status)
+app.router.add_route('GET',    "/v1/run/notify/{run_id}", runHdl.up_data)
 
 app.router.add_static('/assets', TEMPLATE_DIR)
