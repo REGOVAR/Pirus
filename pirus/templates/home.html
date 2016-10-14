@@ -191,7 +191,7 @@
                     {% for p in runs %}
                     <tr>
                         <td>{{ p["runname"] }}<br><span style="color:@gray-light">id : {{ p["id"] }}</span></td>
-                        <td style="vertical-align: middle;">
+                        <td id="run-{{ p["id"] }}-progress">
                             <div class="progress">
                                 <div class="progress-bar {% if p["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if p["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if p["status"] == "DONE" %}progress-bar-success{% endif -%}" 
                                      role="progressbar" aria-valuenow="{{ p["progress"]["value"] }}" aria-valuemin="0" aria-valuemax="100" 
@@ -425,17 +425,52 @@
 
     $(document).ready(function()
     {
-        $('#pipesList').DataTable();
-        $('#runsList').DataTable();
-        $('#filesList').DataTable();
-
-        $('[data-toggle="tooltip"]').tooltip(); 
+        update_datagrid();
     });
 
 
 
+    function update_datagrid()
+    {
+        $('#pipesList').DataTable();
+        $('#runsList').DataTable();
+        $('#filesList').DataTable();
+    }
+
+    function ws_new_pipeline(msg_data)
+    {
+
+    }
+
+    function ws_new_run(msg_data)
+    {
+
+    }
+
+    function ws_run_progress(msg_data)
+    {
+        var tdElement = $("#run-" + msg_data["id"] + "-progress")
+        style="progress-bar "
+        if (msg_data["id"] == "FAILLED") { style += "progress-bar-danger"}
+        else if (msg_data["id"] == "DONE") { style += "progress-bar-success"}
+        else if (msg_data["id"] == "PAUSE") { style += "progress-bar-warning"}
+        else if (msg_data["id"] == "RUN") { style += "progress-bar-striped active"}
+        else if (msg_data["id"] == "WAITING") { style += "progress-bar-warning progress-bar-striped active"}
 
 
+
+        html = "<div class='progress'>\
+                    <div class='" + style + "' role='progressbar' aria-valuenow='" + msg_data["progress"]["value"] + "' aria-valuemin='0' aria-valuemax='100' \
+                         style='min-width: 2em; width: " + msg_data["progress"]["value"] + "%;'>\
+                         " + msg_data["progress"]["label"] + " \
+                    </div>\
+                </div>"
+
+
+        tdElement.html(html)
+
+        // Todo : update controls
+    }
 
 
 
@@ -467,31 +502,7 @@
                 break;
 
             case 'run_progress':
-                var uTxt = ""
-                $.each(json["data"], function (idx, val)
-                {
-                    style="cssProgress-bar " + val["status"]
-                    if (val["status"] == "RUN" )
-                    {
-                        style+=" cssProgress-active";
-                    }
-
-                    uTxt += "<li>\
-                        <span style='display:inline-block; width:350px;'>" + val["id"] + "</span>\
-                        <div class='cssProgress'>\
-                            <div class='progress3'>\
-                                <div class='" + style + "' data-percent='" + val["prog_val"] + "' style='width:" + val["prog_val"] + "%;'>\
-                                    <span class='cssProgress-label'>" + val["prog_val"] + "%</span>\
-                                </div>\
-                            </div>\
-                        </div>\
-                        <span style='display:inline-block; width:100px;'>" + val["status"] + "</span>\
-                        <a class='btn btn-primary' title='Information about the run' href='http://{{ hostname }}/run/" + val["id"] + "' target='_blanck'><i class='fa fa-info' aria-hidden='true'></i></a> \
-                        <a class='btn btn-primary' title='Output log file' href='http://{{ hostname }}/run/" + val["id"] + "/log' target='_blanck'><i class='fa fa-file-text-o' aria-hidden='true'> out</i></a> \
-                        <a class='btn btn-primary' title='Error log file' href='http://{{ hostname }}/run/" + val["id"] + "/err' target='_blanck'><i class='fa fa-file-text-o' aria-hidden='true'> err</i></a> \
-                        </li>\n"
-                })
-                $('#runsList').html(uTxt)
+                ws_run_progress(json["data"])
                 break;
 
             // Todo

@@ -184,7 +184,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         execute(["lxc", "start", c_name])
         # execute(["echo", '"/pipeline/run/run.sh > /pipeline/logs/out.log 2> /pipeline/logs/err.log"',  ">", "/pipeline/run/runcontainer.sh"])
         # execute(["chmod", '+x',  ">", "/pipeline/run/runcontainer.sh"])
-        subprocess.call(["lxc", "exec", c_name, "/pipeline/run/run.sh"], stdout=open(lpath+"/out.log", "w"), stderr=open(lpath+"/err.log", "w"))
+        res = subprocess.call(["lxc", "exec", c_name, "/pipeline/run/run.sh"], stdout=open(lpath+"/out.log", "w"), stderr=open(lpath+"/err.log", "w"))
 
     except:
         wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
