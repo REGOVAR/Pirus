@@ -9,8 +9,16 @@
     <!-- Base -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="https://code.jquery.com/jquery-migrate-3.0.0.js"></script>
-    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/base-min.css">
-    <link rel="stylesheet" href="http://yui.yahooapis.com/pure/0.6.0/pure-min.css">
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <!-- Datagrid -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/dataTables.bootstrap.min.css"/>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.12/js/dataTables.bootstrap.min.js"></script>
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
 
     <!-- Form generator -->
@@ -25,130 +33,244 @@
 
 </head>
 <body>
-
-
-<div id="layout" class="pure-g">
-    <div class="sidebar pure-u-1 pure-u-md-1-4" style="width:auto"> 
-        <div class="header">
-            <img src="/assets/logo.png" height="200px" style="margin-top:-200px; margin-right:20px;margin-bottom:100px;" />
-            <h1 class="brand-title">  Pirus</h1>
-            <h2 class="brand-tagline">Pipeline runner server</h2>
-
-            <nav class="nav">
-                <ul class="nav-list">
-                    <li class="nav-item">
-                        <a class="pure-button" href="/www/about"><i class="fa fa-code" aria-hidden="true"></i> Swagger</a>
-                        <a class="pure-button" href="https://github.com/orgs/REGOVAR/dashboard"><i class="fa fa-github" aria-hidden="true"></i> GitHub</a>
-                        <!--<a class="pure-button" href=""> <i class="fa fa-power-off" aria-hidden="true"></i> Disconnect</a>-->
-                    </li>
-                </ul>
-            </nav>
-        </div>
+    <div style="position: fixed; top:0; left:0; z-index:2000;"">
+        <img src="/assets/logo.png" width="100px" />
     </div>
 
-    <div class="content pure-u-1 pure-u-md-3-4" style="width:auto">
+    <nav class="navbar navbar-default navbar-fixed-top navbar-inverse">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a data-toggle="tab" href="#overview"><i class="fa fa-bar-chart" aria-hidden="true"></i> Overview</a></li>
+                    <li><a data-toggle="tab" href="#files"><i class="fa fa-file-o" aria-hidden="true"></i> Files</a></li>
+                    <li><a data-toggle="tab" href="#pipes"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipelines</a></li>
+                    <li><a data-toggle="tab" href="#runs"><i class="fa fa-tasks" aria-hidden="true"></i> Runs <span class="badge">5</span></a></li>
+                    <li><a data-toggle="tab" href="#api"><i class="fa fa-code" aria-hidden="true"></i> API</a></li>
+                    <li><a data-toggle="tab" href="#help"><i class="fa fa-question" aria-hidden="true"></i> Help</a></li>
+                    <form class="navbar-form navbar-left" role="search">
+                        <div class="form-group">
+                            <input type="text" class="form-control" placeholder="Search">
+                        </div>
+                        <button type="submit" class="btn btn-default"><i class="fa fa-search" aria-hidden="true"></i></button>
+                    </form>
+                    </li>
+                </ul>
+            </div><!--/.nav-collapse -->
+        </div>
+    </nav>
 
+    <div class="container theme-showcase" role="main">
+        <h1 class="content-subhead" style="margin-top:70px"><i class="fa fa-retweet" aria-hidden="true"></i> WS [ <span id="message"></span> ]</h1>
+        <div class="tab-content">
 
-
-            <!-- A wrapper for all the blog posts -->
-            <div>
-                <h1 class="content-subhead"><i class="fa fa-retweet" aria-hidden="true"></i> WS [ <span id="message"></span> ]</h1>
+            <!--          -->
+            <!-- OVERVIEW -->
+            <!--          -->
+            <div id="overview" class="tab-pane fade in active">
                 <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i> Online</h1>
                 <ul id="userList"></ul>
+            </div>
 
+
+            <!--       -->
+            <!-- FILES -->
+            <!--       -->
+            <div id="files" class="tab-pane fade">
                 <h1 class="content-subhead"><i class="fa fa-file-o" aria-hidden="true"></i> Files</h1>
                 <form id="uploadFileForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form">
                 <fieldset>
-                    <div class="fileUpload pure-button">
+                    <div class="fileUpload btn btn-default">
                         <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
                         <input type="file" name="uploadFile" id="uploadFile" class="upload" />
                     </div>
-                    <input type="submit" value="Upload the file on the server" class="pure-button pure-button-primary"/>
-                </fieldset>
-                </form>
-                <ul id="fileList">
-                    {% if files|length ==0 %}
-                    <i>No file available.</i>
-                    {% endif %}
-                    {% for f in files %}
-                        <li><span style="display:inline-block; width:400px;">{{ f["file_name"] }}</span> 
-                        <span style="display:inline-block; width:100px;">{{ f["file_size"] }}</span>
-                        <span style="display:inline-block; width:100px;">{{ f["status"] }}</span>
-                        <a class="pure-button" title="Information about the file" href="http://{{ hostname }}/file/{{f["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
-                        <a class="pure-button" title="Download the file"          href="http://{{ hostname }}/dl/f/{{f["id"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"></i></a>
-                        </li>
-                    {% endfor %}
-                </ul>
-
-                <h1 class="content-subhead"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipelines</h1>
-                <ul id="pipesList">
-                    {% if pipes|length ==0 %}
-                    <i>No pipeline installed.</i>
-                    {% endif %}
-                    {% for p in pipes %}
-                        <li><span style="display:inline-block; width:200px;">{{ p["name"] }}</span> 
-                        <span style="display:inline-block; width:100px;">{{ p["version"] }}</span>
-                        <a class="pure-button" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 
-                        <a class="pure-button" title="Information about the pipeline" href="http://{{ hostname }}/pipeline/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
-                        <a class="pure-button" title="Get Formular files information" href="http://{{ hostname }}/dl/p/{{p["id"]}}/form.json" target="_blanck"><i class="fa fa-file" aria-hidden="true"> form</i></a> 
-                        <a class="pure-button" title="Get Config files information"   href="http://{{ hostname }}/dl/p/{{p["id"]}}/config.json" target="_blanck"><i class="fa fa-file" aria-hidden="true"> conf</i></a> 
-                        <a class="pure-button" title="Run the pipeline"               onclick="javascript:init_run('{{p["id"]}}')"><i class="fa fa-play" aria-hidden="true"></i></a> 
-                        </li>
-                    {% endfor %}
-                </ul>
-
-                <h1 class="content-subhead"><i class="fa fa-tasks" aria-hidden="true"></i> Runs</h1>
-                <ul id="runsList">
-                    {% if runs|length ==0 %}
-                    <i>No run in progress.</i>
-                    {% endif %}
-                    {% for p in runs %}
-                        <li>
-                        <span style="display:inline-block; width:350px;">{{ p["id"] }}</span> 
-                        <div class="cssProgress">
-                            <div class="progress3">
-                                <div class="cssProgress-bar {{ p["status"] }} {% if p["status"] == "RUN" %}cssProgress-active{% endif -%}"  data-percent="{{ p["prog_val"] }}" style="width:{{ p["prog_val"] }}%;">
-                                    <span class="cssProgress-label">{{ p["prog_val"] }}%</span> 
-                                </div>
-                            </div>
-                        </div>
-                        <span style="display:inline-block; width:100px;">{{ p["status"] }}</span>
-                        <a class="pure-button" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
-                        <a class="pure-button" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> log</i></a>
-                        <a class="pure-button" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> err</i></a>
-
-                        </li>
-                    {% endfor %}
-                </ul>
-
-                <br />
-                <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
-
-                <form id="installPackageForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
-                <fieldset>
-                    <div class="fileUpload pure-button">
-                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select Pirus package</span>
-                        <input type="file" type="file" name="pipepck" id="pipepck" class="upload" />
-                    </div>
-                    <input type="submit" value="Install a new pipeline" class="pure-button pure-button-primary"/>
+                    <input type="submit" value="Upload the file on the server" class="btn btn-primary btn btn-primary-primary"/>
                 </fieldset>
                 </form>
 
-
-                <br />
-                <h1 class="content-subhead"><i class="fa fa-play" aria-hidden="true"></i> Run a pipeline</h1>
-                {% if pipes|length ==0 %}
-                    <p><i>You need to install first a pipeline.</i></p>
-                {% else %}
-                    <p id="runFormContainer" style="width:500px"><i>Click on the play button of a pipeline to start</i></p>
-                    <p id="runButtonContainer"></p>
+                {% if files|length ==0 %}
+                <div class="alert alert-warning" role="alert">
+                    <strong>Warning!</strong> No file available on the server.
+                </div>
                 {% endif %}
+                <table id="fileList" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Size</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    {% for f in files %}
+                    <tr>
+                        <td>{{ f["file_name"] }}</td>
+                        <td>{{ f["file_size"] }}</td>
+                        <td>{{ f["status"] }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-default btn-xs" title="Delete file"                onclick="javascript:delete_file('{{f["id"]}}')"><i class="fa fa-trash" aria-hidden="true"> delete</i></a> 
+                                <a class="btn btn-default btn-xs" title="Information about the file" href="http://{{ hostname }}/file/{{f["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
+                                <a class="btn btn-default btn-xs" title="Download the file"          href="http://{{ hostname }}/dl/f/{{f["id"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"> download</i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
             </div>
 
-            
+
+            <!--           -->
+            <!-- PIPELINES -->
+            <!--           -->
+            <div id="pipes" class="tab-pane fade">
+                <h1 class="content-subhead"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipelines</h1>
+
+                {% if pipes|length ==0 %}
+                <div class="alert alert-warning" role="alert">
+                    <strong>Warning!</strong> No pipeline installed.
+                </div>
+                {% endif %}
+                <table id="pipesList" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    {% for p in pipes %}
+                    <tr>
+                        <td><img src="{{ p["logo"] }}" height="30px;"/>{{ p["name"] }} <i>({{ p["version"] }})</i></td>
+                        <td>{{ p["description"] }}</td>
+                        <td>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-default btn-xs" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 
+                                <a class="btn btn-default btn-xs" title="Information about the pipeline" href="http://{{ hostname }}/pipeline/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
+                                <a class="btn btn-default btn-xs" title="Get Formular files information" href="{{p["form_json"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"> form</i></a> 
+                                <a class="btn btn-default btn-xs" title="Get Config files information"   href="{{p["config_json"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"> conf</i></a> 
+                            </div>
+                            &nbsp;
+                            <a class="btn btn-success btn-xs" title="Run the pipeline" data-toggle="modal"  href="#runConfigModal" onclick="javascript:init_run('{{p["id"]}}')"><i class="fa fa-play" aria-hidden="true"></i></a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
+                    <form id="installPackageForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
+                        <fieldset>
+                            <div class="fileUpload btn btn-primary">
+                                <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select Pirus package</span>
+                                <input type="file" type="file" name="pipepck" id="pipepck" class="upload" />
+                            </div>
+                            <input type="submit" value="Install" class="btn btn-primary btn btn-primary-primary"/>
+                        </fieldset>
+                    </form>
+            </div>
+
+                
+            <div class="modal fade" id="runConfigModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title" id="myModalLabel"><i class="fa fa-play" aria-hidden="true"></i> Configure the run</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p id="runFormContainer"></p>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <p id="runButtonContainer"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!--      -->
+            <!-- RUNS -->
+            <!--      -->
+            <div id="runs" class="tab-pane fade">
+                <h1 class="content-subhead"><i class="fa fa-tasks" aria-hidden="true"></i> Runs</h1>
+                {% if runs|length ==0 %}
+                <div class="alert alert-warning" role="alert">
+                    <strong>Warning!</strong> No run have been launched.
+                </div>
+                {% endif %}
+                <table id="runsList" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Progress</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    {% for p in runs %}
+                    <tr>
+                        <td>{{ p["runname"] }}<br><span style="color:@gray-light">id : {{ p["id"] }}</span></td>
+                        <td style="vertical-align: middle;">
+                            <div class="progress">
+                                <div class="progress-bar {% if p["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if p["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if p["status"] == "DONE" %}progress-bar-success{% endif -%}" 
+                                     role="progressbar" aria-valuenow="{{ p["progress"]["value"] }}" aria-valuemin="0" aria-valuemax="100" 
+                                     style="min-width: 2em; width: {{ p["progress"]["value"] }}%;">
+                                    {{ p["progress"]["value"] }}%
+                                </div>
+                            </div>
+                        </td>
+                        <td style="vertical-align: middle;">{{ p["status"] }}</td>
+                        <td style="vertical-align: middle;">
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
+                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> log</i></a>
+                                <a class="btn btn-default btn-xs" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> err</i></a>
+                            </div>
+                            &nbsp;
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-warning btn-xs" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck"><i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
+                                <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck"><i class="fa fa-stop" aria-hidden="true"></i></a> 
+                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-play" aria-hidden="true"></i></a>
+                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-pause" aria-hidden="true"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            </div>
+
+
+            <!--     -->
+            <!-- API -->
+            <!--     -->
+            <div id="api" class="tab-pane fade">
+                <h1> Comming soon</h1>
+            </div>
+
+            <!--      -->
+            <!-- HELP -->
+            <!--      -->
+            <div id="help" class="tab-pane fade">
+                <h1> Comming soon</h1>
+            </div>
+
+            <!--                -->
+            <!-- SEARCH RESULTS -->
+            <!--                -->
+            <div id="search" class="tab-pane fade">
+                <h1> Comming soon</h1>
+            </div>
         </div>
     </div>
-</div>
+
 
   <script>
 
@@ -191,7 +313,7 @@
                     data = jsonFile["data"];
                     for (var i=0; i<data.length; i++)
                     {
-                        json_files[i] = "('" + data[i]["id"] + "', '" + data[i]["file_name"] + "')'"
+                        json_files[i] = data[i]["file_name"] + " [" + data[i]["id"] + "]"
                     }
                 })
                 json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
@@ -218,7 +340,7 @@
             bf.render(container, null);
 
             var container = document.getElementById('runButtonContainer');
-            container.innerHTML = '<a class="pure-button" title="Run the pipeline" onclick="javascript:post_run('+ "'" + pipe_id + "'" + ')"><i class="fa fa-play" aria-hidden="true"></i></a>'
+            container.innerHTML = '<a class="btn btn-primary" title="Run the pipeline" onclick="javascript:post_run('+ "'" + pipe_id + "'" + ')"><i class="fa fa-play" aria-hidden="true"></i></a>'
         })
     }
 
@@ -249,24 +371,12 @@
     function post_run(pipe_id)
     {
         if (bf.validate())
-        {   
-            var inputs = []
-            var config = bf.getData()
-            // create input list with all available files
-            $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
-            {
-                data = jsonFile["data"];
-                for (var i=0; i<data.length; i++)
-                {
-                    inputs[i] = "('" + data[i]["id"] + "', '" + data[i]["file_name"] + "')'"
-                }
-            })
-
+        {
             $.ajax(
             {
                 url: "http://{{ hostname }}/run",
                 type: "POST",
-                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + JSON.stringify(config, null, 4) + ", \"inputs\" : " + JSON.stringify(inputs, null, 4) + "}"
+                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + JSON.stringify(bf.getData(), null, 4) + ", \"\" : " + JSON.stringify([""], null, 4) + "}"
             }).fail(function()
             {
                 alert( "ERROR" );
@@ -280,7 +390,11 @@
 
     $(document).ready(function()
     {
-        
+        $('#pipesList').DataTable();
+        $('#runsList').DataTable();
+        $('#filesList').DataTable();
+
+        $('[data-toggle="tooltip"]').tooltip(); 
     });
 
 
@@ -337,9 +451,9 @@
                             </div>\
                         </div>\
                         <span style='display:inline-block; width:100px;'>" + val["status"] + "</span>\
-                        <a class='pure-button' title='Information about the run' href='http://{{ hostname }}/run/" + val["id"] + "' target='_blanck'><i class='fa fa-info' aria-hidden='true'></i></a> \
-                        <a class='pure-button' title='Output log file' href='http://{{ hostname }}/run/" + val["id"] + "/log' target='_blanck'><i class='fa fa-file-text-o' aria-hidden='true'> out</i></a> \
-                        <a class='pure-button' title='Error log file' href='http://{{ hostname }}/run/" + val["id"] + "/err' target='_blanck'><i class='fa fa-file-text-o' aria-hidden='true'> err</i></a> \
+                        <a class='btn btn-primary' title='Information about the run' href='http://{{ hostname }}/run/" + val["id"] + "' target='_blanck'><i class='fa fa-info' aria-hidden='true'></i></a> \
+                        <a class='btn btn-primary' title='Output log file' href='http://{{ hostname }}/run/" + val["id"] + "/log' target='_blanck'><i class='fa fa-file-text-o' aria-hidden='true'> out</i></a> \
+                        <a class='btn btn-primary' title='Error log file' href='http://{{ hostname }}/run/" + val["id"] + "/err' target='_blanck'><i class='fa fa-file-text-o' aria-hidden='true'> err</i></a> \
                         </li>\n"
                 })
                 $('#runsList').html(uTxt)
