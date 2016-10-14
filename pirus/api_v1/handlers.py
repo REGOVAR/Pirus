@@ -330,7 +330,7 @@ class RunHandler:
             "start" : str(datetime.datetime.now().timestamp()),
             "status" : "INIT",
             "config" : json.dumps(config),
-            "progress" : '{"value" : 0, "label" : "0%", "message" : ""}'
+            "progress" : {"value" : 0, "label" : "0%", "message" : ""}
         })
         run.save()
         # 5- return result
@@ -407,10 +407,16 @@ class RunHandler:
         print("RunHandler[up_progress] : taskid=" + run_id, complete)
         run = Run.from_celery_id(run_id)
         if run is not None:
-            run.prog_val = complete
+            p = run.progress.copy()
+            p.update({"value" : complete, "label" : str(complete) + " %"})
+            # TODO FIXME : workaround to force the update of dynamic field "progress" - only updating progress dictionary doesn't work :( 
+            run.progress = 0 
             run.save()
-        msg = '{"action":"run_progress", "data" : ' + json.dumps(last_runs()) + '}'
-        notify_all(None, msg)
+            run.progress = p
+            run.save()
+            msg = '{"action":"run_progress", "data" : ' + json.dumps(run.export_client_data()) + '}'
+            print (msg)
+            notify_all(None, msg)
         return web.Response()
 
     def up_status(self, request):
@@ -424,6 +430,10 @@ class RunHandler:
         msg = '{"action":"run_progress", "data" : ' + json.dumps(last_runs()) + '}'
         notify_all(None, msg)
         return web.Response()
+
+    def up_data(self, request):
+        pass
+
 
     def get_pause(self, request):
         # Todo

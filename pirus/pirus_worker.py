@@ -77,19 +77,22 @@ class PirusTask(Task):
 
 
     def notify_status(self, status:str):
-        requests.get(self.notify_url + "/status/" + status)
-        print ("send notify status : ", self.notify_url + "/status/" + status)
+        requests.get(self.notify_url + "/s/" + status)
+        print ("send notify status : ", self.notify_url + "/s/" + status)
 
 
 
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def run_pipeline(self, pipe_image_alias, config, inputs):
-    self.run_id = str(self.request.id)
-    self.notify_url = NOTIFY_URL + str(self.request.id)
+    from api_v1.model import Run, PirusFile
+
+
+    self.run_celery_id = str(self.request.id)
+    self.notify_url = 'http://' + HOSTNAME + '/run/notify/' + self.run_celery_id
 
     # Init path
-    rpath = os.path.join(RUNS_DIR, self.run_id)
+    rpath = os.path.join(RUNS_DIR, self.run_celery_id)
     ipath = os.path.join(rpath, "inputs")
     opath = os.path.join(rpath, "outputs")
     lpath = os.path.join(rpath, "logs")
@@ -115,12 +118,14 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     
     wlog.info('INIT    | Pirus worker initialisation : ')
     wlog.info('INIT    |  - LXD alias : ' + pipe_image_alias)
-    wlog.info('INIT    |  - Run ID  : ' + self.run_id)
+    wlog.info('INIT    |  - Run ID  : ' + self.run_celery_id)
     wlog.info('INIT    | Directory created : ')
     wlog.info('INIT    |  - inputs  : ' + ipath)
     wlog.info('INIT    |  - outputs : ' + opath)
     wlog.info('INIT    |  - logs    : ' + lpath)
     wlog.info('INIT    |  - db      : ' + DATABASES_DIR)
+    wlog.info('INIT    | Run config : ' + json.dumps(config))
+    wlog.info('INIT    | Run inputs : ' + json.dumps(inputs))
 
 
 
@@ -130,13 +135,12 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         f.write(json.dumps(config))
         os.chmod(cfile, 0o777)
 
-    #for ifile in inputs:
-        #pirusfile = PirusFile.from_id(ifile[0])
-        #if pirusfile is None:
-        #    pass
-        #else:
-            # Todo : manage case when different file having same file_name.
-    os.symlink("/var/tmp/pirus_v1/downloads/6d8b51ae-bf0f-4cc8-9165-9517dfb2a70f", os.path.join(ipath, "0031.jpg"))
+    for ifile in inputs:
+        pirusfile = PirusFile.from_id(ifile[0])
+        if pirusfile is None :
+            pass
+        else:
+            os.symlink(PirusFile.file_path, os.path.join(ipath, ifile[1]))
 
 
     # Check database, to see how many container are running and if we can create a new one for this run
@@ -146,7 +150,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         while len(lxd_client.containers.all()) >= LXD_MAX:
             time.sleep(1)
         wlog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
-        c_name = LXD_PREFIX + "-" + self.run_id
+        c_name = LXD_PREFIX + "-" + self.run_celery_id
     except:
         wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
@@ -160,7 +164,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         # create container
         execute(["lxc", "init", pipe_image_alias, c_name])
         # set up env
-        execute(["lxc", "config", "set", c_name, "environment.NOTIFY", 'http://' + HOSTNAME + '/run/notify/' + self.run_id + '/'])
+        execute(["lxc", "config", "set", c_name, "environment.NOTIFY", self.notify_url ])
         # set up devices
         execute(["lxc", "config", "device", "add", c_name, "pirus_inputs",  "disk", "source="+ipath,         "path=pipeline/inputs", "readonly=True"])
         execute(["lxc", "config", "device", "add", c_name, "pirus_outputs", "disk", "source="+opath,         "path=pipeline/outputs"])

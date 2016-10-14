@@ -168,25 +168,6 @@
                     </form>
             </div>
 
-                
-            <div class="modal fade" id="runConfigModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title" id="myModalLabel"><i class="fa fa-play" aria-hidden="true"></i> Configure the run</h4>
-                        </div>
-                        <div class="modal-body">
-                            <p id="runFormContainer"></p>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                                <p id="runButtonContainer"></p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
 
             <!--      -->
             <!-- RUNS -->
@@ -215,7 +196,7 @@
                                 <div class="progress-bar {% if p["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if p["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if p["status"] == "DONE" %}progress-bar-success{% endif -%}" 
                                      role="progressbar" aria-valuenow="{{ p["progress"]["value"] }}" aria-valuemin="0" aria-valuemax="100" 
                                      style="min-width: 2em; width: {{ p["progress"]["value"] }}%;">
-                                    {{ p["progress"]["value"] }}%
+                                    {{ p["progress"]["value"] }} %
                                 </div>
                             </div>
                         </td>
@@ -228,10 +209,21 @@
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-warning btn-xs" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck"><i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
-                                <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck"><i class="fa fa-stop" aria-hidden="true"></i></a> 
-                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-play" aria-hidden="true"></i></a>
-                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-pause" aria-hidden="true"></i></a>
+                                <a class="btn btn-default btn-xs" title="Browse input files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_inputs('{{p["id"]}}')">
+                                    <i class="fa fa-folder-open-o" aria-hidden="true"> inputs</i></a> 
+                                <a class="btn btn-default btn-xs" title="Browse output files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_outputs('{{p["id"]}}')">
+                                    <i class="fa fa-folder-open-o" aria-hidden="true"> outputs</i></a> 
+                            </div>
+                            &nbsp;
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-warning btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck">
+                                    <i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
+                                <a class="btn btn-default btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck">
+                                    <i class="fa fa-stop" aria-hidden="true"></i></a> 
+                                <a class="btn btn-default btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck">
+                                    <i class="fa fa-play" aria-hidden="true"></i></a>
+                                <a class="btn btn-default btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck">
+                                    <i class="fa fa-pause" aria-hidden="true"></i></a>
                             </div>
                         </td>
                     </tr>
@@ -253,6 +245,48 @@
             <div id="help" class="tab-pane fade">
                 <h1> Comming soon</h1>
             </div>
+
+
+
+
+
+
+            <div class="modal fade" id="runBrowseFile" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title" id="myModalLabel"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Browse file </h4>
+                        </div>
+                        <div class="modal-body">
+                            <p id="runBrowserContainer">Comming soon !</p>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+                
+            <div class="modal fade" id="runConfigModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title" id="myModalLabel"><i class="fa fa-play" aria-hidden="true"></i> Configure the run</h4>
+                        </div>
+                        <div class="modal-body">
+                            <p id="runFormContainer"></p>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                <p id="runButtonContainer"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
@@ -331,7 +365,7 @@
 
 
 
-    
+
 
     $( "#username" ).change(function()
     {
@@ -357,11 +391,27 @@
     {
         if (bf.validate())
         {
+            config = bf.getData()
+            inputs = []
+
+            $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                {
+                    data = jsonFile["data"];
+                    for (var i=0; i<data.length; i++)
+                    {
+                        inputs[i] = (data[i]["id"], data[i]["file_name"])
+                    }
+                })
+
+            config = JSON.stringify(config, null, 4)
+            inputs = JSON.stringify(inputs, null, 4)
+
+
             $.ajax(
             {
                 url: "http://{{ hostname }}/run",
                 type: "POST",
-                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + JSON.stringify(bf.getData(), null, 4) + ", \"\" : " + JSON.stringify([""], null, 4) + "}"
+                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + config + ", \"inputs\" : " + inputs + "}"
             }).fail(function()
             {
                 alert( "ERROR" );
