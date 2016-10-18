@@ -39,3 +39,24 @@ This document explain you how to build a simple pipeline image for Pirus.
 
 
 ## TODO : export image as file and edit image conf to create a piruse package installable on any pirus server
+
+    # add folowing informations into the metadata.yaml file
+    "pirus":
+    {
+        "name" : "Pirus Simple",
+        "description" : "Test pipeline for pirus",
+        "version": "1.0.0",
+        "pirus_api": "1.0.0",
+        "license" : "AGPL",
+        "developers" : ["Olivier GUEUDELOT"],
+        "run" : "/pipeline/run/run.sh",
+        "inputs" : "/pipeline/inputs",
+        "outputs" : "/pipeline/outputs",
+        "databases" : "/pipeline/db",
+        "logs" : "/pipeline/logs",
+        "form" : "/pipeline/form.json",
+        "icon" : "/pipeline/logo.png"
+    }
+
+    # You can repackage the image in tar.xz, to save space    
+    tar -cJf PirusSimple.tar.xz metadata.yaml rootfs templates
