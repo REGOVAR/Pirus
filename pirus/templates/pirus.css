@@ -1,7 +1,7 @@
 
 .content-subhead {
     text-transform: uppercase;
-    color: #aaa;
+    color: #999;
     border-bottom: 1px solid #eee;
     padding: 0.4em 0;
     font-size: 80%;
@@ -24,4 +24,24 @@
     cursor: pointer;
     opacity: 0;
     filter: alpha(opacity=0);
+}
+
+.panel-group
+{
+    margin-top: 20px;
+}
+.panel-collapse
+{
+    padding: 10px;
+}
+fieldset 
+{
+    margin-bottom: 10px;
+}
+
+.details
+{
+    color: #aaa;
+    font-style: italic;
+    font-size: 10px;
 }

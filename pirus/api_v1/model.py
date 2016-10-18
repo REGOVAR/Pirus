@@ -26,9 +26,8 @@ class PirusFile(Document):
     file_path    = StringField()
     file_size    = StringField() 
     status       = StringField() # DL, TMP, OK
-    comments     = StringField()
-    owner        = StringField()
-    locations    = DynamicField() # dic {key=Run_ID : val="in"|"out"} #empty mean not used
+    comments     = StringField()    
+    runs         = DynamicField() # dic {key=Run_ID : val="in"|"out"} #empty mean not used
     create_date  = StringField()
     tags         = ListField(StringField())
     md5sum       = StringField()
@@ -44,8 +43,7 @@ class PirusFile(Document):
             "file_size"    : self.file_size,
             "status"       : self.status,
             "comments"     : self.comments,
-            "owner"        : self.owner,
-            "locations"    : self.locations,
+            "runs"         : self.runs,
             "create_date"  : self.create_date,
             "tags"         : self.tags,
             "md5sum"       : self.md5sum,
@@ -59,11 +57,11 @@ class PirusFile(Document):
             "file_size"    : self.file_size,
             "status"       : self.status,
             "comments"     : self.comments,
-            "owner"        : self.owner,
-            "locations"    : self.locations,
+            "runs"         : self.runs,
             "create_date"  : self.create_date,
             "tags"         : self.tags,
             "md5sum"       : self.md5sum,
+            "url"          : "http://" + HOSTNAME + "/dl/f/" + str(self.id),
             "id": str(self.id)
         }
 
@@ -76,14 +74,12 @@ class PirusFile(Document):
             self.status        = data["status"]
             self.create_date   = data["create_date"]
             self.md5sum        = data['md5sum']
-            if "locations" in data.keys():
-                self.locations = data["locations"]
+            if "runs" in data.keys():
+                self.runs      = data["runs"]
             if "tags" in data.keys():
                 self.tags      = data['tags']
             if "comments" in data.keys():
                 self.comments  = data["comments"]
-            if "owner" in data.keys():
-                self.owner     = data["owner"]
         except KeyError as e:
             raise ValidationError('Invalid input file: missing ' + e.args[0])
         return self
@@ -104,18 +100,16 @@ class Pipeline(Document):
     lxd_alias      = StringField()
     description    = StringField()
     version        = StringField(required=True)
-    version_api    = StringField(required=True)
-    inputs_allowed = ListField(StringField())
+    pirus_api      = StringField(required=True)
     license        = StringField()
-    authors        = ListField(StringField())
+    developers     = ListField(StringField())
 
     path           = StringField(required=True)
     ipath          = StringField(required=True)
     opath          = StringField(required=True)
     lpath          = StringField(required=True)
-    rpath          = StringField(required=True)
+    run            = StringField(required=True)
     dpath          = StringField(required=True)
-    cfile          = StringField(required=True)
     ffile          = StringField(required=True)
     lfile          = StringField()
 
@@ -129,17 +123,15 @@ class Pipeline(Document):
             "lxd_alias"      : self.lxd_alias,
             "description"    : self.description,
             "version"        : self.version,
-            "version_api"    : self.version_api,
-            "inputs_allowed" : self.inputs_allowed,
+            "pirus_api"      : self.pirus_api,
             "license"        : self.license,
-            "authors"        : self.authors,
+            "developers"     : self.developers,
             "path"           : self.path,
             "ipath"          : self.ipath,
             "opath"          : self.opath,
             "lpath"          : self.lpath,
-            "rpath"          : self.rpath,
+            "run"            : self.run,
             "dpath"          : self.dpath,
-            "cfile"          : self.cfile,
             "ffile"          : self.ffile,
             "lfile"          : self.lfile
         }
@@ -150,26 +142,23 @@ class Pipeline(Document):
             "name"           : self.name,
             "description"    : self.description,
             "version"        : self.version,
-            "version_api"    : self.version_api,
-            "inputs_allowed" : self.inputs_allowed,
+            "pirus_api"      : self.pirus_api,
             "license"        : self.license,
-            "authors"        : self.authors,
-            "config_json"    : "http://" + HOSTNAME + "/dl/p/" + str(self.id) + "/config.json",
-            "form_json"      : "http://" + HOSTNAME + "/dl/p/" + str(self.id) + "/form.json",
-            "logo"           : "http://" + HOSTNAME + "/dl/p/" + str(self.id) + "/" + os.path.basename(self.lfile)
+            "developers"     : self.developers,
+            "form_url"       : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json",
+            "icon"           : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.lfile)
         }
 
     def import_data(self, data):
         try:
             self.name           = data['name']
-            self.version_api    = data["version_api"]
+            self.pirus_api      = data["pirus_api"]
             self.path           = data['path']
             self.ipath          = data['ipath']
             self.opath          = data['opath']
             self.lpath          = data['lpath']
-            self.rpath          = data['rpath']
             self.dpath          = data['dpath']
-            self.cfile          = data['cfile']
+            self.run            = data['run']
             self.ffile          = data['ffile']
             if "lxd_alias" in data.keys():
                 self.lxd_alias = data["lxd_alias"]
@@ -177,38 +166,18 @@ class Pipeline(Document):
                 self.description = data["description"]
             if "version" in data.keys():
                 self.version     = data['version']
-            if "inputs_allowed" in data.keys():
-                self.inputs_allowed = data["inputs_allowed"]
             if "license" in data.keys():
                 self.license     = data["license"]
-            if "authors" in data.keys():
-                self.authors     = data["authors"]
+            if "developers" in data.keys():
+                self.developers  = data["developers"]
             if "lfile" in data.keys():
                 self.lfile       = data['lfile']
         except KeyError as e:
             raise ValidationError('Invalid pipeline: missing ' + e.args[0])
         return self
 
-    # def get_form(self):
-    #     form = None
-    #     if os.path.isfile(self.ffile):
-    #         with open(self.ffile, 'r') as content_file:
-    #             form = content_file.read()
-    #     return form
 
-    # def get_config(self):
-    #     conf = None
-    #     if os.path.isfile(self.cfile):
-    #         with open(self.cfile, 'r') as content_file:
-    #             conf = content_file.read()
-    #     return conf
 
-    # def get_logo(self):
-    #     logo = None
-    #     if os.path.isfile(self.lfile):
-    #         with open(self.lfile, 'r') as content_file:
-    #             logo = content_file.read()
-    #     return logo
 
     @staticmethod
     def from_id(pipe_id):
@@ -219,7 +188,6 @@ class Pipeline(Document):
 
     @staticmethod
     def install(ppackage_name, ppackage_path, ppackage_file):
-        ppackage_file = os.path.join(ppackage_path, "PirusPipeline.tar.gz")
         plog.info('I: Installation of the pipeline package : ' + ppackage_path)
         # 1- Extract pipeline package
         try:
@@ -233,15 +201,16 @@ class Pipeline(Document):
         plog.info('I:    [OK     ] Extraction of PirusPipeline.tar.gz.')
 
         # 2- Check module
-        manifest_file = os.path.join(ppackage_path, "rootfs/pipeline/manifest.json")
-        if not os.path.exists(manifest_file):
+        metadata_file = os.path.join(ppackage_path, "metadata.yaml")
+        if not os.path.exists(metadata_file):
             # TODO : manage error + remove package file
             plog.info('E:    [FAILLED] Manifest.json file extraction.')
             raise PirusException("XXXX", "No manifest file found.")
-        manifest_data = None
+        metadata = None
         try :
-            with open(manifest_file) as f:
-                manifest_data = json.load(f)
+            with open(metadata_file) as f:
+                metadata = json.load(f)
+            metadata = metadata["pirus"]
         except :
             # TODO : manage error
             raise PirusException("XXXX", "Bad pirus pipeline format : Manifest file corrupted.")
@@ -250,7 +219,7 @@ class Pipeline(Document):
         # 3- Check that mandatory fields exists
         missing = ""
         for k in MANIFEST_MANDATORY.keys():
-            if k not in manifest_data.keys():
+            if k not in metadata.keys():
                 missing += k + ", "
         if missing != "":
             missing = missing[:-2]
@@ -259,38 +228,34 @@ class Pipeline(Document):
         plog.info('I:    [OK     ] Checking validity of manifest.json file.')
 
         # 4- Extract pirus technicals files from the package
-        cfile_src = os.path.join(ppackage_path, "rootfs", manifest_data['config.json'][1:] if manifest_data['config.json'][0]=="/" else manifest_data['config.json'] )
-        cfile_dst = os.path.join(ppackage_path, "config.json")
-        shutil.copyfile(cfile_src, cfile_dst)
-        ffile_src = os.path.join(ppackage_path, "rootfs",manifest_data['form.json'][1:] if manifest_data['form.json'][0]=="/" else manifest_data['form.json'])
+        ffile_src = os.path.join(ppackage_path, "rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
         ffile_dst = os.path.join(ppackage_path, "form.json")
         shutil.copyfile(ffile_src, ffile_dst)
         lfile_dst = ""
-        if "logo" in manifest_data.keys():
-            lfile_src = os.path.join(ppackage_path, "rootfs",manifest_data['logo'][1:] if manifest_data['logo'][0]=="/" else manifest_data['logo'])
-            lfile_dst = os.path.join(ppackage_path, os.path.basename(manifest_data['logo']))
+        if "icon" in metadata.keys():
+            lfile_src = os.path.join(ppackage_path, "rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
+            lfile_dst = os.path.join(ppackage_path, os.path.basename(metadata['icon']))
             shutil.copyfile(lfile_src, lfile_dst)
         else:
             lfile_dst = os.path.join(ppackage_path, "logo.png")
             shutil.copyfile(os.path.join(TEMPLATE_DIR, "logo.png", lfile_dst))
 
         # 5- Save pipeline into database
-        manifest_data.update({
-            "path"  : ppackage_path,
-            "ipath" : manifest_data["inputs"],
-            "opath" : manifest_data["outputs"],
-            "lpath" : manifest_data["logs"],
-            "rpath" : manifest_data["run"],
-            "dpath" : manifest_data["databases"],
-            "cfile" : cfile_dst,
-            "ffile" : ffile_dst,
-            "lfile" : lfile_dst,
+        metadata.update({
+            "path"      : ppackage_path,
+            "ipath"     : metadata["inputs"],
+            "opath"     : metadata["outputs"],
+            "lpath"     : metadata["logs"],
+            "run"       : metadata["run"],
+            "dpath"     : metadata["databases"],
+            "ffile"     : ffile_dst,
+            "lfile"     : lfile_dst,
             "lxd_alias" : "pirus-pipe-" + ppackage_name
-            })
+        })
 
         pipeline = Pipeline()
         try:
-            pipeline.import_data(manifest_data)
+            pipeline.import_data(metadata)
             pipeline.save()
         except Exception as err:
             # TODO : manage error
@@ -328,7 +293,7 @@ class Pipeline(Document):
 
         # 7- Clean directory
         try:
-            keep = [ppackage_file, cfile_dst, ffile_dst, lfile_dst]
+            keep = [ppackage_file, ffile_dst, lfile_dst]
             for f in os.listdir(ppackage_path):
                 fullpath = os.path.join(ppackage_path, f)
                 if fullpath not in keep:
@@ -363,8 +328,7 @@ class Pipeline(Document):
 class Run(Document):
     pipe_id   = ObjectIdField(required=True)
     celery_id = StringField(required=True)
-    runname   = StringField(requiered=True)
-    username  = StringField()
+    name      = StringField(requiered=True)
     config    = DynamicField(required=True)
     start     = StringField(required=True)
     end       = StringField()
@@ -381,8 +345,7 @@ class Run(Document):
             "id"        : str(self.id),
             "pipe_id"   : str(self.pipe_id),
             "celery_id" : self.celery_id,
-            "runname"   : self.runname,
-            "username"  : self.username,
+            "name"      : self.name,
             "config"    : self.config,
             "start"     : self.start,
             "end"       : self.end,
@@ -397,8 +360,7 @@ class Run(Document):
             "id"        : str(self.id),
             "pipe_id"   : str(self.pipe_id),
             "celery_id" : self.celery_id,
-            "runname"   : self.runname,
-            "username"  : self.username,
+            "name"      : self.name,
             "config"    : self.config,
             "start"     : self.start,
             "end"       : self.end,
@@ -412,13 +374,11 @@ class Run(Document):
         try:
             self.pipe_id   = data['pipe_id']
             self.celery_id = data['celery_id']
-            self.runname   = data['runname']
+            self.name      = data['name']
             self.config    = data['config']
             self.start     = data['start']
             self.status    = data['status']
             self.progress  = data['progress']
-            if "username" in data:
-                self.username  = data['username']
             if "end" in data:
                 self.end = data['end']
             if "inputs" in data:

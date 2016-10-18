@@ -87,9 +87,8 @@ class WebsiteHandler:
             "port" : PORT,
             "version" : VERSION,
             "base_url" : "http://" + HOSTNAME,
-            "run_max" : LXD_MAX,
-            "run_conf" : LXD_HDW_CONF,
-            "manifest_mandatory" : MANIFEST_MANDATORY
+            "max_parallel_run " : LXD_MAX,
+            "run_config " : LXD_HDW_CONF
         })
 
     def get_api(self, request):
@@ -112,11 +111,22 @@ class FileHandler:
 
     async def upload_simple(self, request):
         file_name = str(uuid.uuid4())
-        file_path = os.path.join(TEMP_DIR, file_name)
+        file_path = os.path.join(FILES_DIR, file_name)
         plog.info('I: Start file uploading : ' + file_path)
         # 1- Retrieve file from post request
         data = await request.post()
         uploadFile = data['uploadFile']
+        comments = None
+        tags = None
+        if "comments" in data.keys():
+            comments = data['comments'].strip()
+        if "tags" in data.keys():
+            tmps = data['tags'].split(',')
+            tags = []
+            for i in tmps:
+                i2 = i.strip()
+                if i2 != "":
+                    tags.append(i2)
         # 2- save file on the server 
         try:
             with open(file_path, 'bw+') as f:
@@ -135,6 +145,8 @@ class FileHandler:
                 "status"       : "TMP", # DOWNLOADING, TMP, OK
                 "create_date"  : str(datetime.datetime.now().timestamp()),
                 "md5sum"       : md5(file_path),
+                "tags"         : tags,
+                "comments"     : comments
             })
         pirusfile.save()
         plog.info('I: File ' + file_name + ' (' + pirusfile.file_size + ') available at ' + file_path)
@@ -196,6 +208,8 @@ class FileHandler:
     async def dl_run_file(self, request):
         return rest_success({})
 
+    def edit_infos(self, request):
+        pass
 
 
 
@@ -216,7 +230,7 @@ class PipelineHandler:
         try:
             ppackage_name = str(uuid.uuid4())
             ppackage_path = os.path.join(PIPELINES_DIR, ppackage_name)
-            ppackage_file = os.path.join(ppackage_path, "PirusPipeline.tar.gz")
+            ppackage_file = os.path.join(ppackage_path, ppackage.filename)
             os.makedirs(ppackage_path)
             with open(ppackage_file, 'bw+') as f:
                 f.write(ppackage.file.read())
@@ -260,35 +274,6 @@ class PipelineHandler:
             return rest_error("Unknow pipeline id " + str(pipe_id))
         return rest_success(Pipeline.objects.get(pk=pipe_id).export_client_data())
 
-    # async def get_qml(self, request):
-    #     pipe_id = request.match_info.get('pipe_id', -1)
-    #     if pipe_id == -1:
-    #         return rest_error("Id not found")
-    #     pipeline = Pipeline.from_id(pipe_id)
-    #     if pipeline is None:
-    #         return rest_error("Unknow pipeline id " + str(pipe_id))
-    #     qml = pipeline.get_qml()
-    #     if qml is None:
-    #         return rest_error("QML not found for the plugin " + str(pipe_id))
-    #     return web.Response(
-    #         headers=MultiDict({'Content-Disposition': 'Attachment'}),
-    #         body=str.encode(qml)
-    #     )
-
-    # def get_config(self, request):
-    #     pipe_id = request.match_info.get('pipe_id', -1)
-    #     if pipe_id == -1:
-    #         return rest_error("Id not found")
-    #     pipeline = Pipeline.from_id(pipe_id)
-    #     if pipeline is None:
-    #         return rest_error("Unknow pipeline id " + str(pipe_id))
-    #     conf = pipeline.get_config()
-    #     if conf is None:
-    #         return rest_error("Config not found for the plugin " + str(pipe_id))
-    #     return web.Response(
-    #         headers=MultiDict({'Content-Disposition': 'Attachment'}),
-    #         body=str.encode(conf)
-    #     )
 
 
 
@@ -311,8 +296,6 @@ class RunHandler:
         pipeline = Pipeline.from_id(pipe_id)
         if pipeline is None:
             return rest_error("Unknow pipeline id " + str(pipe_id))
-        if config is None:
-            return rest_error("Config is empty")
             
         # 3- Enqueue run of the pipeline with celery
         try:
@@ -325,12 +308,12 @@ class RunHandler:
         run = Run()
         run.import_data({
             "pipe_id" : pipe_id,
-            "runname" : config["runname"],
+            "name" : config["name"],
             "celery_id" : str(cw.id),
             "start" : str(datetime.datetime.now().timestamp()),
             "status" : "INIT",
             "config" : json.dumps(config),
-            "progress" : {"value" : 0, "label" : "0%", "message" : ""}
+            "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
         })
         run.save()
         # 5- return result
@@ -401,7 +384,12 @@ class RunHandler:
         filename = request.match_info.get('filename', "")
         return self.download_file(run_id, filename)
 
-    def up_progress(self, request):
+    async def up_progress(self, request):
+        # 1- Retrieve data from request
+        data = await request.json()
+        pipe_id = data["pipeline_id"]
+        config = data["config"]
+        inputs = data["inputs"]
         run_id = request.match_info.get('run_id', -1)
         complete = request.match_info.get('complete', None)
         print("RunHandler[up_progress] : taskid=" + run_id, complete)
@@ -431,7 +419,12 @@ class RunHandler:
         notify_all(None, msg)
         return web.Response()
 
-    def up_data(self, request):
+    async def up_data(self, request):
+        # 1- Retrieve data from request
+        data = await request.json()
+        run_id = data["pipeline_id"]
+        config = data["config"]
+        inputs = data["inputs"]
         pass
 
 

@@ -32,7 +32,7 @@
 
 </head>
 <body>
-    <div style="position: fixed; top:0; left:0; z-index:2000;"">
+    <div style="position: fixed; top:0; left:0; z-index:2000;">
         <img src="/assets/logo.png" width="100px" />
     </div>
 
@@ -77,26 +77,16 @@
             <!--       -->
             <div id="files" class="tab-pane fade">
                 <h1 class="content-subhead"><i class="fa fa-file-o" aria-hidden="true"></i> Files</h1>
-                <form id="uploadFileForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form">
-                <fieldset>
-                    <div class="fileUpload btn btn-default">
-                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
-                        <input type="file" name="uploadFile" id="uploadFile" class="upload" />
-                    </div>
-                    <input type="submit" value="Upload the file on the server" class="btn btn-primary btn btn-primary-primary"/>
-                </fieldset>
-                </form>
-
                 {% if files|length ==0 %}
                 <div class="alert alert-warning" role="alert">
                     <strong>Warning!</strong> No file available on the server.
                 </div>
-                {% endif %}
-                <table id="fileList" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                {% else %}
+                <table id="filesList" class="table table-striped table-bordered" cellspacing="0" width="100%">
                     <thead>
                         <tr>
                             <th>Name</th>
-                            <th>Size</th>
+                            <th>Tags</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -104,8 +94,8 @@
 
                     {% for f in files %}
                     <tr>
-                        <td>{{ f["file_name"] }}</td>
-                        <td>{{ f["file_size"] }}</td>
+                        <td>{{ f["file_name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["file_size"] }}</span></td>
+                        <td>{{ f["tags"] }}</td>
                         <td>{{ f["status"] }}</td>
                         <td>
                             <div class="btn-group" role="group">
@@ -117,6 +107,38 @@
                     </tr>
                     {% endfor %}
                 </table>
+                {% endif %}
+
+                <div class="panel-group">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">
+                            <h1 class="panel-title">
+                                <a data-toggle="collapse" href="#newFilePanel"><i class="fa fa-plus" aria-hidden="true"></i> Uload a file</a>
+                            </h1>
+                        </div>
+                        <div id="newFilePanel" class="panel-collapse collapse">
+                            <form id="uploadFileForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form">
+                                <fieldset>
+                                    <div class="fileUpload btn btn-default">
+                                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
+                                        <input type="file" name="uploadFile" id="uploadFile" class="upload" />
+                                    </div>
+                                </fieldset>
+                                <fieldset>
+                                    <span><i aria-hidden="true"></i> Tags</span>
+                                    <input type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
+                                </fieldset>
+                                <fieldset>
+                                    <span><i aria-hidden="true"></i> Comments</span>
+                                    <input type="text" name="comments" placeholder="Optional comments" class="form-control"/>
+                                </fieldset>
+                                <input type="submit" value="Upload the file on the server" class="btn btn-primary btn btn-primary-primary"/>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <h1 class="content-subhead panel-collapse"></h1>
+                
             </div>
 
 
@@ -130,7 +152,7 @@
                 <div class="alert alert-warning" role="alert">
                     <strong>Warning!</strong> No pipeline installed.
                 </div>
-                {% endif %}
+                {% else %}
                 <table id="pipesList" class="table table-striped table-bordered" cellspacing="0" width="100%">
                     <thead>
                         <tr>
@@ -141,14 +163,13 @@
                     </thead>
                     {% for p in pipes %}
                     <tr>
-                        <td style="vertical-align: middle;"><img src="{{ p["logo"] }}" style="height:30px; width:30px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i></td>
+                        <td style="vertical-align: middle;"><img src="{{ p["icon"] }}" style="height:30px; width:30px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i></td>
                         <td style="vertical-align: middle;">{{ p["description"] }}</td>
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 
                                 <a class="btn btn-default btn-xs" title="Information about the pipeline" href="http://{{ hostname }}/pipeline/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a> 
-                                <a class="btn btn-default btn-xs" title="Get Formular files information" href="{{p["form_json"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"> form</i></a> 
-                                <a class="btn btn-default btn-xs" title="Get Config files information"   href="{{p["config_json"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"> conf</i></a> 
+                                <a class="btn btn-default btn-xs" title="Get Formular files information" href="{{p["form_url"]}}" target="_blanck"><i class="fa fa-file" aria-hidden="true"> form</i></a> 
                             </div>
                             &nbsp;
                             <a class="btn btn-success btn-xs" title="Run the pipeline" data-toggle="modal"  href="#runConfigModal" onclick="javascript:init_run('{{p["id"]}}')"><i class="fa fa-play" aria-hidden="true"></i></a>
@@ -156,16 +177,18 @@
                     </tr>
                     {% endfor %}
                 </table>
+                {% endif %}
+
                 <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
-                    <form id="installPackageForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
-                        <fieldset>
-                            <div class="fileUpload btn btn-primary">
-                                <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select Pirus package</span>
-                                <input type="file" type="file" name="pipepck" id="pipepck" class="upload" />
-                            </div>
-                            <input type="submit" value="Install" class="btn btn-primary btn btn-primary-primary"/>
-                        </fieldset>
-                    </form>
+                <form id="installPackageForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
+                    <fieldset>
+                        <div class="fileUpload btn btn-default">
+                            <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select Pirus package</span>
+                            <input type="file" type="file" name="pipepck" id="pipepck" class="upload" />
+                        </div>
+                        <input type="submit" value="Install" class="btn btn-primary btn btn-primary-primary"/>
+                    </fieldset>
+                </form>
             </div>
 
 
@@ -302,7 +325,7 @@
         // 1- retrieve pipe-config
         $.ajax(
         {
-            url: "http://{{ hostname }}/dl/p/" + pipe_id + "/form.json",
+            url: "http://{{ hostname }}/pipeline/" + pipe_id + "/form.json",
             type: "GET"
         }).fail(function()
         {
@@ -339,14 +362,14 @@
             }
             
             var config = {}
-            $.ajax({ url: "http://{{ hostname }}/dl/p/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
+            $.ajax({ url: "http://{{ hostname }}/pipeline/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
             {
                 config = json["data"];
             })
 
             
             schema = JSON.parse(json_final);
-            schema["properties"]["runname"] = {
+            schema["properties"]["name"] = {
                     "title": "Nom du run",
                     "description": "Le nom qui sera affiché pour ce run.",
                     "type": "string",
