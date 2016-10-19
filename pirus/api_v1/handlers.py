@@ -9,7 +9,6 @@ import aiohttp
 import aiohttp_jinja2
 import jinja2
 import tarfile
-import shutil
 import datetime
 import time
 import uuid
@@ -314,8 +313,9 @@ class RunHandler:
             "name" : config["run"]["name"],
             "celery_id" : str(cw.id),
             "start" : str(datetime.datetime.now().timestamp()),
-            "status" : "INIT",
+            "status" : "WAITING",
             "config" : json.dumps(config),
+            "inputs" : inputs,
             "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
         })
         run.save()
@@ -425,6 +425,7 @@ class RunHandler:
     async def up_data(self, request):
         # 1- Retrieve data from request
         data = await request.json()
+        ipdb.set_trace()
         run_id = request.match_info.get('run_id', -1)
         run = Run.from_celery_id(run_id)
         if run is not None:

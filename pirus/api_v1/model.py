@@ -27,7 +27,7 @@ class PirusFile(Document):
     file_size    = StringField() 
     status       = StringField() # DL, TMP, OK
     comments     = StringField()    
-    runs         = DynamicField() # dic {key=Run_ID : val="in"|"out"} #empty mean not used
+    runs         = ListField(StringField())
     create_date  = StringField()
     tags         = ListField(StringField())
     md5sum       = StringField()

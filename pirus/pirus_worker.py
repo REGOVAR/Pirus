@@ -10,7 +10,10 @@ import logging
 import json
 import pylxd
 import subprocess
+import shutil
+import uuid
 
+from mongoengine import *
 from celery import Celery, Task
 from config import *
 from framework import *
@@ -77,7 +80,7 @@ class PirusTask(Task):
 
 
     def notify_status(self, status:str):
-        requests.post(self.notify_url, data = {"status": status} )
+        requests.post(self.notify_url, data = '{"status": "'+status+'"}' )
 
 
 
@@ -85,7 +88,7 @@ class PirusTask(Task):
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def run_pipeline(self, pipe_image_alias, config, inputs):
     from api_v1.model import Run, PirusFile
-
+    connect('pirus')
 
     self.run_celery_id = str(self.request.id)
     self.notify_url = 'http://' + HOSTNAME + '/run/notify/' + self.run_celery_id
@@ -130,17 +133,26 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
 
 
     # Init inputs
+    run = Run.from_celery_id(self.run_celery_id)
     cfile = os.path.join(ipath, "config.json")
     with open(cfile, 'w') as f:
         f.write(json.dumps(config))
         os.chmod(cfile, 0o777)
 
     for ifile in inputs:
-        pirusfile = PirusFile.from_id(ifile[0])
+        print(ifile)
+        pirusfile = PirusFile.from_id(ifile)
         if pirusfile is None :
+            print("unknow file " + ifile )
             pass
         else:
-            os.symlink(PirusFile.file_path, os.path.join(ipath, ifile[1]))
+            os.symlink(pirusfile.file_path, os.path.join(ipath, pirusfile.file_name))
+            pirusfile.status = "OK"
+            if pirusfile.runs is None:
+                pirusfile.runs = [run.celery_id]
+            else:
+                pirusfile.runs.append(run.celery_id)
+            pirusfile.save()
 
 
     # Check database, to see how many container are running and if we can create a new one for this run
@@ -205,6 +217,36 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
         raise
+
+    # Register outputs files
+    print("outputs check : ", opath)
+    for f in os.listdir(opath):
+        if os.path.isfile(f):
+            print ("output to mv : ", f)
+            file_name = str(uuid.uuid4())
+            file_path = os.path.join(FILES_DIR, file_name)
+            # 1- move file to FILE directory
+            shutil.move(os.path.join(opath, f), file_path)
+            # 2- create symlink
+            os.symlink(file_path, os.path.join(opath, f))
+
+            # 3- register in db
+            pirusfile = PirusFile()
+            pirusfile.import_data({
+                    "file_name"    : f,
+                    "file_type"    : os.path.splitext(f)[1][1:].strip().lower(),
+                    "file_path"    : file_path,
+                    "file_size"    : humansize(os.path.getsize(file_path)),
+                    "status"       : "OK",
+                    "create_date"  : str(datetime.datetime.now().timestamp()),
+                    "md5sum"       : md5(file_path),
+                    "tags"         : tags,
+                    "comments"     : comments,
+                    "runs"         : { str(run.id) : "out" }
+                })
+            pirusfile.save()
+
+
     
     # It's done :)
     self.notify_status("DONE")
