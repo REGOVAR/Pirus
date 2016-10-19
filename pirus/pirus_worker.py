@@ -77,8 +77,7 @@ class PirusTask(Task):
 
 
     def notify_status(self, status:str):
-        requests.get(self.notify_url + "/s/" + status)
-        print ("send notify status : ", self.notify_url + "/s/" + status)
+        requests.post(self.notify_url, , data = {"status": status} )
 
 
 
@@ -90,6 +89,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
 
     self.run_celery_id = str(self.request.id)
     self.notify_url = 'http://' + HOSTNAME + '/run/notify/' + self.run_celery_id
+    config["pirus"]["notify_url"] = self.notify_url
 
     # Init path
     rpath = os.path.join(RUNS_DIR, self.run_celery_id)

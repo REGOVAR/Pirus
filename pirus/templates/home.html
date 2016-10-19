@@ -113,7 +113,7 @@
                     <div class="panel panel-default">
                         <div class="panel-heading">
                             <h1 class="panel-title">
-                                <a data-toggle="collapse" href="#newFilePanel"><i class="fa fa-plus" aria-hidden="true"></i> Uload a file</a>
+                                <a data-toggle="collapse" href="#newFilePanel"><i class="fa fa-plus" aria-hidden="true"></i> Upload a file</a>
                             </h1>
                         </div>
                         <div id="newFilePanel" class="panel-collapse collapse">
@@ -201,7 +201,7 @@
                 <div class="alert alert-warning" role="alert">
                     <strong>Warning!</strong> No run have been launched.
                 </div>
-                {% endif %}
+                {% else %}
                 <table id="runsList" class="table table-striped table-bordered" cellspacing="0" width="100%">
                     <thead>
                         <tr>
@@ -252,6 +252,7 @@
                     </tr>
                     {% endfor %}
                 </table>
+                {% endif %}
             </div>
 
 

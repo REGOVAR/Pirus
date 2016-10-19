@@ -257,15 +257,17 @@ class PipelineHandler:
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
         pipe_id = request.match_info.get('pipe_id', -1)
-        # 2- Check that the user is allowed to remove the package (owner or admin)
-        # Todo
-        # 3- Check that the pipeline is not running
-        # Todo
-        # 4- Remove pipeline files
+        ipdb.set_trace()
+        if pipe_id == -1:
+            return rest_error("Unknow pipeline id " + str(pipe_id))
 
-        # 5- Remove pipeline informations in database
-        print ("DELETE pipeline/<id=" + str(pipe_id) + ">")
-        return rest_success("Uninstall of pipeline " + str(pipe_id) + " success.")
+        try:
+            pipeline = Pipeline.delete(pipe_id)
+        except Exception as error:
+            # TODO : manage error
+            return rest_error("Server Error : The following occure during installation of the pipeline. " + error.msg)
+
+        return rest_success("Pipeline " + str(pipe_id) + " deleted.")
 
 
     def get_details(self, request):
@@ -297,6 +299,8 @@ class RunHandler:
         if pipeline is None:
             return rest_error("Unknow pipeline id " + str(pipe_id))
             
+
+        config = { "run" : config, "pirus" : { "notify_url" : ""}}
         # 3- Enqueue run of the pipeline with celery
         try:
             cw = run_pipeline.delay(pipeline.lxd_alias, config, inputs)
@@ -308,7 +312,7 @@ class RunHandler:
         run = Run()
         run.import_data({
             "pipe_id" : pipe_id,
-            "name" : config["name"],
+            "name" : config["run"]["name"],
             "celery_id" : str(cw.id),
             "start" : str(datetime.datetime.now().timestamp()),
             "status" : "INIT",
@@ -384,48 +388,55 @@ class RunHandler:
         filename = request.match_info.get('filename', "")
         return self.download_file(run_id, filename)
 
-    async def up_progress(self, request):
-        # 1- Retrieve data from request
-        data = await request.json()
-        pipe_id = data["pipeline_id"]
-        config = data["config"]
-        inputs = data["inputs"]
-        run_id = request.match_info.get('run_id', -1)
-        complete = request.match_info.get('complete', None)
-        print("RunHandler[up_progress] : taskid=" + run_id, complete)
-        run = Run.from_celery_id(run_id)
-        if run is not None:
-            p = run.progress.copy()
-            p.update({"value" : complete, "label" : str(complete) + " %"})
-            # TODO FIXME : workaround to force the update of dynamic field "progress" - only updating progress dictionary doesn't work :( 
-            run.progress = 0 
-            run.save()
-            run.progress = p
-            run.save()
-            msg = '{"action":"run_progress", "data" : ' + json.dumps(run.export_client_data()) + '}'
-            print (msg)
-            notify_all(None, msg)
-        return web.Response()
+    # async def up_progress(self, request):
+    #     # 1- Retrieve data from request
+    #     data = await request.json()
+    #     pipe_id = data["pipeline_id"]
+    #     config = data["config"]
+    #     inputs = data["inputs"]
+    #     run_id = request.match_info.get('run_id', -1)
+    #     complete = request.match_info.get('complete', None)
+    #     print("RunHandler[up_progress] : taskid=" + run_id, complete)
+    #     run = Run.from_celery_id(run_id)
+    #     if run is not None:
+    #         p = run.progress.copy()
+    #         p.update({"value" : complete, "label" : str(complete) + " %"})
+    #         # TODO FIXME : workaround to force the update of dynamic field "progress" - only updating progress dictionary doesn't work :( 
+    #         run.progress = 0 
+    #         run.save()
+    #         run.progress = p
+    #         run.save()
+    #         msg = '{"action":"run_progress", "data" : ' + json.dumps(run.export_client_data()) + '}'
+    #         print (msg)
+    #         notify_all(None, msg)
+    #     return web.Response()
 
-    def up_status(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        status = request.match_info.get('status', None)
-        print("RunHandler[up_status] : taskid=" + run_id , status)
-        run = Run.from_celery_id(run_id)
-        if run is not None:
-            run.status = status
-            run.save()
-        msg = '{"action":"run_progress", "data" : ' + json.dumps(last_runs()) + '}'
-        notify_all(None, msg)
-        return web.Response()
+    # def up_status(self, request):
+    #     run_id = request.match_info.get('run_id', -1)
+    #     status = request.match_info.get('status', None)
+    #     print("RunHandler[up_status] : taskid=" + run_id , status)
+    #     run = Run.from_celery_id(run_id)
+    #     if run is not None:
+    #         run.status = status
+    #         run.save()
+    #     msg = '{"action":"run_progress", "data" : ' + json.dumps(last_runs()) + '}'
+    #     notify_all(None, msg)
+    #     return web.Response()
 
     async def up_data(self, request):
         # 1- Retrieve data from request
         data = await request.json()
-        run_id = data["pipeline_id"]
-        config = data["config"]
-        inputs = data["inputs"]
-        pass
+        run_id = request.match_info.get('run_id', -1)
+        run = Run.from_celery_id(run_id)
+        if run is not None:
+            if "progress" in data.keys():
+                run.progress = data["progress"]
+            if "status" in data.keys():
+                run.status = data["status"]
+            run.save()
+            msg = '{"action":"run_progress", "data" : ' + json.dumps(run.export_client_data()) + '}'
+            notify_all(None, msg)
+        return web.Response()
 
 
     def get_pause(self, request):

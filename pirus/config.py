@@ -49,4 +49,4 @@ MANIFEST_MANDATORY = {
 	"run"         : "The command line that will executed by pirus to run the pipeline.", 
 }
 
-PIPELINE_DEFAULT_ICON = "pipeline_icon.pngl"
+PIPELINE_DEFAULT_ICON_PATH = os.path.join(TEMPLATE_DIR , "pipeline_icon.png")

@@ -186,59 +186,71 @@ class Pipeline(Document):
         pipe = Pipeline.objects.get(pk=pipe_id)
         return pipe
 
+
+    @staticmethod
+    def delete(pipe_id):
+        pipe = Pipeline.from_id(pipe_id)
+        if pipe != None:
+            shutil.rmtree(pipe.path)
+            pipe.delete()
+
+
     @staticmethod
     def install(ppackage_name, ppackage_path, ppackage_file):
         plog.info('I: Installation of the pipeline package : ' + ppackage_path)
-        # 1- Extract pipeline package
+        # 1- Extract pipeline metadata
         try:
             tar = tarfile.open(ppackage_file)
-            tar.extractall(path=ppackage_path)
-            tar.close()
+            xdir = [info for info in tar.getmembers() if info.name == "metadata.yaml"]
+            metadata = tar.extractfile(member=xdir[0])
+            metadata = metadata.read()
+            metadata = json.loads(metadata.decode())
+            metadata = metadata["pirus"]
         except:
             # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of PirusPipeline.tar.gz.')
-            raise PirusException("XXXX", "Unable to extract package. Corrupted file or wrong format.")
-        plog.info('I:    [OK     ] Extraction of PirusPipeline.tar.gz.')
+            plog.info('E:    [FAILLED] Extraction of ' + ppackage_file)
+            raise PirusException("XXXX", "Unable to extract package. Corrupted file or wrong format")
+        plog.info('I:    [OK     ] Extraction of metadata from ' + ppackage_file)
 
-        # 2- Check module
-        metadata_file = os.path.join(ppackage_path, "metadata.yaml")
-        if not os.path.exists(metadata_file):
-            # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Manifest.json file extraction.')
-            raise PirusException("XXXX", "No manifest file found.")
-        metadata = None
-        try :
-            with open(metadata_file) as f:
-                metadata = json.load(f)
-            metadata = metadata["pirus"]
-        except :
-            # TODO : manage error
-            raise PirusException("XXXX", "Bad pirus pipeline format : Manifest file corrupted.")
-        plog.info('I:    [OK     ] Manifest.json file extraction.')
-
-        # 3- Check that mandatory fields exists
+        # 2- Check that mandatory fields exists
         missing = ""
         for k in MANIFEST_MANDATORY.keys():
             if k not in metadata.keys():
                 missing += k + ", "
         if missing != "":
             missing = missing[:-2]
-            plog.info('E:    [FAILLED] Checking validity of manifest.json file. (missing : ' + missing + ")")
-            raise PirusException("XXXX", "Bad pirus pipeline format : Mandory fields missing in the manifest.json file (missing : " + missing + ")")
-        plog.info('I:    [OK     ] Checking validity of manifest.json file.')
+            plog.info('E:    [FAILLED] Checking validity of metadata (missing : ' + missing + ")")
+            raise PirusException("XXXX", "Bad pirus pipeline format. Mandory fields missing in the metadata : " + missing)
+        plog.info('I:    [OK     ] Checking validity of metadata')
 
-        # 4- Extract pirus technicals files from the package
-        ffile_src = os.path.join(ppackage_path, "rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
-        ffile_dst = os.path.join(ppackage_path, "form.json")
-        shutil.copyfile(ffile_src, ffile_dst)
-        lfile_dst = ""
-        if "icon" in metadata.keys():
-            lfile_src = os.path.join(ppackage_path, "rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
-            lfile_dst = os.path.join(ppackage_path, os.path.basename(metadata['icon']))
-            shutil.copyfile(lfile_src, lfile_dst)
-        else:
-            lfile_dst = os.path.join(ppackage_path, "logo.png")
-            shutil.copyfile(os.path.join(TEMPLATE_DIR, "logo.png", lfile_dst))
+        # 3- Extract pirus technicals files from the tar file
+        try:
+            ffile_src = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
+            xdir = [info for info in tar.getmembers() if info.name == ffile_src]
+            file = tar.extractfile(member=xdir[0])
+            ffile_src = os.path.join(ppackage_path, ffile_src)
+            ffile_dst = os.path.join(ppackage_path, "form.json")
+            with open(ffile_dst, 'bw+') as f:
+                f.write(file.read())
+
+            lfile_src = PIPELINE_DEFAULT_ICON_PATH
+            lfile_dst = os.path.join(ppackage_path, "icon.png")
+            if "icon" in metadata.keys():
+                lfile_src = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
+                xdir = [info for info in tar.getmembers() if info.name == lfile_src]
+                file = tar.extractfile(member=xdir[0])
+                lfile_src = os.path.join(ppackage_path, lfile_src)
+                lfile_dst = os.path.join(ppackage_path, os.path.basename(metadata['icon']))
+                with open(lfile_dst, 'bw+') as f:
+                    f.write(file.read())
+            else:
+                shutil.copyfile(lfile_src, lfile_dst)
+        except:
+            # TODO : manage error + remove package file
+            plog.info('E:    [FAILLED] Extraction of ' + ppackage_file)
+            raise PirusException("XXXX", "Error occure during extraction of pipeline technical files (form.json / icon)")
+        plog.info('I:    [OK     ] Extraction of pipeline technical files (form.json / icon)')
+
 
         # 5- Save pipeline into database
         metadata.update({
