@@ -95,9 +95,9 @@
                     {% for f in files %}
                     <tr>
                         <td>{{ f["file_name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["file_size"] }}</span></td>
-                        <td>{{ f["tags"] }}</td>
-                        <td>{{ f["status"] }}</td>
-                        <td>
+                        <td style="vertical-align: middle;">{{ f["tags"] }}</td>
+                        <td style="vertical-align: middle;">{{ f["status"] }}</td>
+                        <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs disabled" title="Delete file"                onclick="javascript:delete_file('{{f["id"]}}')"><i class="fa fa-trash" aria-hidden="true"> delete</i></a> 
                                 <a class="btn btn-default btn-xs" title="Information about the file" href="http://{{ hostname }}/file/{{f["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
@@ -212,9 +212,9 @@
                         </tr>
                     </thead>
                     {% for r in runs %}
-                    <tr>{{ r["file_name"] }}<br/><span class="details">{{ r["id"] }} - {{ r["file_size"] }}</span>
+                    <tr>
                         <td>{{ r["name"] }}<br><span class="details">{{ r["id"] }}</span></td>
-                        <td id="run-{{ r["id"] }}-progress">
+                        <td id="run-{{ r["id"] }}-progress" style="vertical-align: middle;">
                             <div class="progress">
                                 <div class="progress-bar {% if r["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}" 
                                      role="progressbar" aria-valuenow="{{ r["progress"]["value"] }}" aria-valuemin="{{ r["progress"]["min"] }}" aria-valuemax="{{ r["progress"]["max"] }}" 
@@ -261,6 +261,7 @@
             <!--     -->
             <div id="api" class="tab-pane fade">
                 <h1> Comming soon</h1>
+                <a href="https://annuel.framapad.org/p/pirusAPI">Spec in progress</a>
             </div>
 
             <!--      -->
@@ -268,6 +269,10 @@
             <!--      -->
             <div id="help" class="tab-pane fade">
                 <h1> Comming soon</h1>
+                <ul>
+                    <li><a href="https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/readme.md">Pipeline creation</a></li>
+                    <li><a href="https://github.com/REGOVAR/Pirus/tree/master/docs">Doc</a></li>
+                </ul>
             </div>
 
 
@@ -423,13 +428,12 @@
                     data = jsonFile["data"];
                     for (var i=0; i<data.length; i++)
                     {
-                        inputs[i] = (data[i]["id"], data[i]["file_name"])
+                        inputs[i] = data[i]["id"]
                     }
                 })
 
             config = JSON.stringify(config, null, 4)
             inputs = JSON.stringify(inputs, null, 4)
-
 
             $.ajax(
             {
