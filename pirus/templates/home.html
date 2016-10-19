@@ -211,41 +211,41 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    {% for p in runs %}
-                    <tr>
-                        <td>{{ p["runname"] }}<br><span style="color:@gray-light">id : {{ p["id"] }}</span></td>
-                        <td id="run-{{ p["id"] }}-progress">
+                    {% for r in runs %}
+                    <tr>{{ r["file_name"] }}<br/><span class="details">{{ r["id"] }} - {{ r["file_size"] }}</span>
+                        <td>{{ r["name"] }}<br><span class="details">{{ r["id"] }}</span></td>
+                        <td id="run-{{ r["id"] }}-progress">
                             <div class="progress">
-                                <div class="progress-bar {% if p["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if p["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if p["status"] == "DONE" %}progress-bar-success{% endif -%}" 
-                                     role="progressbar" aria-valuenow="{{ p["progress"]["value"] }}" aria-valuemin="0" aria-valuemax="100" 
-                                     style="min-width: 2em; width: {{ p["progress"]["value"] }}%;">
-                                    {{ p["progress"]["value"] }} %
+                                <div class="progress-bar {% if r["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}" 
+                                     role="progressbar" aria-valuenow="{{ r["progress"]["value"] }}" aria-valuemin="{{ r["progress"]["min"] }}" aria-valuemax="{{ r["progress"]["max"] }}" 
+                                     style="min-width: 2em; width: {{ r["progress"]["value"] }}%;">
+                                    {{ r["progress"]["value"] }} %
                                 </div>
                             </div>
                         </td>
-                        <td style="vertical-align: middle;">{{ p["status"] }}</td>
+                        <td style="vertical-align: middle;">{{ r["status"] }}</td>
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
-                                <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
-                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> log</i></a>
-                                <a class="btn btn-default btn-xs" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> err</i></a>
+                                <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{r["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
+                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/log" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> log</i></a>
+                                <a class="btn btn-default btn-xs" title="Error log file" href="http://{{ hostname }}/run/{{r["id"]}}/err" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> err</i></a>
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-default btn-xs" title="Browse input files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_inputs('{{p["id"]}}')">
+                                <a class="btn btn-default btn-xs" title="Browse input files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_inputs('{{r["id"]}}')">
                                     <i class="fa fa-folder-open-o" aria-hidden="true"> inputs</i></a> 
-                                <a class="btn btn-default btn-xs" title="Browse output files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_outputs('{{p["id"]}}')">
+                                <a class="btn btn-default btn-xs" title="Browse output files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_outputs('{{r["id"]}}')">
                                     <i class="fa fa-folder-open-o" aria-hidden="true"> outputs</i></a> 
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-warning btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Error log file" href="http://{{ hostname }}/run/{{p["id"]}}/err" target="_blanck">
+                                <a class="btn btn-warning btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Error log file" href="http://{{ hostname }}/run/{{r["id"]}}/err" target="_blanck">
                                     <i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
-                                <a class="btn btn-default btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Information about the run" href="http://{{ hostname }}/run/{{p["id"]}}" target="_blanck">
+                                <a class="btn btn-default btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Information about the run" href="http://{{ hostname }}/run/{{r["id"]}}" target="_blanck">
                                     <i class="fa fa-stop" aria-hidden="true"></i></a> 
-                                <a class="btn btn-default btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck">
+                                <a class="btn btn-default btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/log" target="_blanck">
                                     <i class="fa fa-play" aria-hidden="true"></i></a>
-                                <a class="btn btn-default btn-xs {% if p["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{p["id"]}}/log" target="_blanck">
+                                <a class="btn btn-default btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/log" target="_blanck">
                                     <i class="fa fa-pause" aria-hidden="true"></i></a>
                             </div>
                         </td>

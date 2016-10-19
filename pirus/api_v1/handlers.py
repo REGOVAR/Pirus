@@ -257,12 +257,11 @@ class PipelineHandler:
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
         pipe_id = request.match_info.get('pipe_id', -1)
-        ipdb.set_trace()
         if pipe_id == -1:
             return rest_error("Unknow pipeline id " + str(pipe_id))
 
         try:
-            pipeline = Pipeline.delete(pipe_id)
+            pipeline = Pipeline.remove(pipe_id)
         except Exception as error:
             # TODO : manage error
             return rest_error("Server Error : The following occure during installation of the pipeline. " + error.msg)

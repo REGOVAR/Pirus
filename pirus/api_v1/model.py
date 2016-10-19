@@ -188,7 +188,7 @@ class Pipeline(Document):
 
 
     @staticmethod
-    def delete(pipe_id):
+    def remove(pipe_id):
         pipe = Pipeline.from_id(pipe_id)
         if pipe != None:
             shutil.rmtree(pipe.path)

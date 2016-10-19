@@ -77,7 +77,7 @@ class PirusTask(Task):
 
 
     def notify_status(self, status:str):
-        requests.post(self.notify_url, , data = {"status": status} )
+        requests.post(self.notify_url, data = {"status": status} )
 
 
 
