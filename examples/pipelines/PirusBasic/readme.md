@@ -40,7 +40,13 @@ This document explain you how to build a simple pipeline image for Pirus.
 
 ## TODO : export image as file and edit image conf to create a piruse package installable on any pirus server
 
+    lxc image export PirusSimple
+    # following command shall be done as root to avoid image corruption 
+    # (as it will try to create symlink to computer resource in /dev folder by example)
+    sudo tar xf a847ed7......3c4e2987e75.tar.gz
+
     # add folowing informations into the metadata.yaml file
+    sudo nano metadata.yaml
     "pirus":
     {
         "name" : "Pirus Simple",
@@ -57,6 +63,8 @@ This document explain you how to build a simple pipeline image for Pirus.
         "form" : "/pipeline/form.json",
         "icon" : "/pipeline/logo.png"
     }
-
-    # You can repackage the image in tar.xz, to save space    
-    tar -cJf PirusSimple.tar.xz metadata.yaml rootfs templates
+    
+    # You can repackage the image in tar.xz, to save space
+    sudo tar cfJ PirusSimple.tar.xz metadata.yaml rootfs templates
+    sudo rm -fr metadata.yaml rootfs templates
+    sudo chown olivier:olivier PirusSimple.tar.xz
