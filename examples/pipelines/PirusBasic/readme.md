@@ -47,6 +47,8 @@ This document explain you how to build a simple pipeline image for Pirus.
 
     # add folowing informations into the metadata.yaml file
     sudo nano metadata.yaml
+    
+    # si json
     "pirus":
     {
         "name" : "Pirus Simple",
@@ -63,6 +65,21 @@ This document explain you how to build a simple pipeline image for Pirus.
         "form" : "/pipeline/form.json",
         "icon" : "/pipeline/logo.png"
     }
+    # si yaml
+    pirus:
+        name: "Pirus Simple"
+        description: "Test pipeline for pirus"
+        version : "1.0.0"
+        pirus_api: "1.0.0"
+        license: "AGPL"
+        developers: ["Olivier GUEUDELOT"]
+        run: "/pipeline/run/run.sh"
+        logs: "/pipeline/logs"
+        inputs: "/pipeline/inputs"
+        outputs: "/pipeline/outputs"
+        databases: "/pipeline/db"
+        form: "/pipeline/form.json"
+
     
     # You can repackage the image in tar.xz, to save space
     sudo tar cfJ PirusSimple.tar.xz metadata.yaml rootfs templates
