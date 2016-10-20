@@ -21,7 +21,7 @@ This document explain you how to build a simple pipeline image for Pirus.
     mkdir /pipeline/db
     
     # need curl if you want to notify server with the progress of your run
-    apt install curl
+    apt install curl jq nano
     
     # the script run.sh is the "entry point" of your run
     echo "curl ${NOTIFY}50" > /pipeline/run/run.sh
