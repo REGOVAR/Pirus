@@ -10,11 +10,11 @@ HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
 
 # FILESYSTEM
-FILES_DIR     = "/var/tmp/pirus_" + VERSION + "/files"
-TEMP_DIR      = "/var/tmp/pirus_" + VERSION + "/downloads"
-DATABASES_DIR = "/var/tmp/pirus_" + VERSION + "/databases"
-PIPELINES_DIR = "/var/tmp/pirus_" + VERSION + "/pipelines"
-RUNS_DIR      = "/var/tmp/pirus_" + VERSION + "/runs"
+FILES_DIR     = "/tmp/pirus_" + VERSION + "/files"
+TEMP_DIR      = "/tmp/pirus_" + VERSION + "/downloads"
+DATABASES_DIR = "/tmp/pirus_" + VERSION + "/databases"
+PIPELINES_DIR = "/tmp/pirus_" + VERSION + "/pipelines"
+RUNS_DIR      = "/tmp/pirus_" + VERSION + "/runs"
 
 
 # AUTOCOMPUTED VALUES

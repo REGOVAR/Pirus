@@ -8,6 +8,7 @@ import sys
 import time
 import logging
 import json
+import yaml
 import subprocess
 import tarfile
 import shutil
@@ -204,7 +205,12 @@ class Pipeline(Document):
             xdir = [info for info in tar.getmembers() if info.name == "metadata.yaml"]
             metadata = tar.extractfile(member=xdir[0])
             metadata = metadata.read()
-            metadata = json.loads(metadata.decode())
+            try:
+                # try json ?
+                metadata = json.loads(metadata.decode())
+            except:
+                # try yaml ?
+                metadata = yaml.load(metadata)
             metadata = metadata["pirus"]
         except:
             # TODO : manage error + remove package file
