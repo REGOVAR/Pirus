@@ -1,0 +1,3 @@
+[submodule "tus"]
+	path = tus
+	url = https://github.com/matthoskins1980/Flask-Tus.git
