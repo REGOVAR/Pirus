@@ -216,7 +216,7 @@
                         <td>{{ r["name"] }}<br><span class="details">{{ r["id"] }}</span></td>
                         <td id="run-{{ r["id"] }}-progress" style="vertical-align: middle;">
                             <div class="progress">
-                                <div class="progress-bar {% if r["status"] == "FAILLED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}" 
+                                <div class="progress-bar {% if r["status"] == "FAILLED" or r["status"] == "CANCELLED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}{% if r["status"] == "WAITING" or r["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
                                      role="progressbar" aria-valuenow="{{ r["progress"]["value"] }}" aria-valuemin="{{ r["progress"]["min"] }}" aria-valuemax="{{ r["progress"]["max"] }}" 
                                      style="min-width: 2em; width: {{ r["progress"]["value"] }}%;">
                                     {{ r["progress"]["value"] }} %

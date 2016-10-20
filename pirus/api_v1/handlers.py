@@ -425,7 +425,6 @@ class RunHandler:
     async def up_data(self, request):
         # 1- Retrieve data from request
         data = await request.json()
-        ipdb.set_trace()
         run_id = request.match_info.get('run_id', -1)
         run = Run.from_celery_id(run_id)
         if run is not None:
