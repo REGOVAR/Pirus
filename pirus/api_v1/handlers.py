@@ -6,6 +6,7 @@ import ipdb;
 import os
 import json
 import aiohttp
+
 import aiohttp_jinja2
 import jinja2
 import tarfile
@@ -15,6 +16,7 @@ import uuid
 
 
 from aiohttp import web, MultiDict
+from urllib.parse import parse_qsl
 from mongoengine import *
 
 
@@ -107,10 +109,12 @@ class FileHandler:
 
     def get(self, request):
         # 1- retrieve query parameters
-        r_range  = request.match_info.get('range', "0-" + str(RANGE_DEFAULT))
-        r_fields = request.match_info.get('fields', None)
-        r_order  = request.match_info.get('order', None)
-        r_sort   = request.match_info.get('sort', None)
+        ipdb.set_trace()
+        get_params = MultiDict(parse_qsl(request.query_string))
+        r_range  = get_params.get('range', "0-" + str(RANGE_DEFAULT))
+        r_fields = get_params.get('fields', None)
+        r_order  = get_params.get('order', None)
+        r_sort   = get_params.get('sort', None)
         r_filter = request.match_info.get('filter', None)
 
         # 2- fields to extract
@@ -122,7 +126,7 @@ class FileHandler:
                 if f in PirusFile.public_fields:
                     fields.append(f)
         if len(fields) == 0:
-            return rest_error("No valid fields provided : " + request.match_info.get('fields'))
+            return rest_error("No valid fields provided : " + get_params.get('fields'))
 
         # 3- Build json query for mongoengine
         query = {}
@@ -154,10 +158,10 @@ class FileHandler:
             offset = int(r_range[0])
             limit = int(r_range[1])
         except:
-            return rest_error("No valid range provided : " + request.match_info.get('range') )
+            return rest_error("No valid range provided : " + get_params.get('range') )
 
         # 6- Return result of the query !
-        return [p.export_client_data(fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]]
+        return rest_success([p.export_client_data(fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]])
 
 
 
