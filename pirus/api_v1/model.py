@@ -22,10 +22,12 @@ from framework import *
 
 
 class PirusFile(Document):
-    file_name    = StringField(required=True)
-    file_type    = StringField()
-    file_path    = StringField()
-    file_size    = StringField() 
+    public_fields = ["name", "type", "size", "status", "comments", "runs", "create_date", "tags", "md5sum", "url", "id"]
+
+    name         = StringField(required=True)
+    type         = StringField()
+    path         = StringField()
+    size         = StringField() 
     status       = StringField() # DL, TMP, OK
     comments     = StringField()    
     runs         = ListField(StringField())
@@ -34,14 +36,14 @@ class PirusFile(Document):
     md5sum       = StringField()
 
     def __str__(self):
-        return "<InputFile " + self.file_name + " (" + self.file_size + ") : " + self.file_path + ">"
+        return self.name + " (" + self.size + ") : " + self.path
 
     def export_server_data(self):
         return {
-            "file_name"    : self.file_name,
-            "file_type"    : self.file_type,
-            "file_path"    : self.file_path,
-            "file_size"    : self.file_size,
+            "name"         : self.name,
+            "type"         : self.type,
+            "path"         : self.path,
+            "size"         : self.size,
             "status"       : self.status,
             "comments"     : self.comments,
             "runs"         : self.runs,
@@ -51,27 +53,27 @@ class PirusFile(Document):
             "id": str(self.id)
         }
 
-    def export_client_data(self):
-        return {
-            "file_name"    : self.file_name,
-            "file_type"    : self.file_type,
-            "file_size"    : self.file_size,
-            "status"       : self.status,
-            "comments"     : self.comments,
-            "runs"         : self.runs,
-            "create_date"  : self.create_date,
-            "tags"         : self.tags,
-            "md5sum"       : self.md5sum,
-            "url"          : "http://" + HOSTNAME + "/dl/f/" + str(self.id),
-            "id": str(self.id)
-        }
+    def export_client_data(self, fields=None):
+        result = {}
+        if fields is None:
+            fields = PirusFile.public_fields
+
+        for k in fields:
+            if k == "id":
+                result.update({"id" : str(self.id)})
+            elif k == "url":
+                result.update({"id" : "http://" + HOSTNAME + "/dl/f/" + str(self.id)})
+            else:
+                result.update({k : eval("self."+k)})
+
+        return result
 
     def import_data(self, data):
         try:
-            self.file_name     = data['file_name']
-            self.file_type     = data["file_type"]
-            self.file_path     = data['file_path']
-            self.file_size     = data["file_size"]
+            self.name          = data['name']
+            self.type          = data["type"]
+            self.path          = data['path']
+            self.size          = data["size"]
             self.status        = data["status"]
             self.create_date   = data["create_date"]
             self.md5sum        = data['md5sum']
@@ -86,10 +88,10 @@ class PirusFile(Document):
         return self
 
     @staticmethod
-    def from_id(ifile_id):
-        if not ObjectId.is_valid(ifile_id):
+    def from_id(iid):
+        if not ObjectId.is_valid(iid):
             return None;
-        file = PirusFile.objects.get(pk=ifile_id)
+        file = PirusFile.objects.get(pk=iid)
         return file
 
 
@@ -231,26 +233,26 @@ class Pipeline(Document):
 
         # 3- Extract pirus technicals files from the tar file
         try:
-            ffile_src = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
-            xdir = [info for info in tar.getmembers() if info.name == ffile_src]
+            fsrc = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
+            xdir = [info for info in tar.getmembers() if info.name == fsrc]
             file = tar.extractfile(member=xdir[0])
-            ffile_src = os.path.join(ppackage_path, ffile_src)
-            ffile_dst = os.path.join(ppackage_path, "form.json")
-            with open(ffile_dst, 'bw+') as f:
+            fsrc = os.path.join(ppackage_path, fsrc)
+            fdst = os.path.join(ppackage_path, "form.json")
+            with open(fdst, 'bw+') as f:
                 f.write(file.read())
 
-            lfile_src = PIPELINE_DEFAULT_ICON_PATH
-            lfile_dst = os.path.join(ppackage_path, "icon.png")
+            lsrc = PIPELINE_DEFAULT_ICON_PATH
+            ldst = os.path.join(ppackage_path, "icon.png")
             if "icon" in metadata.keys():
-                lfile_src = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
-                xdir = [info for info in tar.getmembers() if info.name == lfile_src]
+                lsrc = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
+                xdir = [info for info in tar.getmembers() if info.name == lsrc]
                 file = tar.extractfile(member=xdir[0])
-                lfile_src = os.path.join(ppackage_path, lfile_src)
-                lfile_dst = os.path.join(ppackage_path, os.path.basename(metadata['icon']))
-                with open(lfile_dst, 'bw+') as f:
+                lsrc = os.path.join(ppackage_path, lsrc)
+                ldst = os.path.join(ppackage_path, os.path.basename(metadata['icon']))
+                with open(ldst, 'bw+') as f:
                     f.write(file.read())
             else:
-                shutil.copyfile(lfile_src, lfile_dst)
+                shutil.copyfile(lsrc, ldst)
         except:
             # TODO : manage error + remove package file
             plog.info('E:    [FAILLED] Extraction of ' + ppackage_file)
@@ -266,8 +268,8 @@ class Pipeline(Document):
             "lpath"     : metadata["logs"],
             "run"       : metadata["run"],
             "dpath"     : metadata["databases"],
-            "ffile"     : ffile_dst,
-            "lfile"     : lfile_dst,
+            "ffile"     : fdst,
+            "lfile"     : ldst,
             "lxd_alias" : "pirus-pipe-" + ppackage_name
         })
 
@@ -311,7 +313,7 @@ class Pipeline(Document):
 
         # 7- Clean directory
         try:
-            keep = [ppackage_file, ffile_dst, lfile_dst]
+            keep = [ppackage_file, fdst, ldst]
             for f in os.listdir(ppackage_path):
                 fullpath = os.path.join(ppackage_path, f)
                 if fullpath not in keep:

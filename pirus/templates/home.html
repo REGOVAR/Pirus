@@ -94,7 +94,7 @@
 
                     {% for f in files %}
                     <tr>
-                        <td>{{ f["file_name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["file_size"] }}</span></td>
+                        <td>{{ f["name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["size"] }}</span></td>
                         <td style="vertical-align: middle;">{{ f["tags"] }}</td>
                         <td style="vertical-align: middle;">{{ f["status"] }}</td>
                         <td style="vertical-align: middle;">
@@ -361,7 +361,7 @@
                     data = jsonFile["data"];
                     for (var i=0; i<data.length; i++)
                     {
-                        json_files[i] = data[i]["file_name"] + " [" + data[i]["id"] + "]"
+                        json_files[i] = data[i]["name"] + " [" + data[i]["id"] + "]"
                     }
                 })
                 json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))

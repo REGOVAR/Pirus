@@ -99,19 +99,73 @@ class WebsiteHandler:
         return rest_success([f for f in os.listdir(DATABASES_DIR) if os.path.isfile(os.path.join(DATABASES_DIR, f))])
 
 
-
+ 
 
 class FileHandler:
     def __init__(self):
         pass
 
     def get(self, request):
-        return rest_success([i for i in list_files()])
+        # 1- retrieve query parameters
+        r_range  = request.match_info.get('range', "0-" + str(RANGE_DEFAULT))
+        r_fields = request.match_info.get('fields', None)
+        r_order  = request.match_info.get('order', None)
+        r_sort   = request.match_info.get('sort', None)
+        r_filter = request.match_info.get('filter', None)
+
+        # 2- fields to extract
+        fields = PirusFile.public_fields
+        if r_fields is not None:
+            fields = []
+            for f in r_fields.split(','):
+                f = f.strip().lower()
+                if f in PirusFile.public_fields:
+                    fields.append(f)
+        if len(fields) == 0:
+            return rest_error("No valid fields provided : " + request.match_info.get('fields'))
+
+        # 3- Build json query for mongoengine
+        query = {}
+        if r_filter is not None:
+            query = {}
+            for k in fields:
+                query.update({k : {'$regex': r_filter}})
+
+        # 4- Order
+        order = ['-create_date', "name"]
+        if r_sort is not None and r_order is not None:
+            r_sort = r_sort.split(',')
+            r_order = r_order.split(',')
+            if len(r_sort) == len(r_order):
+                order = []
+                for i in range(0, len(r_sort)):
+                    f = r_sort[i].strip().lower()
+                    if f in PirusFile.public_fields:
+                        if r_order[i] == "desc":
+                            f = "-" + f
+                        order.append(f)
+        order = tuple(order)
+
+        # 5- limit
+        r_range = r_range.split("-")
+        offset=0
+        limit=RANGE_DEFAULT
+        try:
+            offset = int(r_range[0])
+            limit = int(r_range[1])
+        except:
+            return rest_error("No valid range provided : " + request.match_info.get('range') )
+
+        # 6- Return result of the query !
+        return [p.export_client_data(fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]]
+
+
+
 
     async def upload_simple(self, request):
-        file_name = str(uuid.uuid4())
-        file_path = os.path.join(FILES_DIR, file_name)
-        plog.info('I: Start file uploading : ' + file_path)
+        name = str(uuid.uuid4())
+        path = os.path.join(FILES_DIR, name)
+        plog.info('I: Start file uploading : ' + path)
         # 1- Retrieve file from post request
         data = await request.post()
         uploadFile = data['uploadFile']
@@ -128,27 +182,27 @@ class FileHandler:
                     tags.append(i2)
         # 2- save file on the server 
         try:
-            with open(file_path, 'bw+') as f:
+            with open(path, 'bw+') as f:
                 f.write(uploadFile.file.read())
         except:
             # TODO : manage error
             raise PirusException("XXXX", "Bad pirus pipeline format : Manifest file corrupted.")
-        plog.info('I: File uploading done : ' + file_path)
+        plog.info('I: File uploading done : ' + path)
         # 3- save file on the database
         pirusfile = PirusFile()
         pirusfile.import_data({
-                "file_name"    : uploadFile.filename,
-                "file_type"    : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
-                "file_path"    : file_path,
-                "file_size"    : humansize(os.path.getsize(file_path)),
+                "name"    : uploadFile.filename,
+                "type"    : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
+                "path"    : path,
+                "size"    : humansize(os.path.getsize(path)),
                 "status"       : "TMP", # DOWNLOADING, TMP, OK
                 "create_date"  : str(datetime.datetime.now().timestamp()),
-                "md5sum"       : md5(file_path),
+                "md5sum"       : md5(path),
                 "tags"         : tags,
                 "comments"     : comments
             })
         pirusfile.save()
-        plog.info('I: File ' + file_name + ' (' + pirusfile.file_size + ') available at ' + file_path)
+        plog.info('I: File ' + name + ' (' + pirusfile.size + ') available at ' + path)
         return rest_success(pirusfile.export_client_data())
 
 
@@ -159,27 +213,27 @@ class FileHandler:
     def delete(self, request):
         return rest_success({})
 
-    def get_file_details(self, request):
-        file_id = request.match_info.get('file_id', -1)
-        if file_id == -1:
-            return rest_error("Unknow file id " + str(file_id))
-        return rest_success(PirusFile.objects.get(pk=file_id).export_client_data())
+    def get_details(self, request):
+        id = request.match_info.get('id', -1)
+        if id == -1:
+            return rest_error("Unknow file id " + str(id))
+        return rest_success(PirusFile.objects.get(pk=id).export_client_data())
 
 
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
-        file_id = request.match_info.get('file_id', -1)
-        if file_id == -1:
+        id = request.match_info.get('id', -1)
+        if id == -1:
             return rest_error("No file id provided")
-        pirus_file = PirusFile.from_id(file_id)
+        pirus_file = PirusFile.from_id(id)
         if pirus_file == None:
-            return rest_error("File with id " + str(file_id) + "doesn't exits.")
+            return rest_error("File with id " + str(id) + "doesn't exits.")
         file = None
-        if os.path.isfile(pirus_file.file_path):
-            with open(pirus_file.file_path, 'br') as content_file:
+        if os.path.isfile(pirus_file.path):
+            with open(pirus_file.path, 'br') as content_file:
                 file = content_file.read()
         return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file.file_name}),
+            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file.name}),
             body=file
         )
 
@@ -379,7 +433,7 @@ class RunHandler:
 
     def get_files(self, request):
         run_id  = request.match_info.get('run_id',  -1)
-        file_id = request.match_info.get('file_id', -1)
+        id = request.match_info.get('id', -1)
         return self.download_file(run_id, "outputs/io.json")
 
     def get_file(self, request):
