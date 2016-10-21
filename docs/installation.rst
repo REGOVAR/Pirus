@@ -7,6 +7,7 @@ You need to have `MongoDB <https://docs.mongodb.com/manual/tutorial/install-mong
         sudo apt install rabbitmq-server
         sudo apt install mongodb
         sudo apt install lxd
+	sudo apt install redis-server
 	
 You may need also to install ::
 
@@ -20,4 +21,21 @@ You can then clone the repository and install requirements ::
         virtualenv -p /usr/bin/python3.5 venv
         source venv/bin/activate
         pip install -r requirements.txt
+
+
+	
+=========
+Run pirus
+=========
+
+Your need first to run celery ::
+
+	cd pirus/
+	celery worker -A pirus_worker --loglevel=info -Q PirusQueue
+
+So you can run pirus ::
+
+	python app.y 
+
+Check if pirus is working there : http://localhost:8080/v1/www
  
