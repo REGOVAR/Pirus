@@ -109,13 +109,12 @@ class FileHandler:
 
     def get(self, request):
         # 1- retrieve query parameters
-        ipdb.set_trace()
         get_params = MultiDict(parse_qsl(request.query_string))
         r_range  = get_params.get('range', "0-" + str(RANGE_DEFAULT))
         r_fields = get_params.get('fields', None)
         r_order  = get_params.get('order', None)
         r_sort   = get_params.get('sort', None)
-        r_filter = request.match_info.get('filter', None)
+        r_filter = get_params.get('filter', None)
 
         # 2- fields to extract
         fields = PirusFile.public_fields
@@ -131,9 +130,9 @@ class FileHandler:
         # 3- Build json query for mongoengine
         query = {}
         if r_filter is not None:
-            query = {}
+            query = {"$or" : []}
             for k in fields:
-                query.update({k : {'$regex': r_filter}})
+                query["$or"].append({k : {'$regex': r_filter}})
 
         # 4- Order
         order = ['-create_date', "name"]
