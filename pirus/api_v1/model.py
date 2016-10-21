@@ -22,7 +22,7 @@ from framework import *
 
 
 class PirusFile(Document):
-    public_fields = ["name", "type", "size", "status", "comments", "runs", "create_date", "tags", "md5sum", "url", "id"]
+    public_fields = ["id", "name", "type", "size", "status", "comments", "runs", "create_date", "tags", "md5sum", "url"]
 
     name         = StringField(required=True)
     type         = StringField()
@@ -35,8 +35,10 @@ class PirusFile(Document):
     tags         = ListField(StringField())
     md5sum       = StringField()
 
+
     def __str__(self):
         return self.name + " (" + self.size + ") : " + self.path
+
 
     def export_server_data(self):
         return {
@@ -53,6 +55,7 @@ class PirusFile(Document):
             "id": str(self.id)
         }
 
+
     def export_client_data(self, fields=None):
         result = {}
         if fields is None:
@@ -65,8 +68,8 @@ class PirusFile(Document):
                 result.update({"id" : "http://" + HOSTNAME + "/dl/f/" + str(self.id)})
             else:
                 result.update({k : eval("self."+k)})
-
         return result
+
 
     def import_data(self, data):
         try:
@@ -87,6 +90,7 @@ class PirusFile(Document):
             raise ValidationError('Invalid input file: missing ' + e.args[0])
         return self
 
+
     @staticmethod
     def from_id(iid):
         if not ObjectId.is_valid(iid):
@@ -98,7 +102,11 @@ class PirusFile(Document):
 
 
 
+
+
 class Pipeline(Document):
+    public_fields = ["name", "description", "version", "pirus_api", "license", "developers", "id"]
+
     name           = StringField(required=True)
     lxd_alias      = StringField()
     description    = StringField()
@@ -117,7 +125,8 @@ class Pipeline(Document):
     lfile          = StringField()
 
     def __str__(self):
-        return "<Pipeline " + self.path + ">"
+        return self.path
+
 
     def export_server_data(self):
         return {
@@ -139,18 +148,24 @@ class Pipeline(Document):
             "lfile"          : self.lfile
         }
 
-    def export_client_data(self):
-        return {
-            "id"             : str(self.id),
-            "name"           : self.name,
-            "description"    : self.description,
-            "version"        : self.version,
-            "pirus_api"      : self.pirus_api,
-            "license"        : self.license,
-            "developers"     : self.developers,
-            "form_url"       : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json",
-            "icon"           : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.lfile)
-        }
+
+    def export_client_data(self, fields=None):
+        result = {}
+        if fields is None:
+            fields = PirusFile.public_fields
+
+        for k in fields:
+            if k == "id":
+                result.update({"id" : str(self.id)})
+            elif k == "form_url":
+                result.update({"id" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"})
+            elif k == "icon":
+                result.update({"id" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.lfile)})
+            else:
+                result.update({k : eval("self."+k)})
+        return result
+
+
 
     def import_data(self, data):
         try:
@@ -346,25 +361,28 @@ class Pipeline(Document):
 
 
 class Run(Document):
-    pipe_id   = ObjectIdField(required=True)
-    celery_id = StringField(required=True)
-    name      = StringField(requiered=True)
-    config    = DynamicField(required=True)
-    start     = StringField(required=True)
-    end       = StringField()
-    status    = StringField()
-    inputs    = ListField(StringField())
-    outputs   = StringField()
-    progress  = DynamicField(required=True)
+    public_fields = ["id", "pipe_id", "name", "config", "start", "end", "status", "inputs", "outputs", "progress"]
+
+    pipe_id    = ObjectIdField(required=True)
+    private_id = StringField(required=True)   # = private_id
+    name       = StringField(requiered=True)
+    config     = DynamicField(required=True)
+    start      = StringField(required=True)
+    end        = StringField()
+    status     = StringField()
+    inputs     = ListField(StringField())
+    outputs    = StringField()
+    progress   = DynamicField(required=True)
 
     def __str__(self):
-        return "<Run " + str(self.id) + ">"
+        return str(self.id)
+
 
     def export_server_data(self):
         return {
             "id"        : str(self.id),
             "pipe_id"   : str(self.pipe_id),
-            "celery_id" : self.celery_id,
+            "private_id" : self.private_id,
             "name"      : self.name,
             "config"    : self.config,
             "start"     : self.start,
@@ -375,25 +393,26 @@ class Run(Document):
             "progress"  : self.progress
         }
 
-    def export_client_data(self):
-        return {
-            "id"        : str(self.id),
-            "pipe_id"   : str(self.pipe_id),
-            "celery_id" : self.celery_id,
-            "name"      : self.name,
-            "config"    : self.config,
-            "start"     : self.start,
-            "end"       : self.end,
-            "status"    : self.status,
-            "inputs"    : self.inputs,
-            "outputs"   : self.outputs,
-            "progress"  : self.progress
-        }
+
+    def export_client_data(self, fields=None):
+        result = {}
+        if fields is None:
+            fields = PirusFile.public_fields
+
+        for k in fields:
+            if k == "id":
+                result.update({"id" : str(self.id)})
+            elif k == "pipe_id":
+                result.update({"id" : str(self.pipe_id)})
+            else:
+                result.update({k : eval("self."+k)})
+        return result
+
 
     def import_data(self, data):
         try:
             self.pipe_id   = data['pipe_id']
-            self.celery_id = data['celery_id']
+            self.private_id = data['private_id']
             self.name      = data['name']
             self.config    = data['config']
             self.start     = data['start']
@@ -417,6 +436,6 @@ class Run(Document):
         return run
 
     @staticmethod
-    def from_celery_id(run_id):
-        run = Run.objects.get(celery_id=run_id)
+    def from_private_id(run_id):
+        run = Run.objects.get(private_id=run_id)
         return run

@@ -90,12 +90,12 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     from api_v1.model import Run, PirusFile
     connect('pirus')
 
-    self.run_celery_id = str(self.request.id)
-    self.notify_url = 'http://' + HOSTNAME + '/run/notify/' + self.run_celery_id
+    self.run_private_id = str(self.request.id)
+    self.notify_url = 'http://' + HOSTNAME + '/run/notify/' + self.run_private_id
     config["pirus"]["notify_url"] = self.notify_url
 
     # Init path
-    rpath = os.path.join(RUNS_DIR, self.run_celery_id)
+    rpath = os.path.join(RUNS_DIR, self.run_private_id)
     ipath = os.path.join(rpath, "inputs")
     opath = os.path.join(rpath, "outputs")
     lpath = os.path.join(rpath, "logs")
@@ -121,7 +121,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     
     wlog.info('INIT    | Pirus worker initialisation : ')
     wlog.info('INIT    |  - LXD alias : ' + pipe_image_alias)
-    wlog.info('INIT    |  - Run ID  : ' + self.run_celery_id)
+    wlog.info('INIT    |  - Run ID  : ' + self.run_private_id)
     wlog.info('INIT    | Directory created : ')
     wlog.info('INIT    |  - inputs  : ' + ipath)
     wlog.info('INIT    |  - outputs : ' + opath)
@@ -133,7 +133,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
 
 
     # Init inputs
-    run = Run.from_celery_id(self.run_celery_id)
+    run = Run.from_private_id(self.run_private_id)
     cfile = os.path.join(ipath, "config.json")
     with open(cfile, 'w') as f:
         f.write(json.dumps(config))
@@ -149,9 +149,9 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
             os.symlink(pirusfile.file_path, os.path.join(ipath, pirusfile.file_name))
             pirusfile.status = "OK"
             if pirusfile.runs is None:
-                pirusfile.runs = [run.celery_id]
+                pirusfile.runs = [run.private_id]
             else:
-                pirusfile.runs.append(run.celery_id)
+                pirusfile.runs.append(run.private_id)
             pirusfile.save()
 
 
@@ -162,7 +162,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         while len(lxd_client.containers.all()) >= LXD_MAX:
             time.sleep(1)
         wlog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
-        c_name = LXD_PREFIX + "-" + self.run_celery_id
+        c_name = LXD_PREFIX + "-" + self.run_private_id
     except:
         wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("FAILLED")
