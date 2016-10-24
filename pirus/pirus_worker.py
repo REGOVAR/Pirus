@@ -87,7 +87,7 @@ class PirusTask(Task):
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def run_pipeline(self, pipe_image_alias, config, inputs):
-    from api_v1.model import Run, PirusFile
+    from api_v1.model import Run, PirusFile, Pipeline
     connect('pirus')
 
     self.run_private_id = str(self.request.id)
@@ -120,7 +120,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     # elog = logging.getLogger('run_err')
     
     wlog.info('INIT    | Pirus worker initialisation : ')
-    wlog.info('INIT    |  - LXD alias : ' + pipe_image_alias)
+    wlog.info('INIT    |  - LXD alias : ' + pipeline.lxd_alias)
     wlog.info('INIT    |  - Run ID  : ' + self.run_private_id)
     wlog.info('INIT    | Directory created : ')
     wlog.info('INIT    |  - inputs  : ' + ipath)
@@ -170,18 +170,18 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
 
 
     # Setting up the lxc container for the run
-    wlog.info('SETUP   | Creation of the LXC container from image "' + pipe_image_alias + '"')
+    wlog.info('SETUP   | Creation of the LXC container from image "' + pipeline.lxd_alias + '"')
     self.notify_status("BUILDING")
     try:
         # create container
-        execute(["lxc", "init", pipe_image_alias, c_name])
+        execute(["lxc", "init", pipeline.lxd_alias, c_name])
         # set up env
         execute(["lxc", "config", "set", c_name, "environment.NOTIFY", self.notify_url ])
         # set up devices
-        execute(["lxc", "config", "device", "add", c_name, "pirus_inputs",  "disk", "source="+ipath,         "path=pipeline/inputs", "readonly=True"])
-        execute(["lxc", "config", "device", "add", c_name, "pirus_outputs", "disk", "source="+opath,         "path=pipeline/outputs"])
-        execute(["lxc", "config", "device", "add", c_name, "pirus_logs",    "disk", "source="+lpath,         "path=pipeline/logs"])
-        execute(["lxc", "config", "device", "add", c_name, "pirus_db",      "disk", "source="+DATABASES_DIR, "path=pipeline/db",     "readonly=True"])
+        execute(["lxc", "config", "device", "add", c_name, "pirus_inputs",  "disk", "source="+ipath,         "path=" + pipeline.ipath[1:], "readonly=True"])
+        execute(["lxc", "config", "device", "add", c_name, "pirus_outputs", "disk", "source="+opath,         "path=" + pipeline.opath[1:]])
+        execute(["lxc", "config", "device", "add", c_name, "pirus_logs",    "disk", "source="+lpath,         "path=" + pipeline.lpath[1:]])
+        execute(["lxc", "config", "device", "add", c_name, "pirus_db",      "disk", "source="+DATABASES_DIR, "path=" + pipeline.dpath[1:], "readonly=True"])
         # TODO => create symlink in ipath directory
         # TODO => copy config file of the run in the ipath directory
     except:

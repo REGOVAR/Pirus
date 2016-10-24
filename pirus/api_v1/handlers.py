@@ -222,7 +222,7 @@ class FileHandler:
         return rest_success({})
 
     def get_details(self, request):
-        id = request.match_info.get('id', -1)
+        id = request.match_info.get('file_id', -1)
         if id == -1:
             return rest_error("Unknow file id " + str(id))
         return rest_success(PirusFile.objects.get(pk=id).export_client_data())
@@ -230,7 +230,7 @@ class FileHandler:
 
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
-        id = request.match_info.get('id', -1)
+        id = request.match_info.get('file_id', -1)
         if id == -1:
             return rest_error("No file id provided")
         pirus_file = PirusFile.from_id(id)
@@ -341,6 +341,8 @@ class PipelineHandler:
 
 
 
+
+
 class RunHandler:
     def __init__(self):
         pass
@@ -366,7 +368,7 @@ class RunHandler:
         config = { "run" : config, "pirus" : { "notify_url" : ""}}
         # 3- Enqueue run of the pipeline with celery
         try:
-            cw = run_pipeline.delay(pipeline.lxd_alias, config, inputs)
+            cw = run_pipeline.delay(pipeline, config, inputs)
             plog.info('RUNNING | New Run start : ' + str(cw.id))
         except:
             # TODO : clean filesystem

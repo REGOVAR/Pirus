@@ -65,7 +65,7 @@ class PirusFile(Document):
             if k == "id":
                 result.update({"id" : str(self.id)})
             elif k == "url":
-                result.update({"id" : "http://" + HOSTNAME + "/dl/f/" + str(self.id)})
+                result.update({"url" : "http://" + HOSTNAME + "/dl/f/" + str(self.id)})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -152,15 +152,15 @@ class Pipeline(Document):
     def export_client_data(self, fields=None):
         result = {}
         if fields is None:
-            fields = PirusFile.public_fields
+            fields = Pipeline.public_fields
 
         for k in fields:
             if k == "id":
                 result.update({"id" : str(self.id)})
             elif k == "form_url":
-                result.update({"id" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"})
+                result.update({"form_url" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"})
             elif k == "icon":
-                result.update({"id" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.lfile)})
+                result.update({"icon" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.lfile)})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -397,13 +397,13 @@ class Run(Document):
     def export_client_data(self, fields=None):
         result = {}
         if fields is None:
-            fields = PirusFile.public_fields
+            fields = Run.public_fields
 
         for k in fields:
             if k == "id":
                 result.update({"id" : str(self.id)})
             elif k == "pipe_id":
-                result.update({"id" : str(self.pipe_id)})
+                result.update({"pipe_id" : str(self.pipe_id)})
             else:
                 result.update({k : eval("self."+k)})
         return result
