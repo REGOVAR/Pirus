@@ -1,3 +1,7 @@
+REST Api
+########
+
+
 Ressources
 ==========
 
@@ -28,7 +32,6 @@ Ressources
 **Run :**
  - **pipeline_id :** unique id of the *Pipeline*
  - **id :** unique id of the run
- - **celery_id :** "81b003c3-73db-483d-b6e8-d636b7def10e
  - **progress :**
  - **value :** value of the progress 
  - **label :** label displayed in the progress bar
@@ -62,6 +65,33 @@ Runs
 ----
   ``GET /run/``
      Description of the get run
+     Response example ::
+     
+    {
+        data: 
+        {
+            progress: 
+            {
+                value: "100",
+                label: "100 / 100",
+                max: "100",
+                min: "0"
+            },
+            end: null,
+            name: "t2",
+            config: "<json serialized>",
+            inputs: [
+                "580897120e95cb2d349fd3ce"
+            ],
+            id: "5808a28b0e95cb328c35c5c3",
+            status: "DONE",
+            outputs: null,
+            pipe_id: "5808a25a0e95cb328c35c5c2",
+            start: "1476960907.384298"
+        },
+        success: true
+    }
+    
 
   ``POST /run/``
      Description of the get run
@@ -75,10 +105,10 @@ Runs
   ``GET /run/{run_id}/config``
      Description of the get run
 
-  ``GET /run/{run_id}/stdout { limit }``
+  ``GET /run/{run_id}/stdout``
      Description of the get run
 
-  ``GET /run/{run_id}/stderr { limit }``
+  ``GET /run/{run_id}/stderr``
      Description of the get run
 
   ``GET /run/{run_id}/log { limit }``
