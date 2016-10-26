@@ -107,6 +107,7 @@ class PirusFile(Document):
 class Pipeline(Document):
     public_fields = ["name", "description", "version", "pirus_api", "license", "developers", "id"]
 
+
     name           = StringField(required=True)
     lxd_alias      = StringField()
     description    = StringField()
@@ -237,28 +238,38 @@ class Pipeline(Document):
 
         # 2- Check that mandatory fields exists
         missing = ""
-        for k in MANIFEST_MANDATORY.keys():
+        for k in MANIFEST["mandatory"].keys():
             if k not in metadata.keys():
-                missing += k + ", "
+                missing += k + ", "                
         if missing != "":
             missing = missing[:-2]
             plog.info('E:    [FAILLED] Checking validity of metadata (missing : ' + missing + ")")
             raise PirusException("XXXX", "Bad pirus pipeline format. Mandory fields missing in the metadata : " + missing)
         plog.info('I:    [OK     ] Checking validity of metadata')
 
+        # 3- Default valeu for optional fields in mandatory file
+        for k in MANIFEST["default"].keys():
+            if k not in metadata.keys():
+                metadata[k] = MANIFEST["default"][k]
+
         # 3- Extract pirus technicals files from the tar file
         try:
-            fsrc = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
-            xdir = [info for info in tar.getmembers() if info.name == fsrc]
-            file = tar.extractfile(member=xdir[0])
-            fsrc = os.path.join(ppackage_path, fsrc)
-            fdst = os.path.join(ppackage_path, "form.json")
-            with open(fdst, 'bw+') as f:
-                f.write(file.read())
+            if metadata["form"] is not None:
+                fsrc = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
+                xdir = [info for info in tar.getmembers() if info.name == fsrc]
+                file = tar.extractfile(member=xdir[0])
+                fsrc = os.path.join(ppackage_path, fsrc)
+                fdst = os.path.join(ppackage_path, "form.json")
+                with open(fdst, 'bw+') as f:
+                    f.write(file.read())
+            else :
+                fdst = os.path.join(ppackage_path, "form.json")
+                with open(fdst, 'w+') as f:
+                    f.write("{}")
 
             lsrc = PIPELINE_DEFAULT_ICON_PATH
             ldst = os.path.join(ppackage_path, "icon.png")
-            if "icon" in metadata.keys():
+            if metadata["icon"] is not None:
                 lsrc = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
                 xdir = [info for info in tar.getmembers() if info.name == lsrc]
                 file = tar.extractfile(member=xdir[0])

@@ -42,16 +42,22 @@ LXD_HDW_CONF = {
 }
 
 
-# MANIFEST MANDATORY
-MANIFEST_MANDATORY = {
-	"name"        : "The displayed name of the pirus pipeline", 
-	"pirus_api"   : "The version of the pirus api used by the pipeline", 
-	"inputs"      : "The absolute path in the pipeline lxd container to the directory where input files have to be mount.", 
-	"outputs"     : "The absolute path in the pipeline lxd container to the directory where output files will be write.", 
-	"logs"        : "The absolute path in the pipeline lxd container to the directory where logs files will be write. Note that out.log, err.log and pirus.log will be automatically created in this directory.",
-	"databases"   : "The absolute path in the pipeline lxd container to the directory where common databases have to be mount.",
-	"form"        : "The absolute path in the pipeline lxd container to the json file use to describe the form that will be used by the user to configure the run.",
-	"run"         : "The command line that will executed by pirus to run the pipeline.", 
+# MANIFEST fields in the pirus pipeline package
+MANIFEST = {
+	"mandatory" : {
+		"name"        : "The displayed name of the pirus pipeline", 
+		"run"         : "The command line that will executed by pirus to run the pipeline.", 
+	},
+	"default" : {
+		"pirus_api"   : VERSION,               # The version of the pirus api used by the pipeline
+		"inputs"      : "/pipeline/inputs",    # The absolute path in the pipeline lxd container to the directory where input files have to be mount.
+		"outputs"     : "/pipeline/outputs",   # The absolute path in the pipeline lxd container to the directory where output files will be write.
+		"logs"        : "/pipeline/logs",      # The absolute path in the pipeline lxd container to the directory where logs files will be write. Note that out.log, err.log and pirus.log will be automatically created in this directory.
+		"databases"   : "/pipeline/databases", # The absolute path in the pipeline lxd container to the directory where common databases have to be mount.
+		"form"        : None,                  # The absolute path in the pipeline lxd container to the json file use to describe the form that will be used by the user to configure the run.
+		"icon"		  : None,                  # The absolute path in the pipeline lxd container to the icon of the pipe.
+	}
 }
+
 
 PIPELINE_DEFAULT_ICON_PATH = os.path.join(TEMPLATE_DIR , "pipeline_icon.png")
