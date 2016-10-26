@@ -176,7 +176,7 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         # create container
         execute(["lxc", "init", pipeline.lxd_alias, c_name])
         # set up env
-        execute(["lxc", "config", "set", c_name, "environment.NOTIFY", self.notify_url ])
+        execute(["lxc", "config", "set", c_name, "environment.PIRUS_NOTIFY_URL", self.notify_url ])
         # set up devices
         execute(["lxc", "config", "device", "add", c_name, "pirus_inputs",  "disk", "source="+ipath,         "path=" + pipeline.ipath[1:], "readonly=True"])
         execute(["lxc", "config", "device", "add", c_name, "pirus_outputs", "disk", "source="+opath,         "path=" + pipeline.opath[1:]])
