@@ -65,8 +65,9 @@ Runs
 ----
   ``GET /run/``
      Description of the get run
-     Response example ::
      
+     Response example:
+.. code-block:: python
     {
         data: 
         {
@@ -91,7 +92,7 @@ Runs
         },
         success: true
     }
-    
+
 
   ``POST /run/``
      Description of the get run
