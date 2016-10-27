@@ -57,16 +57,18 @@ app.router.add_route('GET',    "/v1/run/{run_id}/{filename}", fileHdl.dl_run_fil
 
 app.router.add_route('GET',    "/v1/file", fileHdl.get)
 app.router.add_route('POST',   "/v1/file", fileHdl.upload_simple)
-app.router.add_route('PATCH',  "/v1/bigfile", fileHdl.upload_resumable)
 app.router.add_route('DELETE', "/v1/file/{file_id}", fileHdl.delete)
 app.router.add_route('PUT',    "/v1/file/{file_id}", fileHdl.edit_infos)
 app.router.add_route('GET',    "/v1/file/{file_id}", fileHdl.get_details)
 app.router.add_route('GET',    "/v1/dl/f/{file_id}", fileHdl.dl_file)
-#app.router.add_route('GET',    "/v1/dl/p/{pipe_id}/{filename}", fileHdl.dl_pipe_file)
-#app.router.add_route('GET',    "/v1/dl/r/{run_id}/{filename}", fileHdl.dl_run_file)
 
-#app.router.add_route('GET',    "/v1/run/notify/{run_id}/p/{complete}", runHdl.up_progress)
-#app.router.add_route('GET',    "/v1/run/notify/{run_id}/s/{status}", runHdl.up_status)
+#app.router.add_route('GET',    "/v1/bigfile",           fileHdl.tus_upload_init_get)
+app.router.add_route('POST',   "/v1/bigfile",           fileHdl.tus_upload_init)
+app.router.add_route('OPTIONS',"/v1/bigfile",           fileHdl.tus_config)
+app.router.add_route('HEAD',   "/v1/bigfile/{file_id}", fileHdl.tus_upload_resume)
+app.router.add_route('PATCH',  "/v1/bigfile/{file_id}", fileHdl.tus_upload_chunk)
+app.router.add_route('DELETE', "/v1/bigfile/{file_id}", fileHdl.tus_upload_delete)
+
 app.router.add_route('POST',    "/v1/run/notify/{run_id}", runHdl.up_data)
 
 app.router.add_static('/assets', TEMPLATE_DIR)

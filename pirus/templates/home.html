@@ -137,8 +137,82 @@
                         </div>
                     </div>
                 </div>
-                <h1 class="content-subhead panel-collapse"></h1>
-                
+                <h1 class="content-subhead panel-collapse"></h1>  
+
+
+
+
+
+
+                 <div>
+      <h1>tus-js-client demo</h1>
+
+      <p>
+        For a prettier demo please go to the
+        <a href="http://tus.io/demo.html">tus.io</a> website.
+        This demo is just here to aid developers.
+      </p>
+
+      <div class="alert alert-warining hidden" id="support-alert">
+        <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client. The buttons below may work but probably will fail silently.
+      </div>
+
+      <br />
+
+      <table>
+        <tr>
+          <td>
+            <label for="endpoint">
+              Upload endpoint:
+            </label>
+          </td>
+          <td>
+            <input type="text" id="endpoint" name="endpoint" value="http://{{ hostname }}/bigfile">
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label for="chunksize">
+              Chunk size (bytes):
+            </label>
+          </td>
+          <td>
+            <input type="number" id="chunksize" name="chunksize" value="1024">
+          </td>
+        </tr>
+        
+      </table>
+      
+      <br />
+
+      <input type="file" id="tusFileInput">
+
+      <br />
+      <br />
+
+      <div class="row">
+        <div class="span8">
+          <div class="progress progress-striped progress-success">
+            <div class="bar" style="width: 0%;"></div>
+          </div>
+        </div>
+        <div class="span4">
+          <button class="btn btn-danger stop disabled" id="stop-btn"><i class="icon-white icon-stop"></i> abort upload</button>
+        </div>
+      </div>
+
+      <hr />
+      <h3>Uploads</h3>
+      <p>
+        Succesful uploads will be listed here. Try one!
+      </p>
+
+    </div>
+
+
+
+
+
             </div>
 
 
@@ -217,8 +291,8 @@
                         <td id="run-{{ r["id"] }}-progress" style="vertical-align: middle;">
                             <div class="progress">
                                 <div class="progress-bar {% if r["status"] == "FAILLED" or r["status"] == "CANCELLED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}{% if r["status"] == "WAITING" or r["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
-                                     role="progressbar" aria-valuenow="{{ r["progress"]["value"] }}" aria-valuemin="{{ r["progress"]["min"] }}" aria-valuemax="{{ r["progress"]["max"] }}" 
-                                     style="min-width: 2em; width: {{ r["progress"]["value"] }}%;">
+                                    role="progressbar" aria-valuenow="{{ r["progress"]["value"] }}" aria-valuemin="{{ r["progress"]["min"] }}" aria-valuemax="{{ r["progress"]["max"] }}" 
+                                    style="min-width: 2em; width: {{ r["progress"]["value"] }}%;">
                                     {{ r["progress"]["value"] }} %
                                 </div>
                             </div>
@@ -250,11 +324,10 @@
                             </div>
                         </td>
                     </tr>
-                    {% endfor %}
-                </table>
-                {% endif %}
+                {% endfor %}
+            </table>
+            {% endif %}
             </div>
-
 
             <!--     -->
             <!-- API -->
@@ -297,7 +370,7 @@
                 </div>
             </div>
 
-                
+
             <div class="modal fade" id="runConfigModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -320,126 +393,96 @@
     </div>
 
 
-  <script>
+    <script src="/assets/tus.js"></script>
+    <script src="/assets/tus_client.js"></script>
+    <script>
 
-    var ws = new WebSocket('ws://{{ hostname }}/ws');
-    var $message = $('#message');
-    var BrutusinForms = brutusin["json-forms"];
-    var bf, schema
-    function init_run(pipe_id)
-    {
-        // 1- retrieve pipe-config
-        $.ajax(
+        var ws = new WebSocket('ws://{{ hostname }}/ws');
+        var $message = $('#message');
+        var BrutusinForms = brutusin["json-forms"];
+        var bf, schema
+        function init_run(pipe_id)
         {
-            url: "http://{{ hostname }}/pipeline/" + pipe_id + "/form.json",
-            type: "GET"
-        }).fail(function()
-        {
-            alert( "ERROR" );
-        }).done(function(json) 
-        {
-            var json_final = json
-            var json_db = []
-            var json_files = []
-
-            if (json.indexOf("__PIRUS_DB_ALL__") != -1)
+            // 1- retrieve pipe-config
+            $.ajax(
             {
-
-                // get list of database
-                $.ajax({ url: "http://{{ hostname }}/db", type: "GET", async: false}).done(function(jsonDB)
-                {
-                    json_db = jsonDB["data"];
-                })
-                json_final = json_final.replace(/"__PIRUS_DB_ALL__"/g, JSON.stringify(json_db))
-            }
-            if (json.indexOf("__PIRUS_INPUT_FILES__") != -1)
+                url: "http://{{ hostname }}/pipeline/" + pipe_id + "/form.json",
+                type: "GET"
+            }).fail(function()
             {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                var json_final = json
+                var json_db = []
+                var json_files = []
 
-                // get list of database
-                $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                if (json.indexOf("__PIRUS_DB_ALL__") != -1)
                 {
-                    data = jsonFile["data"];
-                    for (var i=0; i<data.length; i++)
+
+                    // get list of database
+                    $.ajax({ url: "http://{{ hostname }}/db", type: "GET", async: false}).done(function(jsonDB)
                     {
-                        json_files[i] = data[i]["name"] + " [" + data[i]["id"] + "]"
-                    }
-                })
-                json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
-            }
-            
-            var config = {}
-            $.ajax({ url: "http://{{ hostname }}/pipeline/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
-            {
-                config = json["data"];
-            })
+                        json_db = jsonDB["data"];
+                    })
+                    json_final = json_final.replace(/"__PIRUS_DB_ALL__"/g, JSON.stringify(json_db))
+                }
+                if (json.indexOf("__PIRUS_INPUT_FILES__") != -1)
+                {
 
-            
-            schema = JSON.parse(json_final);
-            schema["properties"]["name"] = {
+                    // get list of database
+                    $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                    {
+                        data = jsonFile["data"];
+                        for (var i=0; i<data.length; i++)
+                        {
+                            json_files[i] = data[i]["name"] + " [" + data[i]["id"] + "]"
+                        }
+                    })
+                    json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
+                }
+                
+                var config = {}
+                $.ajax({ url: "http://{{ hostname }}/pipeline/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
+                {
+                    config = json["data"];
+                })
+
+                
+                schema = JSON.parse(json_final);
+                schema["properties"]["name"] = {
                     "title": "Nom du run",
                     "description": "Le nom qui sera affiché pour ce run.",
                     "type": "string",
                     "required": true
                 }
-            
-            bf = BrutusinForms.create(schema);
-            var container = document.getElementById('runFormContainer');
-            container.innerText = ""
-            bf.render(container, null);
+                
+                bf = BrutusinForms.create(schema);
+                var container = document.getElementById('runFormContainer');
+                container.innerText = ""
+                bf.render(container, null);
 
-            var container = document.getElementById('runButtonContainer');
-            container.innerHTML = '<a class="btn btn-primary" title="Run the pipeline" onclick="javascript:post_run('+ "'" + pipe_id + "'" + ')"><i class="fa fa-play" aria-hidden="true"></i></a>'
-        })
-    }
-
-
+                var container = document.getElementById('runButtonContainer');
+                container.innerHTML = '<a class="btn btn-primary" title="Run the pipeline" onclick="javascript:post_run('+ "'" + pipe_id + "'" + ')"><i class="fa fa-play" aria-hidden="true"></i></a>'
+            })
+        }
 
 
 
-    $( "#username" ).change(function()
-    {
-        ws.send( "{\"action\" : \"user_info\", \"data\" : { \"username\" : \"" + $( this ).val() + "\"}}" );
-    });
 
 
-    function delete_pipeline(pipe_id)
-    {
-        $.ajax(
+        $( "#username" ).change(function()
         {
-            url: "http://{{ hostname }}/pipeline/" + pipe_id,
-            type: "DELETE"
-        }).fail(function()
-        {
-            alert( "ERROR" );
-        }).done(function(txt) 
-        {
-            alert( "SUCCESS\n" + txt);
-        })
-    }
-    function post_run(pipe_id)
-    {
-        if (bf.validate())
-        {
-            config = bf.getData()
-            inputs = []
+            ws.send( "{\"action\" : \"user_info\", \"data\" : { \"username\" : \"" + $( this ).val() + "\"}}" );
+        });
 
-            $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
-                {
-                    data = jsonFile["data"];
-                    for (var i=0; i<data.length; i++)
-                    {
-                        inputs[i] = data[i]["id"]
-                    }
-                })
 
-            config = JSON.stringify(config, null, 4)
-            inputs = JSON.stringify(inputs, null, 4)
-
+        function delete_pipeline(pipe_id)
+        {
             $.ajax(
             {
-                url: "http://{{ hostname }}/run",
-                type: "POST",
-                data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + config + ", \"inputs\" : " + inputs + "}"
+                url: "http://{{ hostname }}/pipeline/" + pipe_id,
+                type: "DELETE"
             }).fail(function()
             {
                 alert( "ERROR" );
@@ -448,79 +491,111 @@
                 alert( "SUCCESS\n" + txt);
             })
         }
-    }
-
-
-    $(document).ready(function()
-    {
-        update_datagrid();
-    });
-
-
-
-    function update_datagrid()
-    {
-        $('#pipesList').DataTable();
-        $('#runsList').DataTable();
-        $('#filesList').DataTable();
-    }
-
-    function ws_new_pipeline(msg_data)
-    {
-
-    }
-
-    function ws_new_run(msg_data)
-    {
-
-    }
-
-    function ws_run_progress(msg_data)
-    {
-        var tdElement = $("#run-" + msg_data["id"] + "-progress")
-        style="progress-bar "
-        if (msg_data["id"] == "FAILLED") { style += "progress-bar-danger"}
-        else if (msg_data["id"] == "DONE") { style += "progress-bar-success"}
-        else if (msg_data["id"] == "PAUSE") { style += "progress-bar-warning"}
-        else if (msg_data["id"] == "RUN") { style += "progress-bar-striped active"}
-        else if (msg_data["id"] == "WAITING") { style += "progress-bar-warning progress-bar-striped active"}
-
-
-
-        html = "<div class='progress'>\
-                    <div class='" + style + "' role='progressbar' aria-valuenow='" + msg_data["progress"]["value"] + "' aria-valuemin='0' aria-valuemax='100' \
-                         style='min-width: 2em; width: " + msg_data["progress"]["value"] + "%;'>\
-                         " + msg_data["progress"]["label"] + " \
-                    </div>\
-                </div>"
-
-
-        tdElement.html(html)
-
-        // Todo : update controls
-    }
-
-
-
-    ws.onopen = function()
-    {
-        $message.attr("class", 'label label-success');
-        $message.text('open');
-
-        ws.send('{"action" : "authent", "data" : "Chrome"}')
-    };
-    ws.onmessage = function(ev)
-    {
-        $message.attr("class", 'label label-info');
-        var json = JSON.parse(ev.data);
-
-        dt = new Date()
-        $message.html(dt.toLocaleTimeString() + ' ' + json["action"] + ' : ' + json["data"]);
-
-
-        switch(json["action"])
+        function post_run(pipe_id)
         {
-            case 'online_user':
+            if (bf.validate())
+            {
+                config = bf.getData()
+                inputs = []
+
+                $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                {
+                    data = jsonFile["data"];
+                    for (var i=0; i<data.length; i++)
+                    {
+                        inputs[i] = data[i]["id"]
+                    }
+                })
+
+                config = JSON.stringify(config, null, 4)
+                inputs = JSON.stringify(inputs, null, 4)
+
+                $.ajax(
+                {
+                    url: "http://{{ hostname }}/run",
+                    type: "POST",
+                    data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + config + ", \"inputs\" : " + inputs + "}"
+                }).fail(function()
+                {
+                    alert( "ERROR" );
+                }).done(function(txt) 
+                {
+                    alert( "SUCCESS\n" + txt);
+                })
+            }
+        }
+
+
+        $(document).ready(function()
+        {
+            update_datagrid();
+        });
+
+
+
+        function update_datagrid()
+        {
+            $('#pipesList').DataTable();
+            $('#runsList').DataTable();
+            $('#filesList').DataTable();
+        }
+
+        function ws_new_pipeline(msg_data)
+        {
+
+        }
+
+        function ws_new_run(msg_data)
+        {
+
+        }
+
+        function ws_run_progress(msg_data)
+        {
+            var tdElement = $("#run-" + msg_data["id"] + "-progress")
+            style="progress-bar "
+            if (msg_data["id"] == "FAILLED") { style += "progress-bar-danger"}
+                else if (msg_data["id"] == "DONE") { style += "progress-bar-success"}
+                    else if (msg_data["id"] == "PAUSE") { style += "progress-bar-warning"}
+                        else if (msg_data["id"] == "RUN") { style += "progress-bar-striped active"}
+                            else if (msg_data["id"] == "WAITING") { style += "progress-bar-warning progress-bar-striped active"}
+
+
+
+                                html = "<div class='progress'>\
+                            <div class='" + style + "' role='progressbar' aria-valuenow='" + msg_data["progress"]["value"] + "' aria-valuemin='0' aria-valuemax='100' \
+                            style='min-width: 2em; width: " + msg_data["progress"]["value"] + "%;'>\
+                            " + msg_data["progress"]["label"] + " \
+                        </div>\
+                    </div>"
+
+
+                    tdElement.html(html)
+
+            // Todo : update controls
+        }
+
+
+
+        ws.onopen = function()
+        {
+            $message.attr("class", 'label label-success');
+            $message.text('open');
+
+            ws.send('{"action" : "authent", "data" : "Chrome"}')
+        };
+        ws.onmessage = function(ev)
+        {
+            $message.attr("class", 'label label-info');
+            var json = JSON.parse(ev.data);
+
+            dt = new Date()
+            $message.html(dt.toLocaleTimeString() + ' ' + json["action"] + ' : ' + json["data"]);
+
+
+            switch(json["action"])
+            {
+                case 'online_user':
                 var uTxt = ""
                 $.each(json["data"], function (idx, val)
                 {
@@ -529,27 +604,24 @@
                 $('#userList').html(uTxt)
                 break;
 
-            case 'run_progress':
+                case 'run_progress':
                 ws_run_progress(json["data"])
                 break;
 
-            // Todo
-            // - PipeLst_update
-        }
-    };
-    ws.onclose = function(ev)
-    {
-        $message.attr("class", 'label label-important');
-        $message.text('closed');
-    };
-    ws.onerror = function(ev)
-    {
-        $message.attr("class", 'label label-warning');
-        $message.text('error occurred');
-    };
-  </script>
-
-
-
+                // Todo
+                // - PipeLst_update
+            }
+        };
+        ws.onclose = function(ev)
+        {
+            $message.attr("class", 'label label-important');
+            $message.text('closed');
+        };
+        ws.onerror = function(ev)
+        {
+            $message.attr("class", 'label label-warning');
+            $message.text('error occurred');
+        };
+    </script>
 </body>
 </html> 

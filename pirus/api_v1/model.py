@@ -22,18 +22,20 @@ from framework import *
 
 
 class PirusFile(Document):
-    public_fields = ["id", "name", "type", "size", "status", "comments", "runs", "create_date", "tags", "md5sum", "url"]
+    public_fields = ["id", "name", "type", "size", "size_total", "status", "comments", "runs", "create_date", "tags", "md5sum", "url"]
 
-    name         = StringField(required=True)
-    type         = StringField()
-    path         = StringField()
-    size         = StringField() 
-    status       = StringField() # DL, TMP, OK
-    comments     = StringField()    
-    runs         = ListField(StringField())
-    create_date  = StringField()
-    tags         = ListField(StringField())
-    md5sum       = StringField()
+    name          = StringField(required=True)
+    type          = StringField()
+    path          = StringField()
+    size          = IntField() 
+    size_total    = IntField()
+    upload_offset = IntField()
+    status        = StringField() # UPLOADING, UPLOADED, PAUSE, ERROR, CHECKED
+    comments      = StringField()    
+    runs          = ListField(StringField())
+    create_date   = StringField()
+    tags          = ListField(StringField())
+    md5sum        = StringField()
 
 
     def __str__(self):
@@ -42,19 +44,25 @@ class PirusFile(Document):
 
     def export_server_data(self):
         return {
-            "name"         : self.name,
-            "type"         : self.type,
-            "path"         : self.path,
-            "size"         : self.size,
-            "status"       : self.status,
-            "comments"     : self.comments,
-            "runs"         : self.runs,
-            "create_date"  : self.create_date,
-            "tags"         : self.tags,
-            "md5sum"       : self.md5sum,
-            "id": str(self.id)
+            "name"          : self.name,
+            "type"          : self.type,
+            "path"          : self.path,
+            "size"          : self.size,
+            "size_total"    : self.size_total,
+            "upload_offset" : self.upload_offset,
+            "status"        : self.status,
+            "comments"      : self.comments,
+            "runs"          : self.runs,
+            "create_date"   : self.create_date,
+            "tags"          : self.tags,
+            "md5sum"        : self.md5sum,
+            "id"            : str(self.id)
         }
 
+    def url(self):
+        return "http://" + HOSTNAME + "/dl/f/" + str(self.id)
+    def upload_url(self):
+        return "http://" + HOSTNAME + "/bigfile/" + str(self.id)
 
     def export_client_data(self, fields=None):
         result = {}
@@ -65,7 +73,7 @@ class PirusFile(Document):
             if k == "id":
                 result.update({"id" : str(self.id)})
             elif k == "url":
-                result.update({"url" : "http://" + HOSTNAME + "/dl/f/" + str(self.id)})
+                result.update({"url" : self.url()})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -76,12 +84,17 @@ class PirusFile(Document):
             self.name          = data['name']
             self.type          = data["type"]
             self.path          = data['path']
-            self.size          = data["size"]
+            self.size          = int(data["size"])
+            self.size_total    = int(data["size_total"])
             self.status        = data["status"]
             self.create_date   = data["create_date"]
             self.md5sum        = data['md5sum']
             if "runs" in data.keys():
                 self.runs      = data["runs"]
+            if "upload_offset" in data.keys():
+                self.upload_offset = int(data["upload_offset"])
+            else:
+                self.upload_offset = 0
             if "tags" in data.keys():
                 self.tags      = data['tags']
             if "comments" in data.keys():
@@ -92,11 +105,18 @@ class PirusFile(Document):
 
 
     @staticmethod
-    def from_id(iid):
-        if not ObjectId.is_valid(iid):
+    def from_id(id):
+        if not ObjectId.is_valid(id):
             return None;
-        file = PirusFile.objects.get(pk=iid)
+        file = PirusFile.objects.get(pk=id)
         return file
+
+    @staticmethod
+    def remove(id):
+        file = PirusFile.from_id(id)
+        if file != None:
+            shutil.rmtree(file.path)
+            file.delete()
 
 
 

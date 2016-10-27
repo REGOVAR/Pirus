@@ -24,6 +24,7 @@ from config import *
 from framework import *
 from pirus_worker import run_pipeline
 from api_v1.model import *
+from api_v1.tus import tus_manager
 
 
 
@@ -114,7 +115,14 @@ def process_generic_get(query_string, allowed_fields):
 
 
 
-
+def get_file_data(request):
+    id = request.match_info.get('file_id', -1)
+    if id == -1:
+        return rest_error("Unknow file id " + str(id))
+    pirus_file = PirusFile.from_id(id)
+    if pirus_file == None:
+        return rest_error("File with id " + str(id) + "doesn't exits.")
+    return pirus_file
 
 
 
@@ -169,7 +177,7 @@ class FileHandler:
 
 
 
-
+    # "Simple" upload (synchrone and not resumable)
     async def upload_simple(self, request):
         name = str(uuid.uuid4())
         path = os.path.join(FILES_DIR, name)
@@ -199,24 +207,50 @@ class FileHandler:
         # 3- save file on the database
         pirusfile = PirusFile()
         pirusfile.import_data({
-                "name"    : uploadFile.filename,
-                "type"    : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
-                "path"    : path,
-                "size"    : humansize(os.path.getsize(path)),
-                "status"       : "TMP", # DOWNLOADING, TMP, OK
-                "create_date"  : str(datetime.datetime.now().timestamp()),
-                "md5sum"       : md5(path),
-                "tags"         : tags,
-                "comments"     : comments
+                "name"          : uploadFile.filename,
+                "type"          : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
+                "path"          : path,
+                "size"          : int(os.path.getsize(path)),
+                "size_total"    : int(os.path.getsize(path)),
+                "status"        : "UPLOADED",
+                "create_date"   : str(datetime.datetime.now().timestamp()),
+                "md5sum"        : md5(path),
+                "tags"          : tags,
+                "comments"      : comments
             })
         pirusfile.save()
         plog.info('I: File ' + name + ' (' + pirusfile.size + ') available at ' + path)
         return rest_success(pirusfile.export_client_data())
 
 
-    def upload_resumable(self, request):
-        # do something else
-        return 'End of upload'
+
+
+
+    # Resumable download implement the TUS.IO protocol.
+    def tus_config(self, request):
+        print ("tus_config", request)
+        return tus_manager.options(request)
+
+    def tus_upload_init(self, request):
+        print ("tus_upload_init", request)
+        return tus_manager.creation(request)
+
+    def tus_upload_resume(self, request):
+        print ("tus_upload_resume", request)
+        return tus_manager.resume(request)
+
+    async def tus_upload_chunk(self, request):
+        print ("tus_upload_chunk", request)
+        result = await tus_manager.patch(request)
+        return result
+
+    def tus_upload_delete(self, request):
+        print ("tus_upload_delete", request)
+        return tus_manager.delete_file(request)
+
+
+
+
 
     def delete(self, request):
         return rest_success({})
