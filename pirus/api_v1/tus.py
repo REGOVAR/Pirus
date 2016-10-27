@@ -82,7 +82,7 @@ class TusManager:
         # file transfer complete, rename from resource id to actual filename
         if pfile.size_total == pfile.upload_offset: 
             pfile.status = "DOWNLOADED"
-            pfile.path = os.path.join(FILES_DIR, filename)
+            pfile.path = os.path.join(FILES_DIR, str(uuid.uuid4()))
             os.rename(upload_file_path, pfile.path)
             pfile.save()
         headers = { 'Upload-Offset' : str(pfile.upload_offset), 'Tus-Temp-Filename' : str(pfile.id) }
