@@ -1,6 +1,13 @@
-============
+Quick guide
+###########
+
+Deploye and use Pirus in 5 minutes.
+
+
 Installation
 ============
+
+
 
 You need to have `MongoDB <https://docs.mongodb.com/manual/tutorial/install-mongodb-on-ubuntu/>`_ and `RabbitMQ <https://www.rabbitmq.com/install-debian.html>`_ installed on your system :: 
 
@@ -24,7 +31,7 @@ You can then clone the repository and install requirements ::
 
 
 	
-=========
+
 Run pirus
 =========
 
@@ -39,3 +46,28 @@ So you can run pirus ::
 
 Check if pirus is working there : http://localhost:8080/v1/www
  
+
+
+
+Upload a file
+=============
+
+todo
+
+
+Install a Pipeline
+==================
+
+
+todo
+
+
+
+Launch a Run
+============
+
+todo
+
+
+
+
