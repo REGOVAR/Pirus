@@ -13,7 +13,7 @@ Contents:
    
    
    presentation
-   installation
+   quickguide
    userguide
    devguide
    
