@@ -42,3 +42,5 @@ Features
  * API REST
  * Resumable upload for big files
  * Possibility to expose a simple interface to setup a pipeline (according to a unique json file)
+ * Push notification for Run progress
+ * Run can be paused and resume
