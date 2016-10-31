@@ -66,7 +66,7 @@
             <!--          -->
             <!-- OVERVIEW -->
             <!--          -->
-            <div id="overview" class="tab-pane fade in active">
+            <div id="overview" class="tab-pane fade">
                 <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i> Online</h1>
                 <ul id="userList"></ul>
             </div>
@@ -75,7 +75,49 @@
             <!--       -->
             <!-- FILES -->
             <!--       -->
-            <div id="files" class="tab-pane fade">
+            <div id="files" class="tab-pane fade in active">
+                <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Upload a file</h1>
+
+
+                <div class="alert alert-warining hidden" id="support-alert">
+                    <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client. The buttons below may work but probably will fail silently.
+                </div>
+
+                <input type="hidden" id="endpoint" name="endpoint" value="http://{{ hostname }}/bigfile">
+                <input type="hidden" id="chunksize" name="chunksize" value="1024">
+                <input type="file" id="tusFileInput">
+                <br/>
+                <div id="tusFileProgress">
+                    <div class="alert alert-success" id="support-alert">
+                        <b>Ready</b> to download a file.
+                    </div>
+                </div>
+
+
+                <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
+                    <!--
+                    <fieldset>
+                        <div class="fileUpload btn btn-default">
+                            <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
+                            <input type="file" name="uploadFile" id="uploadFile" class="upload" />
+                        </div>
+                    </fieldset>
+                    -->
+                    <fieldset>
+                        <span><i aria-hidden="true"></i> Tags</span>
+                        <input id="uploadFileFormTags" type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
+                    </fieldset>
+                    <fieldset>
+                        <span><i aria-hidden="true"></i> Comments</span>
+                        <input id="uploadFileFormComments" type="text" name="comments" placeholder="Optional comments" class="form-control"/>
+                    </fieldset>
+                    <input type="submit" value="Update file data" class="btn btn-primary btn btn-primary-primary"/>
+                </form>
+
+                <br/>
+
+
+
                 <h1 class="content-subhead"><i class="fa fa-file-o" aria-hidden="true"></i> Files</h1>
                 {% if files|length ==0 %}
                 <div class="alert alert-warning" role="alert">
@@ -93,7 +135,7 @@
                     </thead>
 
                     {% for f in files %}
-                    <tr>
+                    <tr id="fileEntry-{{ f["id"] }}">
                         <td>{{ f["name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["size"] }}</span></td>
                         <td style="vertical-align: middle;">{{ f["tags"] }}</td>
                         <td style="vertical-align: middle;">{{ f["status"] }}</td>
@@ -108,111 +150,6 @@
                     {% endfor %}
                 </table>
                 {% endif %}
-
-                <div class="panel-group">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">
-                            <h1 class="panel-title">
-                                <a data-toggle="collapse" href="#newFilePanel"><i class="fa fa-plus" aria-hidden="true"></i> Upload a file</a>
-                            </h1>
-                        </div>
-                        <div id="newFilePanel" class="panel-collapse collapse">
-                            <form id="uploadFileForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form">
-                                <fieldset>
-                                    <div class="fileUpload btn btn-default">
-                                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
-                                        <input type="file" name="uploadFile" id="uploadFile" class="upload" />
-                                    </div>
-                                </fieldset>
-                                <fieldset>
-                                    <span><i aria-hidden="true"></i> Tags</span>
-                                    <input type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
-                                </fieldset>
-                                <fieldset>
-                                    <span><i aria-hidden="true"></i> Comments</span>
-                                    <input type="text" name="comments" placeholder="Optional comments" class="form-control"/>
-                                </fieldset>
-                                <input type="submit" value="Upload the file on the server" class="btn btn-primary btn btn-primary-primary"/>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <h1 class="content-subhead panel-collapse"></h1>  
-
-
-
-
-
-
-                 <div>
-      <h1>tus-js-client demo</h1>
-
-      <p>
-        For a prettier demo please go to the
-        <a href="http://tus.io/demo.html">tus.io</a> website.
-        This demo is just here to aid developers.
-      </p>
-
-      <div class="alert alert-warining hidden" id="support-alert">
-        <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client. The buttons below may work but probably will fail silently.
-      </div>
-
-      <br />
-
-      <table>
-        <tr>
-          <td>
-            <label for="endpoint">
-              Upload endpoint:
-            </label>
-          </td>
-          <td>
-            <input type="text" id="endpoint" name="endpoint" value="http://{{ hostname }}/bigfile">
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <label for="chunksize">
-              Chunk size (bytes):
-            </label>
-          </td>
-          <td>
-            <input type="number" id="chunksize" name="chunksize" value="1024">
-          </td>
-        </tr>
-        
-      </table>
-      
-      <br />
-
-      <input type="file" id="tusFileInput">
-
-      <br />
-      <br />
-
-      <div class="row">
-        <div class="span8">
-          <div class="progress progress-striped progress-success">
-            <div class="bar" style="width: 0%;"></div>
-          </div>
-        </div>
-        <div class="span4">
-          <button class="btn btn-danger stop disabled" id="stop-btn"><i class="icon-white icon-stop"></i> abort upload</button>
-        </div>
-      </div>
-
-      <hr />
-      <h3>Uploads</h3>
-      <p>
-        Succesful uploads will be listed here. Try one!
-      </p>
-
-    </div>
-
-
-
-
-
             </div>
 
 
@@ -393,9 +330,11 @@
     </div>
 
 
+    <script src="/assets/pirus.js"></script>
     <script src="/assets/tus.js"></script>
     <script src="/assets/tus_client.js"></script>
     <script>
+        var rootURL = "http://{{ hostname }}"
 
         var ws = new WebSocket('ws://{{ hostname }}/ws');
         var $message = $('#message');
@@ -406,7 +345,7 @@
             // 1- retrieve pipe-config
             $.ajax(
             {
-                url: "http://{{ hostname }}/pipeline/" + pipe_id + "/form.json",
+                url: rootURL + "/pipeline/" + pipe_id + "/form.json",
                 type: "GET"
             }).fail(function()
             {
@@ -421,7 +360,7 @@
                 {
 
                     // get list of database
-                    $.ajax({ url: "http://{{ hostname }}/db", type: "GET", async: false}).done(function(jsonDB)
+                    $.ajax({ url: rootURL + "/db", type: "GET", async: false}).done(function(jsonDB)
                     {
                         json_db = jsonDB["data"];
                     })
@@ -431,7 +370,7 @@
                 {
 
                     // get list of database
-                    $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                    $.ajax({ url: rootURL + "/file", type: "GET", async: false}).done(function(jsonFile)
                     {
                         data = jsonFile["data"];
                         for (var i=0; i<data.length; i++)
@@ -443,7 +382,7 @@
                 }
                 
                 var config = {}
-                $.ajax({ url: "http://{{ hostname }}/pipeline/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
+                $.ajax({ url: rootURL + "/pipeline/" + pipe_id + "/config.json", type: "GET", async: false}).done(function(json)
                 {
                     config = json["data"];
                 })
@@ -481,7 +420,7 @@
         {
             $.ajax(
             {
-                url: "http://{{ hostname }}/pipeline/" + pipe_id,
+                url: rootURL + "/pipeline/" + pipe_id,
                 type: "DELETE"
             }).fail(function()
             {
@@ -498,7 +437,7 @@
                 config = bf.getData()
                 inputs = []
 
-                $.ajax({ url: "http://{{ hostname }}/file", type: "GET", async: false}).done(function(jsonFile)
+                $.ajax({ url: rootURL + "/file", type: "GET", async: false}).done(function(jsonFile)
                 {
                     data = jsonFile["data"];
                     for (var i=0; i<data.length; i++)
@@ -512,7 +451,7 @@
 
                 $.ajax(
                 {
-                    url: "http://{{ hostname }}/run",
+                    url: rootURL + "/run",
                     type: "POST",
                     data: "{\"pipeline_id\" : \""+ pipe_id +"\", \"config\" : " + config + ", \"inputs\" : " + inputs + "}"
                 }).fail(function()
@@ -553,24 +492,13 @@
         function ws_run_progress(msg_data)
         {
             var tdElement = $("#run-" + msg_data["id"] + "-progress")
-            style="progress-bar "
-            if (msg_data["id"] == "FAILLED") { style += "progress-bar-danger"}
-                else if (msg_data["id"] == "DONE") { style += "progress-bar-success"}
-                    else if (msg_data["id"] == "PAUSE") { style += "progress-bar-warning"}
-                        else if (msg_data["id"] == "RUN") { style += "progress-bar-striped active"}
-                            else if (msg_data["id"] == "WAITING") { style += "progress-bar-warning progress-bar-striped active"}
-
-
-
-                                html = "<div class='progress'>\
-                            <div class='" + style + "' role='progressbar' aria-valuenow='" + msg_data["progress"]["value"] + "' aria-valuemin='0' aria-valuemax='100' \
-                            style='min-width: 2em; width: " + msg_data["progress"]["value"] + "%;'>\
-                            " + msg_data["progress"]["label"] + " \
-                        </div>\
-                    </div>"
-
-
-                    tdElement.html(html)
+            buildProgressBar(
+                msg_data["progress"]["min"], 
+                msg_data["progress"]["max"], 
+                msg_data["progress"]["value"],
+                msg_data["progress"]["label"],
+                msg_data["status"],
+                "run-" + msg_data["id"] + "-progress")
 
             // Todo : update controls
         }

@@ -400,7 +400,7 @@ class Run(Document):
     config     = DynamicField(required=True)
     start      = StringField(required=True)
     end        = StringField()
-    status     = StringField()
+    status     = StringField()  # WAITING, PAUSE, INITIALIZING, RUNNING, FINISHING, ERROR, DONE, CANCELED
     inputs     = ListField(StringField())
     outputs    = StringField()
     progress   = DynamicField(required=True)

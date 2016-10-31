@@ -1,8 +1,5 @@
 var upload = null
-var stopBtn = document.querySelector("#stop-btn")
 var input = document.querySelector("#tusFileInput")
-var progress = document.querySelector(".progress")
-var progressBar = progress.querySelector(".bar")
 var alertBox = document.querySelector("#support-alert")
 var chunkInput = document.querySelector("#chunksize")
 var endpointInput = document.querySelector("#endpoint")
@@ -11,19 +8,11 @@ if (!tus.isSupported) {
     alertBox.className = alertBox.className.replace("hidden", "")
 }
 
-stopBtn.addEventListener("click", function(e) {
-    e.preventDefault()
-
-    if (upload) {
-      upload.abort()
-    }
-})
 
 input.addEventListener("change", function(e) {
     var file = e.target.files[0]
     console.log("selected file", file)
 
-    stopBtn.classList.remove("disabled")
     var endpoint = endpointInput.value
     var chunkSize = parseInt(chunkInput.value, 10)
     if (isNaN(chunkSize)) {
@@ -37,30 +26,34 @@ input.addEventListener("change", function(e) {
             filename: file.name
         },
         onError: function(error) {
-            reset()
-            alert("Failed because: " + error)
+            input.value = ""
+            buildPopup("Failed because: " + error, "alert", "tusFileProgress")
         },
         onProgress: function(bytesUploaded, bytesTotal) {
             var percentage = (bytesUploaded / bytesTotal * 100).toFixed(2)
-            progressBar.style.width = percentage + "%"
             console.log(bytesUploaded, bytesTotal, percentage + "%")
+            buildProgressBar(percentage, "RUN", "tusFileProgress")
         },
         onSuccess: function() {
-            reset()
-            var anchor = document.createElement("a")
-            anchor.textContent = "Download " + upload.file.name + " (" + upload.file.size + " bytes)"
-            anchor.href = "/uploads/" + upload.file.name
-            anchor.className = "btn btn-success"
-            e.target.parentNode.appendChild(anchor)
+            input.value = ""
+            buildPopup("Download finish !  " + upload.file.name + " is now available for run.", "success", "tusFileProgress")
+            $("#uploadFileForm").addClass("hidden")
         }
     }
 
     upload = new tus.Upload(file, options)
     upload.start()
-})
 
-function reset() {
-    input.value = ""
-    stopBtn.classList.add("disabled")
-    progress.classList.remove("active")
-}
+    fileId = upload.url.substr(upload.url.lastIndexOf('/') + 1)
+    addFileEntry(fileId)
+
+    // retrieve file information an load/enable second part of the form
+    $.ajax({ url: rootURL + "/file/" + fileId, type: "GET", async: false}).done(function(jsonData)
+    {
+        $("#uploadFileForm").removeClass("hidden")
+        $("#uploadFileFormTags").val(jsonData["tags"])
+        $("#uploadFileFormComments").val(jsonData["comments"])
+        $("#uploadFileForm").attr('action', rootURL + "/file/" + fileId);
+
+    })
+})

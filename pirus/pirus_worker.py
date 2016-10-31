@@ -164,14 +164,14 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         wlog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
         c_name = LXD_PREFIX + "-" + self.run_private_id
     except:
-        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("FAILLED")
+        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
+        self.notify_status("ERROR")
         raise
 
 
     # Setting up the lxc container for the run
     wlog.info('SETUP   | Creation of the LXC container from image "' + pipeline.lxd_alias + '"')
-    self.notify_status("BUILDING")
+    self.notify_status("INITIALIZING")
     try:
         # create container
         execute(["lxc", "init", pipeline.lxd_alias, c_name])
@@ -185,8 +185,8 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         # TODO => create symlink in ipath directory
         # TODO => copy config file of the run in the ipath directory
     except:
-        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("FAILLED")
+        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
+        self.notify_status("ERROR")
         raise
 
     # Run the pipe !
@@ -199,8 +199,8 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         res = subprocess.call(["lxc", "exec", c_name, "/pipeline/run/run.sh"], stdout=open(lpath+"/out.log", "w"), stderr=open(lpath+"/err.log", "w"))
 
     except:
-        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("FAILLED")
+        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
+        self.notify_status("ERROR")
         raise
 
     # Stop container and clear resource
@@ -214,8 +214,8 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
         wlog.info('STOP    |  - closing and deleting the lxc container : ' + c_name)
         execute(["lxc", "delete", c_name, "--force"])
     except:
-        wlog.info('FAILLED | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("FAILLED")
+        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
+        self.notify_status("ERROR")
         raise
 
     # Register outputs files
