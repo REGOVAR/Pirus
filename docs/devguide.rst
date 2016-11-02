@@ -6,10 +6,9 @@ Developer Guide
 Solution organisation
 =====================
  * The core team of Pirus project:
-    * ikit :  Technical leader and main developer
-    * dridk : Functional leader
-    * Oodnadatta : Consultant
-    * Arkanosis : Consultant
+    * As sub project of Revogar, the core team of Pirus, is the same as for Regovar : Ikit, dridk, Oodnadatta and Arkanosis. All of them are both consultant and developer.
+    * Technical leader : ikit
+    * Functional leader : dridk
  * Coding Rules : 
     * https://www.python.org/dev/peps/pep-0008/
  * Git branching strategy : 
