@@ -83,13 +83,13 @@
                     <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client. The buttons below may work but probably will fail silently.
                 </div>
 
-                <input type="hidden" id="endpoint" name="endpoint" value="http://{{ hostname }}/bigfile">
-                <input type="hidden" id="chunksize" name="chunksize" value="1024">
+                <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
+                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="1024">
                 <input type="file" id="tusFileInput">
                 <br/>
                 <div id="tusFileProgress">
                     <div class="alert alert-success" id="support-alert">
-                        <b>Ready</b> to download a file.
+                        <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
                     </div>
                 </div>
 
@@ -138,7 +138,16 @@
                     <tr id="fileEntry-{{ f["id"] }}">
                         <td>{{ f["name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["size"] }}</span></td>
                         <td style="vertical-align: middle;">{{ f["tags"] }}</td>
-                        <td style="vertical-align: middle;">{{ f["status"] }}</td>
+                        <td style="vertical-align: middle;">
+                            {{ f["status"] }} <br/>
+                            <div class="progress">
+                                <div class="progress-bar {% if f["status"] == "ERROR" %}progress-bar-danger{% endif -%}{% if f["status"] == "UPLOADING" %}progress-bar-striped active{% endif -%}{% if f["status"] == "UPLOADED" or f["status"] == "CHECKED" %}progress-bar-success{% endif -%}{% if f["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
+                                    role="progressbar" aria-valuenow="{{ f["size"] }}" aria-valuemin="0" aria-valuemax="{{ f["size"] }}" 
+                                    style="min-width: 2em;">
+                                    {{ f["status"]}}
+                                </div>
+                            </div>
+                        </td>
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs disabled" title="Delete file"                onclick="javascript:delete_file('{{f["id"]}}')"><i class="fa fa-trash" aria-hidden="true"> delete</i></a> 
@@ -174,7 +183,7 @@
                     </thead>
                     {% for p in pipes %}
                     <tr>
-                        <td style="vertical-align: middle;"><img src="{{ p["icon"] }}" style="height:30px; width:30px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i></td>
+                        <td style="vertical-align: middle;"><img src="{{ p["icon_url"] }}" style="height:30px; width:30px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i></td>
                         <td style="vertical-align: middle;">{{ p["description"] }}</td>
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
@@ -191,15 +200,16 @@
                 {% endif %}
 
                 <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
-                <form id="installPackageForm" method="POST" enctype="multipart/form-data" action="http://{{ hostname }}/pipeline" class="pure-form">
-                    <fieldset>
-                        <div class="fileUpload btn btn-default">
-                            <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select Pirus package</span>
-                            <input type="file" type="file" name="pipepck" id="pipepck" class="upload" />
-                        </div>
-                        <input type="submit" value="Install" class="btn btn-primary btn btn-primary-primary"/>
-                    </fieldset>
-                </form>
+
+                <input type="hidden" id="tusPipeEndpoint" name="tusPipeEndpoint" value="http://{{ hostname }}/pipeline/upload">
+                <input type="hidden" id="tusPipeChunkSize" name="tusPipeChunkSize" value="512000">
+                <input type="file" id="tusPipeInput">
+                <br/>
+                <div id="tusPipeProgress">
+                    <div class="alert alert-success" id="support-alert">
+                        <b>Ready !</b> Start by selecting the pipeline you want to install. Upload will start automaticaly.
+                    </div>
+                </div>
             </div>
 
 

@@ -22,13 +22,12 @@ from framework import *
 
 
 class PirusFile(Document):
-    public_fields = ["id", "name", "type", "size", "size_total", "status", "comments", "runs", "create_date", "tags", "md5sum", "url"]
+    public_fields = ["id", "name", "type", "size", "status", "comments", "runs", "create_date", "tags", "md5sum", "url"]
 
     name          = StringField(required=True)
     type          = StringField()
     path          = StringField()
     size          = IntField() 
-    size_total    = IntField()
     upload_offset = IntField()
     status        = StringField() # UPLOADING, UPLOADED, PAUSE, ERROR, CHECKED
     comments      = StringField()    
@@ -48,7 +47,6 @@ class PirusFile(Document):
             "type"          : self.type,
             "path"          : self.path,
             "size"          : self.size,
-            "size_total"    : self.size_total,
             "upload_offset" : self.upload_offset,
             "status"        : self.status,
             "comments"      : self.comments,
@@ -62,7 +60,7 @@ class PirusFile(Document):
     def url(self):
         return "http://" + HOSTNAME + "/dl/f/" + str(self.id)
     def upload_url(self):
-        return "http://" + HOSTNAME + "/bigfile/" + str(self.id)
+        return "http://" + HOSTNAME + "/file/upload/" + str(self.id)
 
     def export_client_data(self, fields=None):
         result = {}
@@ -85,18 +83,18 @@ class PirusFile(Document):
             self.type          = data["type"]
             self.path          = data['path']
             self.size          = int(data["size"])
-            self.size_total    = int(data["size_total"])
             self.status        = data["status"]
             self.create_date   = data["create_date"]
-            self.md5sum        = data['md5sum']
+            if "md5sum" in data.keys():
+                self.md5sum = data["md5sum"]
             if "runs" in data.keys():
-                self.runs      = data["runs"]
+                self.runs = data["runs"]
             if "upload_offset" in data.keys():
                 self.upload_offset = int(data["upload_offset"])
             else:
                 self.upload_offset = 0
             if "tags" in data.keys():
-                self.tags      = data['tags']
+                self.tags = data['tags']
             if "comments" in data.keys():
                 self.comments  = data["comments"]
         except KeyError as e:
@@ -125,48 +123,61 @@ class PirusFile(Document):
 
 
 class Pipeline(Document):
-    public_fields = ["name", "description", "version", "pirus_api", "license", "developers", "id"]
-
-
-    name           = StringField(required=True)
-    lxd_alias      = StringField()
-    description    = StringField()
-    version        = StringField(required=True)
-    pirus_api      = StringField(required=True)
-    license        = StringField()
-    developers     = ListField(StringField())
-
-    path           = StringField(required=True)
-    ipath          = StringField(required=True)
-    opath          = StringField(required=True)
-    lpath          = StringField(required=True)
-    run            = StringField(required=True)
-    dpath          = StringField(required=True)
-    ffile          = StringField(required=True)
-    lfile          = StringField()
+    # Static
+    public_fields    = ["name", "description", "version", "pirus_api", "license", "developers", "size", "upload_offset", "status", "id"]
+    # Metadata
+    name             = StringField(required=True)
+    description      = StringField()
+    version          = StringField()
+    pirus_api        = StringField(required=True)
+    license          = StringField()
+    developers       = ListField(StringField())
+    # Upload data
+    size             = IntField(required=True)
+    upload_offset    = IntField(required=True)
+    status           = StringField(required=True) # UPLOADING, PAUSE, ERROR, INSTALLING, READY
+    # Internal data (run deployment)
+    pipeline_file    = StringField(required=True)
+    root_path        = StringField()
+    lxd_alias        = StringField()
+    lxd_inputs_path  = StringField()
+    lxd_outputs_path = StringField()
+    lxd_logs_path    = StringField()
+    lxd_db_path      = StringField()
+    lxd_run_cmd      = StringField()
+    form_file        = StringField()
+    icon_file        = StringField()
 
     def __str__(self):
-        return self.path
+        return self.pipeline_file
 
+    def url(self):
+        return "http://" + HOSTNAME + "/dl/p/" + str(self.id)
+    def upload_url(self):
+        return "http://" + HOSTNAME + "/pipeline/upload/" + str(self.id)
 
     def export_server_data(self):
         return {
-            "id"             : str(self.id),
-            "name"           : self.name,
-            "lxd_alias"      : self.lxd_alias,
-            "description"    : self.description,
-            "version"        : self.version,
-            "pirus_api"      : self.pirus_api,
-            "license"        : self.license,
-            "developers"     : self.developers,
-            "path"           : self.path,
-            "ipath"          : self.ipath,
-            "opath"          : self.opath,
-            "lpath"          : self.lpath,
-            "run"            : self.run,
-            "dpath"          : self.dpath,
-            "ffile"          : self.ffile,
-            "lfile"          : self.lfile
+            "id"               : str(self.id),
+            "name"             : self.name,
+            "description"      : self.description,
+            "version"          : self.version,
+            "pirus_api"        : self.pirus_api,
+            "license"          : self.license,
+            "developers"       : self.developers,
+            "size"             : self.size,
+            "upload_offset"    : self.upload_offset,
+            "status"           : self.status,
+            "pipeline_file"    : self.pipeline_file,
+            "root_path"        : self.root_path,
+            "lxd_alias"        : self.lxd_alias,
+            "lxd_inputs_path"  : self.lxd_inputs_path,
+            "lxd_outputs_path" : self.lxd_outputs_path,
+            "lxd_logs_path"    : self.lxd_logs_path,
+            "lxd_db_path"      : self.lxd_db_path,
+            "lxd_run_cmd"      : self.lxd_run_cmd,
+            "form_file"        : self.form_file,
+            "icon_file"        : self.icon_file
         }
 
 
@@ -180,42 +191,52 @@ class Pipeline(Document):
                 result.update({"id" : str(self.id)})
             elif k == "form_url":
                 result.update({"form_url" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"})
-            elif k == "icon":
-                result.update({"icon" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.lfile)})
+            elif k == "icon_url":
+                result.update({"icon" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.icon_file)})
             else:
                 result.update({k : eval("self."+k)})
         return result
 
 
-
     def import_data(self, data):
         try:
+            # Required fields
             self.name           = data['name']
             self.pirus_api      = data["pirus_api"]
-            self.path           = data['path']
-            self.ipath          = data['ipath']
-            self.opath          = data['opath']
-            self.lpath          = data['lpath']
-            self.dpath          = data['dpath']
-            self.run            = data['run']
-            self.ffile          = data['ffile']
-            if "lxd_alias" in data.keys():
-                self.lxd_alias = data["lxd_alias"]
+            self.size           = int(data["size"])
+            self.upload_offset  = int(data["upload_offset"])
+            self.status         = data["status"]
+            self.pipeline_file  = data["pipeline_file"]
+            # Optional fields
             if "description" in data.keys():
                 self.description = data["description"]
             if "version" in data.keys():
-                self.version     = data['version']
+                self.version = data['version']
             if "license" in data.keys():
-                self.license     = data["license"]
+                self.license = data["license"]
             if "developers" in data.keys():
                 self.developers  = data["developers"]
-            if "lfile" in data.keys():
-                self.lfile       = data['lfile']
+            if "root_path" in data.keys():
+                self.root_path = data['root_path']
+            if "lxd_alias" in data.keys():
+                self.lxd_alias = data['lxd_alias']
+            if "lxd_inputs_path" in data.keys():
+                self.lxd_inputs_path = data['lxd_inputs_path']
+            if "lxd_outputs_path" in data.keys():
+                self.lxd_outputs_path = data['lxd_outputs_path']
+            if "lxd_logs_path" in data.keys():
+                self.lxd_logs_path = data['lxd_logs_path']
+            if "lxd_db_path" in data.keys():
+                self.lxd_db_path = data['lxd_db_path']
+            if "lxd_run_cmd" in data.keys():
+                self.lxd_run_cmd = data['lxd_run_cmd']
+            if "form_file" in data.keys():
+                self.form_file = data['form_file']
+            if "icon_file" in data.keys():
+                self.icon_file = data['icon_file']
         except KeyError as e:
             raise ValidationError('Invalid pipeline: missing ' + e.args[0])
         return self
-
-
 
 
     @staticmethod
@@ -230,18 +251,35 @@ class Pipeline(Document):
     def remove(pipe_id):
         pipe = Pipeline.from_id(pipe_id)
         if pipe != None:
-            shutil.rmtree(pipe.path)
+            shutil.rmtree(pipe.root_path)
             pipe.delete()
 
 
     @staticmethod
-    def install(ppackage_name, ppackage_path, ppackage_file):
-        plog.info('I: Installation of the pipeline package : ' + ppackage_path)
-        # 1- Extract pipeline metadata
+    def install(pipe_id):
+
+        pipeline = Pipeline.from_id(pipe_id)
+        if pipeline == None or pipeline.size != pipeline.upload_offset or pipeline.status != "UPLOADING":
+            return None
+
+
+        lxd_alias     = str(uuid.uuid4())
+        root_path     = os.path.join(PIPELINES_DIR, lxd_alias)
+        old_file      = pipeline.pipeline_file
+        pipeline_file = os.path.join(root_path, pipeline.name)
+
+        # 1- Copy file into final folder
+        plog.info('I: Installation of the pipeline package : ' + root_path)
+        os.makedirs(root_path)
+        os.rename(old_file, pipeline_file)
+        os.chmod(pipeline_file, 0o777)
+
+        # 2- Extract pipeline metadata
+        # TODO : instead of testing import json then yaml, loading only yaml should be enough. to be tested
         try:
-            tar = tarfile.open(ppackage_file)
-            xdir = [info for info in tar.getmembers() if info.name == "metadata.yaml"]
-            metadata = tar.extractfile(member=xdir[0])
+            tar = tarfile.open(pipeline_file)
+            tar_data = [info for info in tar.getmembers() if info.name == "metadata.yaml"]
+            metadata = tar.extractfile(member=tar_data[0])
             metadata = metadata.read()
             try:
                 # try json ?
@@ -252,9 +290,9 @@ class Pipeline(Document):
             metadata = metadata["pirus"]
         except:
             # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of ' + ppackage_file)
+            plog.info('E:    [FAILLED] Extraction of ' + pipeline_file)
             raise PirusException("XXXX", "Unable to extract package. Corrupted file or wrong format")
-        plog.info('I:    [OK     ] Extraction of metadata from ' + ppackage_file)
+        plog.info('I:    [OK     ] Extraction of metadata from ' + pipeline_file)
 
         # 2- Check that mandatory fields exists
         missing = ""
@@ -267,59 +305,58 @@ class Pipeline(Document):
             raise PirusException("XXXX", "Bad pirus pipeline format. Mandory fields missing in the metadata : " + missing)
         plog.info('I:    [OK     ] Checking validity of metadata')
 
-        # 3- Default valeu for optional fields in mandatory file
+        # 3- Default value for optional fields in mandatory file
         for k in MANIFEST["default"].keys():
             if k not in metadata.keys():
                 metadata[k] = MANIFEST["default"][k]
 
-        # 3- Extract pirus technicals files from the tar file
+        # 4- Extract pirus technicals files from the tar file
         try:
             if metadata["form"] is not None:
-                fsrc = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
-                xdir = [info for info in tar.getmembers() if info.name == fsrc]
-                file = tar.extractfile(member=xdir[0])
-                fsrc = os.path.join(ppackage_path, fsrc)
-                fdst = os.path.join(ppackage_path, "form.json")
-                with open(fdst, 'bw+') as f:
+                source     = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
+                tar_data   = [info for info in tar.getmembers() if info.name == source]
+                file       = tar.extractfile(member=tar_data[0])
+                source     = os.path.join(root_path, source)
+                form_file  = os.path.join(root_path, "form.json")
+                with open(form_file, 'bw+') as f:
                     f.write(file.read())
             else :
-                fdst = os.path.join(ppackage_path, "form.json")
-                with open(fdst, 'w+') as f:
+                form_file = os.path.join(root_path, "form.json")
+                with open(form_file, 'w+') as f:
                     f.write("{}")
 
-            lsrc = PIPELINE_DEFAULT_ICON_PATH
-            ldst = os.path.join(ppackage_path, "icon.png")
+            source = PIPELINE_DEFAULT_ICON_PATH
+            icon_file = os.path.join(root_path, "icon.png")
             if metadata["icon"] is not None:
-                lsrc = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
-                xdir = [info for info in tar.getmembers() if info.name == lsrc]
-                file = tar.extractfile(member=xdir[0])
-                lsrc = os.path.join(ppackage_path, lsrc)
-                ldst = os.path.join(ppackage_path, os.path.basename(metadata['icon']))
-                with open(ldst, 'bw+') as f:
+                source = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
+                tar_data = [info for info in tar.getmembers() if info.name == source]
+                file = tar.extractfile(member=tar_data[0])
+                source = os.path.join(root_path, source)
+                icon_file = os.path.join(root_path, os.path.basename(metadata['icon']))
+                with open(icon_file, 'bw+') as f:
                     f.write(file.read())
             else:
-                shutil.copyfile(lsrc, ldst)
+                shutil.copyfile(source, icon_file)
         except:
             # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of ' + ppackage_file)
+            plog.info('E:    [FAILLED] Extraction of ' + pipeline_file)
             raise PirusException("XXXX", "Error occure during extraction of pipeline technical files (form.json / icon)")
         plog.info('I:    [OK     ] Extraction of pipeline technical files (form.json / icon)')
 
 
         # 5- Save pipeline into database
         metadata.update({
-            "path"      : ppackage_path,
-            "ipath"     : metadata["inputs"],
-            "opath"     : metadata["outputs"],
-            "lpath"     : metadata["logs"],
-            "run"       : metadata["run"],
-            "dpath"     : metadata["databases"],
-            "ffile"     : fdst,
-            "lfile"     : ldst,
-            "lxd_alias" : "pirus-pipe-" + ppackage_name
+            "root_path"        : root_path,
+            "lxd_inputs_path"  : metadata["inputs"],
+            "lxd_outputs_path" : metadata["outputs"],
+            "lxd_logs_path"    : metadata["logs"],
+            "lxd_db_path"      : metadata["databases"],
+            "lxd_run_cmd"      : metadata["run"],
+            "form_file"        : form_file,
+            "logo_file"        : icon_file,
+            "lxd_alias"        : "pirus-pipe-" + lxd_alias,
+            "pipeline_file"    : pipeline_file
         })
-
-        pipeline = Pipeline()
         try:
             pipeline.import_data(metadata)
             pipeline.save()
@@ -331,10 +368,10 @@ class Pipeline(Document):
         plog.info('I:    [OK     ] Save pipeline information in database with id='+ str(pipeline.id))
 
         # 6- Install lxd container
-        cmd = ["lxc", "image", "import", ppackage_file, "--alias", pipeline.lxd_alias]
+        cmd = ["lxc", "image", "import", pipeline_file, "--alias", lxd_alias]
         try:
-            out_tmp = '/tmp/' + ppackage_name + '-out'
-            err_tmp = '/tmp/' + ppackage_name + '-err'
+            out_tmp = '/tmp/' + lxd_alias + '-out'
+            err_tmp = '/tmp/' + lxd_alias + '-err'
             subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
 
         except Exception as err:
@@ -352,16 +389,16 @@ class Pipeline(Document):
             plog.info(err)
             plog.info('--------------------------')
             pipeline.delete()
-            shutil.rmtree(ppackage_path)
+            shutil.rmtree(root_path)
             raise PirusException("XXXX", "Failed to install pipeline lxd image (" + err + ")")
         else:
             plog.info('I:    [OK     ] Installation of the lxd image.')
 
         # 7- Clean directory
         try:
-            keep = [ppackage_file, fdst, ldst]
-            for f in os.listdir(ppackage_path):
-                fullpath = os.path.join(ppackage_path, f)
+            keep = [pipeline_file, form_file, icon_file]
+            for f in os.listdir(root_path):
+                fullpath = os.path.join(root_path, f)
                 if fullpath not in keep:
                     if os.path.isfile(fullpath):
                         os.remove(fullpath)

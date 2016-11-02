@@ -32,30 +32,11 @@ from api_v1.tus import tus_manager
 
 
 # Common methods
-
-def check_pipeline_package(path:str):
-    # TODO
-    # files mandatory : plugin.py, form.qml, manifest.json, config.json
-    # check manifest.json, mandatory fields :
-    pass
-
-
-def list_pipelines():
-    return [f.export_client_data() for f in Pipeline.objects.all().order_by('-name')]
-
-
-def list_files():
-    return [p.export_client_data() for p in PirusFile.objects.all().order_by('-create_date')]
-
-
-def list_runs(start=0, limit=10):
-    return [r.export_client_data() for r in Run.objects.all().order_by('-start')[start:start+limit]]
-
-
 def notify_all(src, msg):
     for ws in app['websockets']:
         if src != ws[1]:
             ws[0].send_str(msg)
+
 
 
 def process_generic_get(query_string, allowed_fields):
@@ -115,14 +96,8 @@ def process_generic_get(query_string, allowed_fields):
 
 
 
-def get_file_data(request):
-    id = request.match_info.get('file_id', -1)
-    if id == -1:
-        return rest_error("Unknow file id " + str(id))
-    pirus_file = PirusFile.from_id(id)
-    if pirus_file == None:
-        return rest_error("File with id " + str(id) + "doesn't exits.")
-    return pirus_file
+
+
 
 
 
@@ -137,9 +112,9 @@ class WebsiteHandler:
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
         return {
-            "runs"     : list_runs(), 
-            "pipes"    : list_pipelines(),
-            "files"    : list_files(),
+            "runs"     : [r.export_client_data() for r in Run.objects.all().order_by('-start')], 
+            "pipes"    : [f.export_client_data() for f in Pipeline.objects.all().order_by('-name')],
+            "files"    : [p.export_client_data() for p in PirusFile.objects.all().order_by('-create_date')],
             "hostname" : HOSTNAME
         }
 
@@ -164,19 +139,20 @@ class WebsiteHandler:
 
  
 
+
 class FileHandler:
-    def __init__(self):
-        pass
 
     def get(self, request):
         # Generic processing of the get query
         fields, query, order, offset, limit = process_generic_get(request.query_string, PirusFile.public_fields)
-
         # Return result of the query for PirusFile 
         return rest_success([p.export_client_data(fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]])
 
 
-
+    def edit_infos(self, request):
+        # TODO : implement PUT to edit file metadata (and remove the obsolete  "simple post" replaced by TUS upload )
+        return rest_error("Not yet implemented")
+        
     # "Simple" upload (synchrone and not resumable)
     async def upload_simple(self, request):
         name = str(uuid.uuid4())
@@ -211,7 +187,6 @@ class FileHandler:
                 "type"          : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
                 "path"          : path,
                 "size"          : int(os.path.getsize(path)),
-                "size_total"    : int(os.path.getsize(path)),
                 "status"        : "UPLOADED",
                 "create_date"   : str(datetime.datetime.now().timestamp()),
                 "md5sum"        : md5(path),
@@ -222,6 +197,17 @@ class FileHandler:
         plog.info('I: File ' + name + ' (' + pirusfile.size + ') available at ' + path)
         return rest_success(pirusfile.export_client_data())
 
+
+    def delete(self, request):
+        # TODO : implement DELETE to remove file metadata...
+        return rest_error("Not yet implemented")
+
+
+    def get_details(self, request):
+        id = request.match_info.get('file_id', -1)
+        if id == -1:
+            return rest_error("Unknow file id " + str(id))
+        return rest_success(PirusFile.objects.get(pk=id).export_client_data())
 
 
 
@@ -252,14 +238,6 @@ class FileHandler:
 
 
 
-    def delete(self, request):
-        return rest_success({})
-
-    def get_details(self, request):
-        id = request.match_info.get('file_id', -1)
-        if id == -1:
-            return rest_error("Unknow file id " + str(id))
-        return rest_success(PirusFile.objects.get(pk=id).export_client_data())
 
 
     async def dl_file(self, request):        
@@ -278,7 +256,6 @@ class FileHandler:
             headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file.name}),
             body=file
         )
-
 
     async def dl_pipe_file(self, request):
         # 1- Retrieve request parameters
@@ -299,12 +276,10 @@ class FileHandler:
             body=file
         )
 
-
     async def dl_run_file(self, request):
         return rest_success({})
 
-    def edit_infos(self, request):
-        pass
+
 
 
 
@@ -316,53 +291,18 @@ class PipelineHandler:
 
     def get(self, request):
         fields, query, order, offset, limit = process_generic_get(request.query_string, Pipeline.public_fields)
-        return rest_success([p.export_client_data(fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]])
-
-
-    async def post(self, request):
-        # 1- Retrieve pirus package from post request
-        data = await request.post()
-        ppackage = data['pipepck']
-        # 2- save pirus package on the server plugins directory (with a random name to avoid problem if filename already exists)
-        try:
-            ppackage_name = str(uuid.uuid4())
-            ppackage_path = os.path.join(PIPELINES_DIR, ppackage_name)
-            ppackage_file = os.path.join(ppackage_path, ppackage.filename)
-            os.makedirs(ppackage_path)
-            with open(ppackage_file, 'bw+') as f:
-                f.write(ppackage.file.read())
-                os.chmod(ppackage_file, 0o777)
-        except:
-            # TODO : manage error
-            return rest_error("Server Error : Unable to write on server disk (no space ? no right ?).")
-        # 3- Handle nstall process done by model
-        pipeline = None
-        try:
-            pipeline = Pipeline.install(ppackage_name, ppackage_path, ppackage_file)
-        except Exception as error:
-            # TODO : manage error
-            return rest_error("Server Error : The following occure during installation of the pipeline. " + error.msg)
-        os.chmod(ppackage_file, 0o664)
-        # 4- Answer to te client
-        if pipeline == None:
-            # TODO : manage error
-            rest_error("Server Error : Unexpected error occured while installing the pipeline.")
-
-        return rest_success(pipeline.export_client_data())
-
+        return rest_success([p.export_client_data(fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]])   
 
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
         pipe_id = request.match_info.get('pipe_id', -1)
         if pipe_id == -1:
             return rest_error("Unknow pipeline id " + str(pipe_id))
-
         try:
             pipeline = Pipeline.remove(pipe_id)
         except Exception as error:
             # TODO : manage error
             return rest_error("Server Error : The following occure during installation of the pipeline. " + error.msg)
-
         return rest_success("Pipeline " + str(pipe_id) + " deleted.")
 
 
@@ -371,6 +311,29 @@ class PipelineHandler:
         if pipe_id == -1:
             return rest_error("Unknow pipeline id " + str(pipe_id))
         return rest_success(Pipeline.objects.get(pk=pipe_id).export_client_data())
+
+
+    # Resumable download implement the TUS.IO protocol.
+    def tus_config(self, request):
+        print ("tus_config", request)
+        return tus_manager.options(request)
+
+    def tus_upload_init(self, request):
+        print ("tus_upload_init", request)
+        return tus_manager.creation(request)
+
+    def tus_upload_resume(self, request):
+        print ("tus_upload_resume", request)
+        return tus_manager.resume(request)
+
+    async def tus_upload_chunk(self, request):
+        print ("tus_upload_chunk", request)
+        result = await tus_manager.patch(request)
+        return result
+
+    def tus_upload_delete(self, request):
+        print ("tus_upload_delete", request)
+        return tus_manager.delete_file(request)
 
 
 

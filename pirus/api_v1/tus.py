@@ -24,25 +24,88 @@ TUS_MAX_SIZE = 6250000000 # 50 Go
 TUS_EXTENSION = ['creation', 'termination', 'file-check']
 
 
-class TusManager:
-
-    def __init__(self, app=None, upload_url='/file-upload', upload_folder='uploads/', overwrite=True, upload_finish_cb=None):
-        pass
 
 
 
-    def get_file_data(self, request):
+# TUS wrapper interface
+class TusFileWrapper:
+    id = "<unique id of the file>"
+    name = "<filename>"
+    size = "<total size of the file in bytes>"
+    upload_offset = "<upload offset position>"
+    path = "<path where the file is saved on the server>"
+    upload_url = "<url that the client shall used to upload the file>"
+    
+    def save(self):
+        # Do something when the upload of a chunk of the file is done. Basicaly : save new offset position in a database
+        pass;
+
+    def complete(self):
+        # Do something when the upload of the file is finished
+        pass;
+
+    @staticmethod
+    def from_request(request):
+        """ Return the wrapper to manipulate the uploading file """
+        if request == None:
+            return TusManager.build_response(code=404)
         id = request.match_info.get('file_id', -1)
         if id == -1:
-            return self.build_response(code=404)
-        pirus_file = PirusFile.from_id(id)
-        if pirus_file == None:
-            return self.build_response(code=404)
-        return pirus_file
+            return TusManager.build_response(code=404)
+
+        # We can upload file or pipeline, we check model according to url
+        if "/file/upload" in request.raw_path :
+            return PirusFileWrapper(id)
+        if "pipeline/upload" in request.raw_path :
+            return PirusPipelineWrapper(id)
+        return TusManager.build_response(code=404)
+
+    @staticmethod
+    def new_upload(request, filename, file_size):
+        # Create and return the wrapper to manipulate the uploading file
+        if "/file/upload" in request.raw_path :
+            pfile   = PirusFile()
+            pfile.import_data({
+                    "name"          : filename,
+                    "type"          : os.path.splitext(filename)[1][1:].strip().lower(),
+                    "path"          : os.path.join(TEMP_DIR, str(uuid.uuid4())),
+                    "size"          : file_size,
+                    "upload_offset" : 0,
+                    "status"        : "UPLOADING",
+                    "create_date"   : str(datetime.datetime.now().timestamp())
+                })
+            pfile.save()
+            return PirusFileWrapper(pfile.id)
+
+        if "/pipeline/upload" in request.raw_path :
+            pPipe   = Pipeline()
+            pPipe.import_data({
+                    "name"          : filename,
+                    "pirus_api"     : "Unknow",
+                    "pipeline_file" : os.path.join(TEMP_DIR, str(uuid.uuid4())),
+                    "size"          : file_size,
+                    "upload_offset" : 0,
+                    "status"        : "UPLOADING"
+                })
+            pPipe.save()
+            return PirusPipelineWrapper(pPipe.id)
 
 
 
-    def build_response(self, code, headers={}, body=""):
+
+
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# TUS.IO Protocal manager - GENERIC IMPLEMENTATION 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+class TusManager:
+
+    @staticmethod
+    def build_response(code, headers={}, body=""):
         h = {'Tus-Resumable' : TUS_API_VERSION,  'Tus-Version' : TUS_API_VERSION_SUPPORTED}
         h.update(headers)
         return web.Response(body=body.encode(), status=code, headers=h)
@@ -51,70 +114,48 @@ class TusManager:
 
     # HEAD request done by client to retrieve the offset where the upload of the file shall be resume
     def resume(self, request):
-        pfile = self.get_file_data(request)
-        return self.build_response(code=200, headers={ 'Upload-Offset' : str(pfile.upload_offset), 'Cache-Control' : 'no-store' })
+        fw = TusFileWrapper.from_request(request)
+        return TusManager.build_response(code=200, headers={ 'Upload-Offset' : str(fw.upload_offset), 'Cache-Control' : 'no-store' })
 
 
     # PATCH request done by client to upload a chunk a of file.
     async def patch(self, request):
-        pfile = self.get_file_data(request)
+        fw = TusFileWrapper.from_request(request)
         data = await request.content.read()
-        upload_file_path = pfile.path
-        filename = pfile.name
-        if filename is None or os.path.lexists( upload_file_path ) is False:
-            # logger.info( "PATCH sent for resource_id that does not exist. {}".format( pfile.id))
-            return self.build_response(code=410)
+        if fw.name is None or os.path.lexists( fw.path ) is False:
+            # logger.info( "PATCH sent for resource_id that does not exist. {}".format( fw.id))
+            return TusManager.build_response(code=410)
         file_offset = int(request.headers.get("Upload-Offset", 0))
         chunk_size = int(request.headers.get("Content-Length", 0))
-        if file_offset != pfile.upload_offset: # check to make sure we're in sync
-            return self.build_response(code=409) # HTTP 409 Conflict
+        if file_offset != fw.upload_offset: # check to make sure we're in sync
+            return TusManager.build_response(code=409) # HTTP 409 Conflict
         try:
-            f = open( upload_file_path, "bw+")
+            f = open( fw.path, "bw+")
         except IOError:
-            return self.build_response(code=500, body="Unable to write file chunk on the the server :(")
+            return TusManager.build_response(code=500, body="Unable to write file chunk on the the server :(")
         finally:
             f.seek( file_offset )
             f.write(data)
             f.close()
-        pfile.upload_offset += chunk_size # self.redis_connection.incrby( "file-uploads/{}/offset".format( resource_id ), chunk_size)
-        pfile.size = pfile.upload_offset
-        pfile.save()
-        # file transfer complete, rename from resource id to actual filename
-        if pfile.size_total == pfile.upload_offset: 
-            pfile.status = "DOWNLOADED"
-            pfile.path = os.path.join(FILES_DIR, str(uuid.uuid4()))
-            os.rename(upload_file_path, pfile.path)
-            pfile.save()
-        headers = { 'Upload-Offset' : str(pfile.upload_offset), 'Tus-Temp-Filename' : str(pfile.id) }
-        return self.build_response(code=200, headers=headers)
+        fw.upload_offset += chunk_size
+        fw.save()
+        # file transfer complete
+        if fw.size == fw.upload_offset: 
+            fw.complete()
+        headers = { 'Upload-Offset' : str(fw.upload_offset), 'Tus-Temp-Filename' : str(fw.id) }
+        return TusManager.build_response(code=200, headers=headers)
+
 
     # OPTIONS request done by client to know how the server is convigured
     def options(self, request):
-        return self.build_response(code=204, headers={ 'Tus-Extension' : ",".join(TUS_EXTENSION), 'Tus-Max-Size' : str(TUS_MAX_SIZE) })
+        return TusManager.build_response(code=204, headers={ 'Tus-Extension' : ",".join(TUS_EXTENSION), 'Tus-Max-Size' : str(TUS_MAX_SIZE) })
 
-    # GET request done by client to check if a file already exists in database or not
-    # def exists(self, request):
-    #     metadata = {}
-    #     for kv in request.headers.get("Upload-Metadata", None).split(","):
-    #         key, value = kv.split(" ")
-    #         metadata[key] = base64.b64decode(value)
-
-    #     if metadata.get("filename", None) is None:
-    #         return self.build_response(code=404, body="metadata filename is not set")
-
-    #     filename_name, extension = os.path.splitext( metadata.get("filename").decode())
-    #     h={}
-    #     if filename_name.upper() in [os.path.splitext(f)[0].upper() for f in os.listdir( os.path.dirname( self.upload_folder ))]:
-    #         h.update({'Tus-File-Name' : metadata.get("filename").decode(), 'Tus-File-Exists' : True})
-    #     else:
-    #         h.update({'Tus-File-Exists' : False})
-    #     return self.build_response(code=200, headers=h)
 
 
     # POST request done by client to start a new resumable upload
     def creation(self, request):
         if request.headers.get("Tus-Resumable", None) is None:
-            return self.build_response(code=500, body="Received File upload for unsupported file transfer protocol")
+            return TusManager.build_response(code=500, body="Received File upload for unsupported file transfer protocol")
 
         # process upload metadata
         metadata = {}
@@ -122,61 +163,125 @@ class TusManager:
             key, value = kv.split(" ")
             metadata[key] = base64.b64decode(value)
 
-        # if os.path.lexists( os.path.join( self.upload_folder, metadata.get("filename").decode() )) and self.file_overwrite is False:
-        #     return self.build_response(code=409) # HTTP 409 Conflict
-
         # Retrieve data about the file
         filename  = metadata.get("filename").decode()
-        path      = os.path.join(TEMP_DIR, str(uuid.uuid4()))
         file_size = int(request.headers.get("Upload-Length", "0"))
-        comments  = None
-        tags      = None
-        # if "comments" in data.keys():
-        #     comments = data['comments'].strip()
-        # if "tags" in data.keys():
-        #     tmps = data['tags'].split(',')
-        #     tags = []
-        #     for i in tmps:
-        #         i2 = i.strip()
-        #         if i2 != "":
-        #             tags.append(i2)
+
         # Create file entry in database
-        pirusfile   = PirusFile()
-        pirusfile.import_data({
-                "name"         : filename,
-                "type"         : os.path.splitext(filename)[1][1:].strip().lower(),
-                "path"         : path,
-                "size"         : 0,
-                "size_total"   : file_size,
-                "offset"       : 0,
-                "status"       : "DOWNLOADING",
-                "create_date"  : str(datetime.datetime.now().timestamp()),
-                "md5sum"       : None,
-                # "tags"         : tags,
-                # "comments"     : comments
-            })
-        pirusfile.save()
+        fw = TusFileWrapper.new_upload(request, filename, file_size)
 
         # create empty file that allocated the needed disk space
         try:
-            f = open( path, "wb")
+            f = open( fw.path, "wb")
             f.seek( file_size - 1)
             f.write("\0".encode())
             f.close()
         except IOError as e:
-            return self.build_response(code=500, body="Unable to create file: {}".format(e))
+            return TusManager.build_response(code=500, body="Unable to create file: {}".format(e))
 
-        return self.build_response(code=201, headers={'Location' : pirusfile.upload_url(), 'Tus-Temp-Filename' : str(pirusfile.id)})
+        return TusManager.build_response(code=201, headers={'Location' : fw.upload_url, 'Tus-Temp-Filename' : str(fw.id)})
 
 
 
     # DELETE request done by client to delete a file
     def delete_file(self, request):
-        pfile = self.get_file_data(request)
-        os.unlink(pfile.path)
-        PirusFile.remove(pfile.id)
-        return self.build_response(code=204)
+        fw = TusFileWrapper.from_request(request)
+        os.unlink(fw.path)
+        PirusFile.remove(fw.id)
+        return TusManager.build_response(code=204)
+
+
+    # GET request !!! Not implemented - Trash code !!!
+    # def exists(self, request):
+    #     metadata = {}
+    #     for kv in request.headers.get("Upload-Metadata", None).split(","):
+    #         key, value = kv.split(" ")
+    #         metadata[key] = base64.b64decode(value)
+
+    #     if metadata.get("filename", None) is None:
+    #         return TusManager.build_response(code=404, body="metadata filename is not set")
+
+    #     filename_name, extension = os.path.splitext( metadata.get("filename").decode())
+    #     h={}
+    #     if filename_name.upper() in [os.path.splitext(f)[0].upper() for f in os.listdir( os.path.dirname( self.upload_folder ))]:
+    #         h.update({'Tus-File-Name' : metadata.get("filename").decode(), 'Tus-File-Exists' : True})
+    #     else:
+    #         h.update({'Tus-File-Exists' : False})
+    #     return TusManager.build_response(code=200, headers=h)
 
 
 
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# PIRUS SPECIFIC IMPLEMENTATION 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+
+# Custom wrapper for Pirus file
+class PirusFileWrapper (TusFileWrapper) :
+    def __init__(self, id):
+        self.pfile = PirusFile.from_id(id)
+
+        self.id = self.pfile.id
+        self.name = self.pfile.name
+        self.upload_offset = self.pfile.upload_offset
+        self.path = self.pfile.path
+        self.size = self.pfile.size
+        self.upload_url = self.pfile.upload_url()
+
+    def save(self):
+        # Update pirus file status
+        self.pfile.upload_offset = self.upload_offset
+        self.pfile.status = "UPLOADING"
+        self.pfile.save()
+
+    def complete(self):
+        # Update pirus file status
+        self.pfile.status = "UPLOADED"
+        oldpath = self.path
+        self.pfile.path = os.path.join(FILES_DIR, str(uuid.uuid4()))
+        os.rename(oldpath, self.pfile.path)
+        self.pfile.save()
+        # TODO : check if run was waiting the end of the upload to start
+
+
+# Custom wrapper for Pirus pipeline
+class PirusPipelineWrapper (TusFileWrapper) :
+    def __init__(self, id):
+        self.ppipe = Pipeline.from_id(id)
+
+        self.id = self.ppipe.id
+        self.name = self.ppipe.name
+        self.upload_offset = self.ppipe.upload_offset
+        self.path = self.ppipe.pipeline_file
+        self.size = self.ppipe.size
+        self.upload_url = self.ppipe.upload_url()
+
+    def save(self):
+        # Update upload status of the pipe
+        self.ppipe.upload_offset = self.upload_offset
+        self.ppipe.status = "UPLOADING"
+        self.ppipe.save()
+
+    def complete(self):
+        # Save pirus package on the server plugins directory
+        try:
+            pipeline = Pipeline.install(self.ppipe.id)
+        except Exception as error:
+            # TODO : manage error
+            pass
+
+
+
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# Instanciate manager 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 tus_manager = TusManager()
