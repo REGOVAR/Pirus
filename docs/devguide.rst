@@ -6,14 +6,14 @@ Developer Guide
 Solution organisation
 =====================
  * The core team of Pirus project:
-   * Ikit :  Technical leader and main developer
-   * drIdk : Functional leader
-   * Oodnadatta : Consultant
-   * Arkanosis : Consultant
+    * Ikit :  Technical leader and main developer
+    * drIdk : Functional leader
+    * Oodnadatta : Consultant
+    * Arkanosis : Consultant
  * Coding Rules : https://www.python.org/dev/peps/pep-0008/
  * Git branching strategy : 
-   * dev on master, 
-   * one branch by release; with the version number as name (by example branch "v1.0.0" for the v1.0.0)
+    * dev on master, 
+    * one branch by release; with the version number as name (by example branch "v1.0.0" for the v1.0.0)
  * Discussion : https://regovar.slack.com/
  
 
