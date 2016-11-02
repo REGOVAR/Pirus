@@ -6,8 +6,8 @@ Developer Guide
 Solution organisation
 =====================
  * The core team of Pirus project:
-    * Ikit :  Technical leader and main developer
-    * drIdk : Functional leader
+    * ikit :  Technical leader and main developer
+    * dridk : Functional leader
     * Oodnadatta : Consultant
     * Arkanosis : Consultant
  * Coding Rules : https://www.python.org/dev/peps/pep-0008/
