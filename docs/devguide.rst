@@ -10,11 +10,13 @@ Solution organisation
     * dridk : Functional leader
     * Oodnadatta : Consultant
     * Arkanosis : Consultant
- * Coding Rules : https://www.python.org/dev/peps/pep-0008/
+ * Coding Rules : 
+    * https://www.python.org/dev/peps/pep-0008/
  * Git branching strategy : 
-    * dev on master, 
-    * one branch by release; with the version number as name (by example branch "v1.0.0" for the v1.0.0)
- * Discussion : https://regovar.slack.com/
+    * Dev on master, 
+    * One branch by release; with the version number as name (by example branch "v1.0.0" for the v1.0.0)
+ * Discussion : 
+    * https://regovar.slack.com/
  
 
 
