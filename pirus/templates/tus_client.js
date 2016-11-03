@@ -50,8 +50,7 @@ pirusFileInput.addEventListener("change", function(e) {
     pirusFileUpload.start()
 
     fileId = pirusFileUpload.url.substr(pirusFileUpload.url.lastIndexOf('/') + 1)
-    addFileEntry(fileId)
-
+    
     // retrieve file information an load/enable second part of the form
     $.ajax({ url: rootURL + "/file/" + fileId, type: "GET", async: false}).done(function(jsonData)
     {

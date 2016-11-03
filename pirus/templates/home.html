@@ -84,7 +84,7 @@
                 </div>
 
                 <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
-                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="1024">
+                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="512000">
                 <input type="file" id="tusFileInput">
                 <br/>
                 <div id="tusFileProgress">
@@ -138,16 +138,7 @@
                     <tr id="fileEntry-{{ f["id"] }}">
                         <td>{{ f["name"] }}<br/><span class="details">{{ f["id"] }} - {{ f["size"] }}</span></td>
                         <td style="vertical-align: middle;">{{ f["tags"] }}</td>
-                        <td style="vertical-align: middle;">
-                            {{ f["status"] }} <br/>
-                            <div class="progress">
-                                <div class="progress-bar {% if f["status"] == "ERROR" %}progress-bar-danger{% endif -%}{% if f["status"] == "UPLOADING" %}progress-bar-striped active{% endif -%}{% if f["status"] == "UPLOADED" or f["status"] == "CHECKED" %}progress-bar-success{% endif -%}{% if f["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
-                                    role="progressbar" aria-valuenow="{{ f["size"] }}" aria-valuemin="0" aria-valuemax="{{ f["size"] }}" 
-                                    style="min-width: 2em;">
-                                    {{ f["status"]}}
-                                </div>
-                            </div>
-                        </td>
+                        <td style="vertical-align: middle;"><progress value="{{ f["upload_offset"] }}" max="{{ f["size"] }}" ></progress> {{ f["status"] }}</td>
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs disabled" title="Delete file"                onclick="javascript:delete_file('{{f["id"]}}')"><i class="fa fa-trash" aria-hidden="true"> delete</i></a> 
@@ -178,6 +169,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Description</th>
+                            <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -185,6 +177,7 @@
                     <tr>
                         <td style="vertical-align: middle;"><img src="{{ p["icon_url"] }}" style="height:30px; width:30px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i></td>
                         <td style="vertical-align: middle;">{{ p["description"] }}</td>
+                        <td style="vertical-align: middle;"><progress value="{{ p["upload_offset"] }}" max="{{ p["size"] }}" ></progress> {{ p["status"] }}</td> 
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 

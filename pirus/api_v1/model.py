@@ -22,7 +22,7 @@ from framework import *
 
 
 class PirusFile(Document):
-    public_fields = ["id", "name", "type", "size", "status", "comments", "runs", "create_date", "tags", "md5sum", "url"]
+    public_fields = ["id", "name", "type", "size", "status", "upload_offset", "comments", "runs", "create_date", "tags", "md5sum", "url"]
 
     name          = StringField(required=True)
     type          = StringField()
@@ -355,7 +355,10 @@ class Pipeline(Document):
             "form_file"        : form_file,
             "logo_file"        : icon_file,
             "lxd_alias"        : "pirus-pipe-" + lxd_alias,
-            "pipeline_file"    : pipeline_file
+            "pipeline_file"    : pipeline_file,
+            "size"             : pipeline.size,
+            "upload_offset"    : pipeline.upload_offset,
+            "status"           : "INSTALLING"
         })
         try:
             pipeline.import_data(metadata)
@@ -410,6 +413,9 @@ class Pipeline(Document):
             plog.info('E:    [FAILLED] Cleaning repository.')
         plog.info('I:    [OK     ] Cleaning repository.')
         plog.info('I:    All fine. Pipeline is ready !')
+
+        pipeline.status = "READY"
+        pipeline.save()
         return pipeline
         
 

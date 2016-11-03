@@ -266,7 +266,7 @@ class FileHandler:
         pipeline = Pipeline.from_id(pipe_id)
         if filename == None:
             return rest_error("No filename provided")
-        path = os.path.join(pipeline.path, filename)
+        path = os.path.join(pipeline.root_path, filename)
         file = None
         if os.path.isfile(path):
             with open(path, 'br') as content_file:
