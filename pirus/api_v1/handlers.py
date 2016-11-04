@@ -13,6 +13,7 @@ import tarfile
 import datetime
 import time
 import uuid
+import subprocess
 
 
 from aiohttp import web, MultiDict
@@ -349,47 +350,11 @@ class RunHandler:
         return rest_success([p.export_client_data(fields) for p in Run.objects(__raw__=query).order_by(*order)[offset:limit]])
 
 
-    async def post(self, request):
-        # 1- Retrieve data from request
-        data = await request.json()
-        pipe_id = data["pipeline_id"]
-        config = data["config"]
-        inputs = data["inputs"]
-
-        # 2- Load pipeline from database
-        pipeline = Pipeline.from_id(pipe_id)
-        if pipeline is None:
-            return rest_error("Unknow pipeline id " + str(pipe_id))
-            
-
-        config = { "run" : config, "pirus" : { "notify_url" : ""}}
-        # 3- Enqueue run of the pipeline with celery
-        try:
-            cw = run_pipeline.delay(pipeline, config, inputs)
-            plog.info('RUNNING | New Run start : ' + str(cw.id))
-        except:
-            # TODO : clean filesystem
-            return rest_error("Unable to run the pipeline with celery " + str(pipe_id))
-        # 4- Store run information into database
-        run = Run()
-        run.import_data({
-            "pipe_id" : pipe_id,
-            "name" : config["run"]["name"],
-            "private_id" : str(cw.id),
-            "start" : str(datetime.datetime.now().timestamp()),
-            "status" : "WAITING",
-            "config" : json.dumps(config),
-            "inputs" : inputs,
-            "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
-        })
-        run.save()
-        # 5- return result
-        return rest_success(run.export_client_data())
-
     def delete(self, request):
         run_id = request.match_info.get('run_id', -1)
         print ("DELETE run/<id=" + str(run_id) + ">")
         return web.Response(body=b"DELETE run/<id>")
+
 
     def get_details(self, request):
         run_id = request.match_info.get('run_id', -1)
@@ -452,7 +417,7 @@ class RunHandler:
         return self.download_file(run_id, filename)
 
 
-    async def up_data(self, request):
+    async def update_status(self, request):
         # 1- Retrieve data from request
         data = await request.json()
         run_id = request.match_info.get('run_id', -1)
@@ -460,25 +425,79 @@ class RunHandler:
         if run is not None:
             if "progress" in data.keys():
                 run.progress = data["progress"]
+            status = run.status
             if "status" in data.keys():
-                run.status = data["status"]
-            run.save()
-            msg = '{"action":"run_progress", "data" : ' + json.dumps(run.export_client_data()) + '}'
-            notify_all(None, msg)
+                status = data["status"]
+            self.set_status(run, status)
+
         return web.Response()
 
 
+    # Update the status of the run, and according to the new status will do specific action
+    # Notify also every one via websocket that run status changed
+    def set_status(self, run, new_status):
+        run.status = new_status
+        run.save()
+
+        #Need to do something according to the new status ?
+        # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
+        if run.status in ["PAUSE", "ERROR", "DONE", "CANCELED"]:
+            next_run = Run.objects(status="WAITING").order_by('start')
+            if next_run is not []:
+                if next_run[0].status == "PAUSE":
+                    start_run.delay(next_run[0].id)
+                else :
+                    run_pipeline.delay(next_run[0].id)
+        
+        msg = {"action":"run_changed", "data" : [json.dumps(run.export_client_data())] }
+        notify_all(None, str(msg))
+
+
+
+    async def post(self, request):
+        # 1- Retrieve data from request
+        data = await request.json()
+        pipe_id = data["pipeline_id"]
+        config = data["config"]
+        inputs = data["inputs"]
+        config = { "run" : config, "pirus" : { "notify_url" : ""}}
+        # Create the run 
+        run = Run.create(pipe_id, config, inputs)
+        if run is None:
+            return error
+        # start run
+        run_pipeline.delay(run.id)
+        return rest_success(run.export_client_data())
+
+
     def get_pause(self, request):
-        # Todo
-        pass
+        run_id  = request.match_info.get('run_id',  -1)
+        run = Run.from_id(run_id)
+        subprocess.Popen(["lxc", "pause", run.lxd_container])
+        self.set_status(run, "PAUSE")
+        return rest_success(run.export_client_data())
+
 
     def get_play(self, request):
-        # Todo
-        pass
+        run_id  = request.match_info.get('run_id',  -1)
+        run = Run.from_id(run_id)
+        subprocess.Popen(["lxc", "start", run.lxd_container])
+        self.set_status(run, "RUNNING")
+        return rest_success(run.export_client_data())
+
 
     def get_stop(self, request):
-        # Todo
-        pass
+        run_id  = request.match_info.get('run_id',  -1)
+        run = Run.from_id(run_id)
+        subprocess.Popen(["lxc", "stop", run.lxd_container, "--force"])
+        self.set_status(run, "CANCELED")
+        return rest_success(run.export_client_data())
+
+
+
+
+
+
 
 
 

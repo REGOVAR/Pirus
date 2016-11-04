@@ -70,7 +70,7 @@ app.router.add_route('PATCH',  "/v1/file/upload/{file_id}", fileHdl.tus_upload_c
 app.router.add_route('DELETE', "/v1/file/upload/{file_id}", fileHdl.tus_upload_delete)
 
 # Websockets / realtime notification
-app.router.add_route('POST',    "/v1/run/notify/{run_id}", runHdl.up_data)
+app.router.add_route('POST',    "/v1/run/notify/{run_id}", runHdl.update_status)
 
 
 # DEV/DEBUG - Routes that should be manages directly by NginX

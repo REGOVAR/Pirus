@@ -82,108 +82,114 @@ class PirusTask(Task):
     def notify_status(self, status:str):
         requests.post(self.notify_url, data = '{"status": "'+status+'"}' )
 
+    def error(self, msg:str, error_code:int=500):
+        # TODO : some log ?...
+        self.notify_status('ERROR')
+        return error_code
+
+
+
+
 
 
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def run_pipeline(self, pipe_image_alias, config, inputs):
+def run_pipeline(self, run_id):
     from api_v1.model import Run, PirusFile, Pipeline
     connect('pirus')
 
-    self.run_private_id = str(self.request.id)
-    self.notify_url = 'http://' + HOSTNAME + '/run/notify/' + self.run_private_id
-    config["pirus"]["notify_url"] = self.notify_url
+    run = Run.from_id(run_id)
+    if run is None :
+        # TODO : log error
+        return
 
-    # Init path
-    rpath = os.path.join(RUNS_DIR, self.run_private_id)
-    ipath = os.path.join(rpath, "inputs")
-    opath = os.path.join(rpath, "outputs")
-    lpath = os.path.join(rpath, "logs")
+    self.notify_url = run.notify_url()
+    # # Init logs
+    # print(os.path.join(lpath, "pirus.log"))
+    # setup_logger('pirus_worker', os.path.join(lpath, "pirus_worker.log"))
+    # setup_logger('run_out', os.path.join(lpath, "out.log"))
+    # setup_logger('run_err', os.path.join(lpath, "err.log"))
+    # wlog = logging.getLogger('pirus_worker')
+    # # olog = logging.getLogger('run_out')
+    # # elog = logging.getLogger('run_err')
+    
+    # wlog.info('INIT    | Pirus worker initialisation : ')
+    # wlog.info('INIT    |  - LXD alias : ' + pipeline.lxd_alias)
+    # wlog.info('INIT    |  - Run ID  : ' + self.run_private_id)
+    # wlog.info('INIT    | Directory created : ')
+    # wlog.info('INIT    |  - inputs  : ' + ipath)
+    # wlog.info('INIT    |  - outputs : ' + opath)
+    # wlog.info('INIT    |  - logs    : ' + lpath)
+    # wlog.info('INIT    |  - db      : ' + DATABASES_DIR)
+    # wlog.info('INIT    | Run config : ' + json.dumps(config))
+    # wlog.info('INIT    | Run inputs : ' + json.dumps(inputs))
+
+
+
+    run.status = "WAITING"
+    run.save()
+
+    # Check that all inputs files are ready to be used
+    for file_id in run.inputs:
+        f = PirusFile.from_id(file_id)
+        if f is None :
+            return self.error('Inputs file deleted before the start of the run. Run aborded.')
+        if f.status not in ["CHECKED", "UPLOADED"]:
+            # inputs not ready, we keep the run in the waiting status
+            return 1
+        
+    # Inputs files ready to use, looking for lxd resources now
+    count = 0
+    for lxd_container in lxd_client.containers.all():
+        if lxd_container.name.startswith(LXD_PREFIX) and lxd_container.status == 'Running':
+            count += 1
+    if count >= LXD_MAX:
+        # too many run in progress, we keep the run in the waiting status
+        return 1
+
+
+    #LXD ready ! Prepare filesystem of the server to host lxc container files
+    root_path    = os.path.join(RUNS_DIR, self.run_private_id)
+    inputs_path  = os.path.join(root_path, "inputs")
+    outputs_path = os.path.join(root_path, "outputs")
+    logs_path    = os.path.join(root_path, "logs")
 
     # Init directories
-    if not os.path.exists(ipath):
-        os.makedirs(ipath)
-    if not os.path.exists(opath):
-        os.makedirs(opath)
-        os.chmod(opath, 0o777)
-    if not os.path.exists(lpath):
-        os.makedirs(lpath)
-        os.chmod(lpath, 0o777)
+    if not os.path.exists(inputs_path):
+        os.makedirs(inputs_path)
+    if not os.path.exists(outputs_path):
+        os.makedirs(outputs_path)
+        os.chmod(outputs_path, 0o777)
+    if not os.path.exists(logs_path):
+        os.makedirs(logs_path)
+        os.chmod(logs_path, 0o777)
 
-    # Init logs
-    print(os.path.join(lpath, "pirus.log"))
-    setup_logger('pirus_worker', os.path.join(lpath, "pirus_worker.log"))
-    setup_logger('run_out', os.path.join(lpath, "out.log"))
-    setup_logger('run_err', os.path.join(lpath, "err.log"))
-    wlog = logging.getLogger('pirus_worker')
-    # olog = logging.getLogger('run_out')
-    # elog = logging.getLogger('run_err')
-    
-    wlog.info('INIT    | Pirus worker initialisation : ')
-    wlog.info('INIT    |  - LXD alias : ' + pipeline.lxd_alias)
-    wlog.info('INIT    |  - Run ID  : ' + self.run_private_id)
-    wlog.info('INIT    | Directory created : ')
-    wlog.info('INIT    |  - inputs  : ' + ipath)
-    wlog.info('INIT    |  - outputs : ' + opath)
-    wlog.info('INIT    |  - logs    : ' + lpath)
-    wlog.info('INIT    |  - db      : ' + DATABASES_DIR)
-    wlog.info('INIT    | Run config : ' + json.dumps(config))
-    wlog.info('INIT    | Run inputs : ' + json.dumps(inputs))
+    # Put inputs files in the inputs directory of the run
+    conf_file = os.path.join(inputs_path, "config.json")
+    with open(conf_file, 'w') as f:
+        ipdb.set_trace()
+        f.write(json.dumps(run.config))
+        os.chmod(conf_file, 0o777)
 
-
-
-    # Init inputs
-    run = Run.from_private_id(self.run_private_id)
-    cfile = os.path.join(ipath, "config.json")
-    with open(cfile, 'w') as f:
-        f.write(json.dumps(config))
-        os.chmod(cfile, 0o777)
-
-    for ifile in inputs:
-        print(ifile)
-        pirusfile = PirusFile.from_id(ifile)
-        if pirusfile is None :
-            print("unknow file " + ifile )
-            pass
-        else:
-            os.symlink(pirusfile.file_path, os.path.join(ipath, pirusfile.file_name))
-            pirusfile.status = "OK"
-            if pirusfile.runs is None:
-                pirusfile.runs = [run.private_id]
-            else:
-                pirusfile.runs.append(run.private_id)
-            pirusfile.save()
-
-
-    # Check database, to see how many container are running and if we can create a new one for this run
-    wlog.info('WAITING | Looking for lxc container creation ...')
-    self.notify_status("WAITING")
-    try:
-        while len(lxd_client.containers.all()) >= LXD_MAX:
-            time.sleep(1)
-        wlog.info('WAITING | ' + str(len(lxd_client.containers.all())) + '/' + str(LXD_MAX) + ' containers -> ok to create a new one')
-        c_name = LXD_PREFIX + "-" + self.run_private_id
-    except:
-        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("ERROR")
-        raise
-
+    for file_id in run.inputs:
+        f = PirusFile.from_id(file_id)
+        os.symlink(f.file_path, os.path.join(inputs_path, f.file_name))
 
     # Setting up the lxc container for the run
-    wlog.info('SETUP   | Creation of the LXC container from image "' + pipeline.lxd_alias + '"')
+    wlog.info('SETUP   | Creation of the LXC container from image "' + run.lxd_image + '"')
+
     self.notify_status("INITIALIZING")
     try:
+        pipeline = Pipeline.from_id(run.pipeline_id)
         # create container
-        execute(["lxc", "init", pipeline.lxd_alias, c_name])
+        subprocess.call(["lxc", "init", run.lxd_image, run.lxd_container])
         # set up env
-        execute(["lxc", "config", "set", c_name, "environment.PIRUS_NOTIFY_URL", self.notify_url ])
+        subprocess.call(["lxc", "config", "set", run.lxd_container, "environment.PIRUS_NOTIFY_URL", self.notify_url ])
         # set up devices
-        execute(["lxc", "config", "device", "add", c_name, "pirus_inputs",  "disk", "source="+ipath,         "path=" + pipeline.ipath[1:], "readonly=True"])
-        execute(["lxc", "config", "device", "add", c_name, "pirus_outputs", "disk", "source="+opath,         "path=" + pipeline.opath[1:]])
-        execute(["lxc", "config", "device", "add", c_name, "pirus_logs",    "disk", "source="+lpath,         "path=" + pipeline.lpath[1:]])
-        execute(["lxc", "config", "device", "add", c_name, "pirus_db",      "disk", "source="+DATABASES_DIR, "path=" + pipeline.dpath[1:], "readonly=True"])
-        # TODO => create symlink in ipath directory
-        # TODO => copy config file of the run in the ipath directory
+        subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_inputs",  "disk", "source="+inputs_path,   "path=" + pipeline.lxd_inputs_path[1:], "readonly=True"])
+        subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_outputs", "disk", "source="+outputs_path,  "path=" + pipeline.lxd_outputs_path[1:]])
+        subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_logs",    "disk", "source="+logs_path,     "path=" + pipeline.lxd_logs_path[1:]])
+        subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_db",      "disk", "source="+DATABASES_DIR, "path=" + pipeline.lxd_db_path[1:], "readonly=True"])
     except:
         wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("ERROR")
@@ -193,15 +199,29 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     wlog.info('RUN     | Run the pipe !')
     self.notify_status("RUN")
     try:
-        execute(["lxc", "start", c_name])
-        # execute(["echo", '"/pipeline/run/run.sh > /pipeline/logs/out.log 2> /pipeline/logs/err.log"',  ">", "/pipeline/run/runcontainer.sh"])
-        # execute(["chmod", '+x',  ">", "/pipeline/run/runcontainer.sh"])
-        res = subprocess.call(["lxc", "exec", c_name, "/pipeline/run/run.sh"], stdout=open(lpath+"/out.log", "w"), stderr=open(lpath+"/err.log", "w"))
-
+        subprocess.call(["lxc", "start", run.lxd_container])
+        # subprocess.call(["echo", '"/pipeline/run/run.sh > /pipeline/logs/out.log 2> /pipeline/logs/err.log"',  ">", "/pipeline/run/runcontainer.sh"])
+        # subprocess.call(["chmod", '+x',  ">", "/pipeline/run/runcontainer.sh"])
+        subprocess.Popen(["lxc", "exec", run.lxd_container, pipeline.lxd_run_cmd], stdout=open(logs_path+"/out.log", "w"), stderr=open(logs_path+"/err.log", "w"))
     except:
         wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("ERROR")
         raise
+
+
+
+
+@app.task(base=PirusTask, queue='PirusQueue', bind=True)
+def terminate_run(self, run_id):
+    # Init celery task
+    from api_v1.model import Run, PirusFile, Pipeline
+    connect('pirus')
+    run = Run.from_id(run_id)
+    if run is None :
+        # TODO : log error
+        return
+    self.notify_url = run.notify_url()
+
 
     # Stop container and clear resource
     wlog.info('STOP    | Run ending')
@@ -209,10 +229,10 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     try:
         # Clean outputs
         wlog.info('STOP    |  - chmod 775 on outputs and logs files produced by the container')
-        execute(["lxc", "exec", c_name, "--", "chmod", "755", "-Rf", "/pipeline"])
+        subprocess.call(["lxc", "exec", run.lxd_container, "--", "chmod", "755", "-Rf", "/pipeline"])
 
-        wlog.info('STOP    |  - closing and deleting the lxc container : ' + c_name)
-        execute(["lxc", "delete", c_name, "--force"])
+        wlog.info('STOP    |  - closing and deleting the lxc container : ' + run.lxd_container)
+        subprocess.call(["lxc", "delete", run.lxd_container, "--force"])
     except:
         wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
         self.notify_status("ERROR")
@@ -251,13 +271,3 @@ def run_pipeline(self, pipe_image_alias, config, inputs):
     # It's done :)
     self.notify_status("DONE")
     wlog.info('STOP    | All is done. Bye.')
-
-
-@app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def start_run(self, run_id, config):
-    pass
-
-
-@app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def freeze_run(self, run_id):
-    pass

@@ -435,11 +435,12 @@ class Pipeline(Document):
 
 
 class Run(Document):
-    public_fields = ["id", "pipe_id", "name", "config", "start", "end", "status", "inputs", "outputs", "progress"]
+    public_fields = ["id", "pipeline_id", "name", "config", "start", "end", "status", "inputs", "outputs", "progress"]
 
-    pipe_id    = ObjectIdField(required=True)
-    private_id = StringField(required=True)   # = private_id
-    name       = StringField(requiered=True)
+    pipeline_id = ObjectIdField(required=True) # id of the pipe used for this run
+    lxd_container  = StringField()
+    lxd_image  = StringField(required=True)
+    name       = StringField(requiered=True)  # 
     config     = DynamicField(required=True)
     start      = StringField(required=True)
     end        = StringField()
@@ -455,8 +456,9 @@ class Run(Document):
     def export_server_data(self):
         return {
             "id"        : str(self.id),
-            "pipe_id"   : str(self.pipe_id),
-            "private_id" : self.private_id,
+            "pipeline_id"   : str(self.pipeline_id),
+            "lxd_container" : self.lxd_container,
+            "lxd_image" : self.lxd_image,
             "name"      : self.name,
             "config"    : self.config,
             "start"     : self.start,
@@ -476,8 +478,8 @@ class Run(Document):
         for k in fields:
             if k == "id":
                 result.update({"id" : str(self.id)})
-            elif k == "pipe_id":
-                result.update({"pipe_id" : str(self.pipe_id)})
+            elif k == "pipeline_id":
+                result.update({"pipeline_id" : str(self.pipeline_id)})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -485,13 +487,15 @@ class Run(Document):
 
     def import_data(self, data):
         try:
-            self.pipe_id   = data['pipe_id']
-            self.private_id = data['private_id']
+            self.pipeline_id   = data['pipeline_id']
+            self.lxd_image = data['lxd_image']
             self.name      = data['name']
             self.config    = data['config']
             self.start     = data['start']
             self.status    = data['status']
             self.progress  = data['progress']
+            if "lxd_container" in data:
+                self.lxd_container = data['lxd_container']
             if "end" in data:
                 self.end = data['end']
             if "inputs" in data:
@@ -501,6 +505,16 @@ class Run(Document):
         except KeyError as e:
             raise ValidationError('Invalid plugin: missing ' + e.args[0])
         return self 
+
+
+    def url(self):
+        return 'http://' + HOSTNAME + '/dl/r/' + str(self.id)
+    def notify_url(self):
+        return 'http://' + HOSTNAME + '/run/notify/' + self.lxd_alias
+
+
+
+
 
     @staticmethod
     def from_id(run_id):
@@ -512,4 +526,47 @@ class Run(Document):
     @staticmethod
     def from_private_id(run_id):
         run = Run.objects.get(private_id=run_id)
+        return run
+
+    @staticmethod
+    def launch_run(pipeline_id, config_data, inputs_data):
+        pass
+
+    @staticmethod
+    def create(pipeline_id, config_data, inputs_data):
+        # Load pipeline from database
+        pipeline = Pipeline.from_id(pipeline_id)
+        if pipeline is None:
+            # TODO : LOG rest_error("Unknow pipeline id " + str(pipeline_id))
+            return None
+        
+        # Create run in database.
+        lxd_container = LXD_PREFIX + "-" + str(uuid.uuid4())
+        config_data["pirus"]["notify_url"] = 'http://' + HOSTNAME + '/run/notify/' + lxd_container
+
+        run = Run()
+        run.import_data({
+            "pipeline_id" : pipeline_id,
+            "name" : config_data["run"]["name"],
+            "lxd_container" : lxd_container,
+            "lxd_image" : pipeline.lxd_alias,
+            "start" : str(datetime.datetime.now().timestamp()),
+            "status" : "INITIALIZING",
+            "config" : json.dumps(config_data),
+            "inputs" : inputs_data,
+            "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
+        })
+        run.save()
+
+        # Update input files to indicate that they will be used by this run
+        for file_id in run.inputs:
+            f = PirusFile.from_id(file_id)
+            if f is None :
+                # This file doesn't exists, so we will ignore it
+                run.inputs.remove(file_id)
+            elif run.id not in f.runs :
+                f.runs.append(run.id)
+
+        
+        # OK, run created and waiting to be start
         return run
