@@ -54,9 +54,9 @@ class TusFileWrapper:
             return TusManager.build_response(code=404)
 
         # We can upload file or pipeline, we check model according to url
-        if "/file/upload" in request.raw_path :
+        if "/file/upload" in request.raw_path and PirusFile.from_id(id) is not None:
             return PirusFileWrapper(id)
-        if "pipeline/upload" in request.raw_path :
+        if "pipeline/upload" in request.raw_path and Pipeline.from_id(id) is not None :
             return PirusPipelineWrapper(id)
         return TusManager.build_response(code=404)
 
@@ -130,13 +130,13 @@ class TusManager:
         if file_offset != fw.upload_offset: # check to make sure we're in sync
             return TusManager.build_response(code=409) # HTTP 409 Conflict
         try:
-            f = open( fw.path, "bw+")
+            with open(fw.path, "bw+") as f:
+                f.seek( file_offset )
+                f.write(data)
+
         except IOError:
             return TusManager.build_response(code=500, body="Unable to write file chunk on the the server :(")
-        finally:
-            f.seek( file_offset )
-            f.write(data)
-            f.close()
+
         fw.upload_offset += chunk_size
         fw.save()
         # file transfer complete
@@ -172,10 +172,7 @@ class TusManager:
 
         # create empty file that allocated the needed disk space
         try:
-            f = open( fw.path, "wb")
-            f.seek( file_size - 1)
-            f.write("\0".encode())
-            f.close()
+            os.mknod(fw.path)
         except IOError as e:
             return TusManager.build_response(code=500, body="Unable to create file: {}".format(e))
 

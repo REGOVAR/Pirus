@@ -84,7 +84,7 @@
                 </div>
 
                 <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
-                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="512000">
+                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="1024">
                 <input type="file" id="tusFileInput">
                 <br/>
                 <div id="tusFileProgress">
@@ -195,7 +195,7 @@
                 <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
 
                 <input type="hidden" id="tusPipeEndpoint" name="tusPipeEndpoint" value="http://{{ hostname }}/pipeline/upload">
-                <input type="hidden" id="tusPipeChunkSize" name="tusPipeChunkSize" value="512000">
+                <input type="hidden" id="tusPipeChunkSize" name="tusPipeChunkSize" value="256000">
                 <input type="file" id="tusPipeInput">
                 <br/>
                 <div id="tusPipeProgress">

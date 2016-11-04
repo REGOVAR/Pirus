@@ -251,7 +251,10 @@ class Pipeline(Document):
     def remove(pipe_id):
         pipe = Pipeline.from_id(pipe_id)
         if pipe != None:
-            shutil.rmtree(pipe.root_path)
+            if pipe.root_path is not None:
+                shutil.rmtree(pipe.root_path)
+            if os.path.exists(pipe.pipeline_file):
+                shutil.rmtree(pipe.pipeline_file)
             pipe.delete()
 
 

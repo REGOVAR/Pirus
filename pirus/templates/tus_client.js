@@ -41,7 +41,7 @@ pirusFileInput.addEventListener("change", function(e) {
         },
         onSuccess: function() {
             pirusFileInput.value = ""
-            buildPopup("Download finish !  " + upload.file.name + " is now available for run.", "success", "tusFileProgress")
+            buildPopup("Download finish !  " + pirusFileUpload.file.name + " is now available for run.", "success", "tusFileProgress")
             $("#uploadFileForm").addClass("hidden")
         }
     }
@@ -116,7 +116,7 @@ pirusPipeInput.addEventListener("change", function(e) {
         },
         onSuccess: function() {
             pirusPipeInput.value = ""
-            buildPopup("Download finish !  " + upload.file.name + " Will be soon installed.", "success", "tusPipeProgress")
+            buildPopup("Download finish !  " + pirusPipeUpload.file.name + " Will be soon installed.", "success", "tusPipeProgress")
         }
     }
 
