@@ -124,7 +124,7 @@ class PirusFile(Document):
 
 class Pipeline(Document):
     # Static
-    public_fields    = ["name", "description", "version", "pirus_api", "license", "developers", "size", "upload_offset", "status", "id"]
+    public_fields    = ["name", "description", "version", "pirus_api", "license", "developers", "size", "upload_offset", "status", "id", "icon_url", "form_url"]
     # Metadata
     name             = StringField(required=True)
     description      = StringField()
@@ -132,6 +132,9 @@ class Pipeline(Document):
     pirus_api        = StringField(required=True)
     license          = StringField()
     developers       = ListField(StringField())
+    icon_url         = StringField()
+    form_url         = StringField()
+    upload_url       = StringField()
     # Upload data
     size             = IntField(required=True)
     upload_offset    = IntField(required=True)
@@ -151,10 +154,6 @@ class Pipeline(Document):
     def __str__(self):
         return self.pipeline_file
 
-    def url(self):
-        return "http://" + HOSTNAME + "/dl/p/" + str(self.id)
-    def upload_url(self):
-        return "http://" + HOSTNAME + "/pipeline/upload/" + str(self.id)
 
     def export_server_data(self):
         return {
@@ -189,10 +188,6 @@ class Pipeline(Document):
         for k in fields:
             if k == "id":
                 result.update({"id" : str(self.id)})
-            elif k == "form_url":
-                result.update({"form_url" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"})
-            elif k == "icon_url":
-                result.update({"icon" : "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.icon_file)})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -232,11 +227,30 @@ class Pipeline(Document):
                 self.lxd_run_cmd = data['lxd_run_cmd']
             if "form_file" in data.keys():
                 self.form_file = data['form_file']
+                self.form_url = "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"
             if "icon_file" in data.keys():
                 self.icon_file = data['icon_file']
+                self.icon_url = "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.icon_file)
         except KeyError as e:
             raise ValidationError('Invalid pipeline: missing ' + e.args[0])
         return self
+
+
+    @staticmethod
+    def new_from_tus(filename, file_size):
+        pipe   = Pipeline()
+        pipe.import_data({
+                "name"          : filename,
+                "pirus_api"     : "Unknow",
+                "pipeline_file" : os.path.join(TEMP_DIR, str(uuid.uuid4())),
+                "size"          : file_size,
+                "upload_offset" : 0,
+                "status"        : "UPLOADING"
+            })
+        pipe.save()
+        pipe.upload_url = "http://" + HOSTNAME + "/pipeline/upload/" + str(self.id)
+        pipe.save()
+        return pipe
 
 
     @staticmethod
@@ -251,10 +265,21 @@ class Pipeline(Document):
     def remove(pipe_id):
         pipe = Pipeline.from_id(pipe_id)
         if pipe != None:
+            # Clean filesystem
             if pipe.root_path is not None:
                 shutil.rmtree(pipe.root_path)
             if os.path.exists(pipe.pipeline_file):
                 shutil.rmtree(pipe.pipeline_file)
+            # Clean LXD
+            if pipe.lxd_alias is not None:
+                try:
+                    cmd = ["lxc", "image", "delete", pipe.lxd_alias]
+                    out_tmp = '/tmp/' + pipe.lxd_alias + '-out'
+                    err_tmp = '/tmp/' + pipe.lxd_alias + '-err'
+                    subprocess.call(cmd, stdout=open(out_tmp, "r+"), stderr=open(err_tmp, "r+"))
+                except Exception as err:
+                    plog.info('W: Unable to clean LXD for the pipe : ' + pipe.lxd_alias)
+            # Clean DB
             pipe.delete()
 
 
@@ -348,6 +373,7 @@ class Pipeline(Document):
 
 
         # 5- Save pipeline into database
+        lxd_alias = LXD_IMAGE_PREFIX + lxd_alias
         metadata.update({
             "root_path"        : root_path,
             "lxd_inputs_path"  : metadata["inputs"],
@@ -357,11 +383,13 @@ class Pipeline(Document):
             "lxd_run_cmd"      : metadata["run"],
             "form_file"        : form_file,
             "logo_file"        : icon_file,
-            "lxd_alias"        : "pirus-pipe-" + lxd_alias,
+            "lxd_alias"        : lxd_alias,
             "pipeline_file"    : pipeline_file,
             "size"             : pipeline.size,
             "upload_offset"    : pipeline.upload_offset,
-            "status"           : "INSTALLING"
+            "status"           : "INSTALLING",
+            "icon_url"         : "http://" + HOSTNAME + "/pipeline/" + str(pipeline.id) + + "/" + os.path.basename(icon_file),
+            "form_url"         : "http://" + HOSTNAME + "/pipeline/" + str(pipeline.id) + "/form.json"
         })
         try:
             pipeline.import_data(metadata)
@@ -544,7 +572,7 @@ class Run(Document):
             return None
         
         # Create run in database.
-        lxd_container = LXD_PREFIX + "-" + str(uuid.uuid4())
+        lxd_container = LXD_CONTAINER_PREFIX + str(uuid.uuid4())
         config_data["pirus"]["notify_url"] = 'http://' + HOSTNAME + '/run/notify/' + lxd_container
 
         run = Run()

@@ -78,17 +78,8 @@ class TusFileWrapper:
             return PirusFileWrapper(pfile.id)
 
         if "/pipeline/upload" in request.raw_path :
-            pPipe   = Pipeline()
-            pPipe.import_data({
-                    "name"          : filename,
-                    "pirus_api"     : "Unknow",
-                    "pipeline_file" : os.path.join(TEMP_DIR, str(uuid.uuid4())),
-                    "size"          : file_size,
-                    "upload_offset" : 0,
-                    "status"        : "UPLOADING"
-                })
-            pPipe.save()
-            return PirusPipelineWrapper(pPipe.id)
+            pipe=Pipeline.new_from_tus(filename, file_size)
+            return PirusPipelineWrapper(pipe.id)
 
 
 
@@ -130,7 +121,7 @@ class TusManager:
         if file_offset != fw.upload_offset: # check to make sure we're in sync
             return TusManager.build_response(code=409) # HTTP 409 Conflict
         try:
-            with open(fw.path, "bw+") as f:
+            with open(fw.path, "br+") as f:
                 f.seek( file_offset )
                 f.write(data)
 
@@ -255,7 +246,7 @@ class PirusPipelineWrapper (TusFileWrapper) :
         self.upload_offset = self.ppipe.upload_offset
         self.path = self.ppipe.pipeline_file
         self.size = self.ppipe.size
-        self.upload_url = self.ppipe.upload_url()
+        self.upload_url = self.ppipe.upload_url
 
     def save(self):
         # Update upload status of the pipe

@@ -135,28 +135,8 @@ class PirusException(Exception):
 # Create server app
 setup_logger('pirus', os.path.join(PIRUS_DIR, "pirus.log"))
 plog = logging.getLogger('pirus')
-plog.info('I: Pirus server initialisation')
-plog.info('I: Config loaded :')
-plog.info('I:    HOST           : ' + HOST)
-plog.info('I:    PORT           : ' + PORT)
-plog.info('I:    VERSION        : ' + VERSION)
-plog.info('I:    HOSTNAME       : ' + HOSTNAME)
-plog.info('I:    FILES_DIR      : ' + FILES_DIR)
-plog.info('I:    TEMP_DIR       : ' + TEMP_DIR)
-plog.info('I:    DATABASES_DIR  : ' + DATABASES_DIR)
-plog.info('I:    PIPELINES_DIR  : ' + PIPELINES_DIR)
-plog.info('I:    RUNS_DIR       : ' + RUNS_DIR)
-plog.info('I:    PIRUS_DIR      : ' + PIRUS_DIR)
-plog.info('I:    TEMPLATE_DIR   : ' + TEMPLATE_DIR)
-plog.info('I:    ERROR_ROOT_URL : ' + ERROR_ROOT_URL)
-plog.info('I:    NOTIFY_URL     : ' + NOTIFY_URL)
-plog.info('I:    LXD_UID        : ' + str(LXD_UID))
-plog.info('I:    LXD_GID        : ' + str(LXD_GID))
-plog.info('I:    LXD_MAX        : ' + str(LXD_MAX))
-plog.info('I:    LXD_PREFIX     : ' + LXD_PREFIX)
 
 
 app = web.Application()
-plog.info('I: iaoHTTP server started')
 aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(TEMPLATE_DIR))
 
