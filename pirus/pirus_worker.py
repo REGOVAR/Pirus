@@ -84,6 +84,7 @@ class PirusTask(Task):
 
     def error(self, msg:str, error_code:int=500):
         # TODO : some log ?...
+        print(error_code, " : ", msg)
         self.notify_status('ERROR')
         return error_code
 
@@ -103,7 +104,8 @@ def run_pipeline(self, run_id):
         # TODO : log error
         return
 
-    self.notify_url = run.notify_url()
+    self.notify_url = run.notify_url
+    print(self.notify_url)
     # # Init logs
     # print(os.path.join(lpath, "pirus.log"))
     # setup_logger('pirus_worker', os.path.join(lpath, "pirus_worker.log"))
@@ -125,9 +127,7 @@ def run_pipeline(self, run_id):
     # wlog.info('INIT    | Run inputs : ' + json.dumps(inputs))
 
 
-
-    run.status = "WAITING"
-    run.save()
+    self.notify_status("WAITING")
 
     # Check that all inputs files are ready to be used
     for file_id in run.inputs:
@@ -141,15 +141,18 @@ def run_pipeline(self, run_id):
     # Inputs files ready to use, looking for lxd resources now
     count = 0
     for lxd_container in lxd_client.containers.all():
-        if lxd_container.name.startswith(LXD_PREFIX) and lxd_container.status == 'Running':
+        if lxd_container.name.startswith(LXD_CONTAINER_PREFIX) and lxd_container.status == 'Running':
             count += 1
     if count >= LXD_MAX:
         # too many run in progress, we keep the run in the waiting status
         return 1
 
 
+
+    self.notify_status("INITIALIZING")
+
     #LXD ready ! Prepare filesystem of the server to host lxc container files
-    root_path    = os.path.join(RUNS_DIR, self.run_private_id)
+    root_path    = os.path.join(RUNS_DIR, run.lxd_container)
     inputs_path  = os.path.join(root_path, "inputs")
     outputs_path = os.path.join(root_path, "outputs")
     logs_path    = os.path.join(root_path, "logs")
@@ -166,21 +169,27 @@ def run_pipeline(self, run_id):
 
     # Put inputs files in the inputs directory of the run
     conf_file = os.path.join(inputs_path, "config.json")
+    data = json.loads(run.config)
     with open(conf_file, 'w') as f:
-        ipdb.set_trace()
-        f.write(json.dumps(run.config))
+        f.write(json.dumps(data))
         os.chmod(conf_file, 0o777)
 
     for file_id in run.inputs:
         f = PirusFile.from_id(file_id)
-        os.symlink(f.file_path, os.path.join(inputs_path, f.file_name))
+        os.symlink(f.path, os.path.join(inputs_path, f.name))
 
     # Setting up the lxc container for the run
-    wlog.info('SETUP   | Creation of the LXC container from image "' + run.lxd_image + '"')
-
-    self.notify_status("INITIALIZING")
     try:
         pipeline = Pipeline.from_id(run.pipeline_id)
+        # create run file
+        run_file = os.path.join(root_path, "start_" + run.lxd_container + ".sh")
+        print(run_file)
+        with open(run_file, 'w') as f:
+            f.write("#!/bin/bash\n")
+            f.write(pipeline.lxd_run_cmd + " 1> " + os.path.join(pipeline.lxd_logs_path, 'out.log') + " 2> " + os.path.join(pipeline.lxd_logs_path, "err.log\n"))
+            f.write("curl -X POST -d '{\"status\" : \"FINISHING\"}' " + run.notify_url + "\n")
+            os.chmod(run_file, 0o777)
+
         # create container
         subprocess.call(["lxc", "init", run.lxd_image, run.lxd_container])
         # set up env
@@ -191,21 +200,19 @@ def run_pipeline(self, run_id):
         subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_logs",    "disk", "source="+logs_path,     "path=" + pipeline.lxd_logs_path[1:]])
         subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_db",      "disk", "source="+DATABASES_DIR, "path=" + pipeline.lxd_db_path[1:], "readonly=True"])
     except:
-        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("ERROR")
-        raise
+        return self.error('Unexpected error ' + str(sys.exc_info()[0]))
+        raise 
 
     # Run the pipe !
-    wlog.info('RUN     | Run the pipe !')
-    self.notify_status("RUN")
     try:
         subprocess.call(["lxc", "start", run.lxd_container])
-        # subprocess.call(["echo", '"/pipeline/run/run.sh > /pipeline/logs/out.log 2> /pipeline/logs/err.log"',  ">", "/pipeline/run/runcontainer.sh"])
-        # subprocess.call(["chmod", '+x',  ">", "/pipeline/run/runcontainer.sh"])
-        subprocess.Popen(["lxc", "exec", run.lxd_container, pipeline.lxd_run_cmd], stdout=open(logs_path+"/out.log", "w"), stderr=open(logs_path+"/err.log", "w"))
+        lxd_run_file = os.path.join("/", os.path.basename(run_file))
+        subprocess.call(["lxc", "file", "push", run_file, run.lxd_container + lxd_run_file])
+        subprocess.Popen(["lxc", "exec", run.lxd_container, "chmod", "+x", lxd_run_file])
+        subprocess.Popen(["lxc", "exec", run.lxd_container, lxd_run_file])
+        self.notify_status("RUNNING")
     except:
-        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("ERROR")
+        return self.error('Unexpected error ' + str(sys.exc_info()[0]))
         raise
 
 
@@ -224,18 +231,12 @@ def terminate_run(self, run_id):
 
 
     # Stop container and clear resource
-    wlog.info('STOP    | Run ending')
-    self.notify_status("STOP")
     try:
         # Clean outputs
-        wlog.info('STOP    |  - chmod 775 on outputs and logs files produced by the container')
         subprocess.call(["lxc", "exec", run.lxd_container, "--", "chmod", "755", "-Rf", "/pipeline"])
-
-        wlog.info('STOP    |  - closing and deleting the lxc container : ' + run.lxd_container)
         subprocess.call(["lxc", "delete", run.lxd_container, "--force"])
     except:
-        wlog.info('ERROR   | Unexpected error ' + str(sys.exc_info()[0]))
-        self.notify_status("ERROR")
+        return self.error('Unexpected error ' + str(sys.exc_info()[0]))
         raise
 
     # Register outputs files
@@ -270,4 +271,3 @@ def terminate_run(self, run_id):
     
     # It's done :)
     self.notify_status("DONE")
-    wlog.info('STOP    | All is done. Bye.')

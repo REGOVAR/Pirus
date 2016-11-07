@@ -480,6 +480,9 @@ class Run(Document):
     outputs    = StringField()
     progress   = DynamicField(required=True)
 
+    url        = StringField()
+    notify_url = StringField()
+
     def __str__(self):
         return str(self.id)
 
@@ -538,13 +541,6 @@ class Run(Document):
         return self 
 
 
-    def url(self):
-        return 'http://' + HOSTNAME + '/dl/r/' + str(self.id)
-    def notify_url(self):
-        return 'http://' + HOSTNAME + '/run/notify/' + self.lxd_alias
-
-
-
 
 
     @staticmethod
@@ -552,11 +548,6 @@ class Run(Document):
         if not ObjectId.is_valid(run_id):
             return None;
         run = Run.objects.get(pk=run_id)
-        return run
-
-    @staticmethod
-    def from_private_id(run_id):
-        run = Run.objects.get(private_id=run_id)
         return run
 
     @staticmethod
@@ -573,7 +564,6 @@ class Run(Document):
         
         # Create run in database.
         lxd_container = LXD_CONTAINER_PREFIX + str(uuid.uuid4())
-        config_data["pirus"]["notify_url"] = 'http://' + HOSTNAME + '/run/notify/' + lxd_container
 
         run = Run()
         run.import_data({
@@ -587,6 +577,13 @@ class Run(Document):
             "inputs" : inputs_data,
             "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
         })
+        run.save()
+
+        run.url = 'http://' + HOSTNAME + '/dl/r/' + str(run.id)
+        run.notify_url = 'http://' + HOSTNAME + '/run/notify/' + str(run.id)
+        config_data = json.loads(run.config)
+        config_data["pirus"]["notify_url"] = run.notify_url
+        run.config = json.dumps(config_data)
         run.save()
 
         # Update input files to indicate that they will be used by this run
