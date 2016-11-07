@@ -426,8 +426,9 @@ class RunHandler:
     # Update the status of the run, and according to the new status will do specific action
     # Notify also every one via websocket that run status changed
     def set_status(self, run, new_status):
-        run.status = new_status
-        run.save()
+        if run.status != "ERROR":
+            run.status = new_status
+            run.save()
 
         #Need to do something according to the new status ?
         # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
@@ -435,14 +436,14 @@ class RunHandler:
             next_run = Run.objects(status="WAITING").order_by('start')
             if len(next_run) > 0:
                 if next_run[0].status == "PAUSE":
-                    start_run.delay(next_run[0].id)
+                    start_run.delay(str(next_run[0].id))
                 else :
-                    run_pipeline.delay(next_run[0].id)
+                    run_pipeline.delay(str(next_run[0].id))
         elif run.status == "FINISHING":
-            terminate_run.delay(run.id)
+            terminate_run.delay(str(run.id))
         
-        msg = {"action":"run_changed", "data" : [json.dumps(run.export_client_data())] }
-        notify_all(None, str(msg))
+        msg = {"action":"run_changed", "data" : [run.export_client_data()] }
+        notify_all(None, json.dumps(msg))
 
 
 

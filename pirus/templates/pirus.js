@@ -10,7 +10,7 @@ function buildProgressBar(percentage, pbTheme, containerId) {
         { style += "progress-bar-success"}
     else if (pbTheme == "PAUSE")
         { style += "progress-bar-warning"}
-    else if (pbTheme == "RUN" || pbTheme == "UPLOADING")
+    else if (pbTheme == "RUNNING" || pbTheme == "UPLOADING")
         { style += "progress-bar-striped active"}
     else if (pbTheme == "WAITING") { style += "progress-bar-warning progress-bar-striped active"}
 

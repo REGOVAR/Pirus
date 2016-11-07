@@ -239,7 +239,7 @@
                                 </div>
                             </div>
                         </td>
-                        <td style="vertical-align: middle;">{{ r["status"] }}</td>
+                        <td id="run-{{ r["id"] }}-status" style="vertical-align: middle;">{{ r["status"] }}</td>
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{r["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
@@ -494,17 +494,14 @@
 
         }
 
-        function ws_run_progress(msg_data)
+        function ws_run_changed(data)
         {
-            var tdElement = $("#run-" + msg_data["id"] + "-progress")
-            buildProgressBar(
-                msg_data["progress"]["min"], 
-                msg_data["progress"]["max"], 
-                msg_data["progress"]["value"],
-                msg_data["progress"]["label"],
-                msg_data["status"],
-                "run-" + msg_data["id"] + "-progress")
-
+            jQuery.each(data, function(index, item) {
+                var percentage = (item["progress"]["value"] / item["progress"]["max"] * 100).toFixed(2)
+                buildProgressBar(percentage, item["status"], "run-" + item["id"] + "-progress")
+                var tdElement = $("#run-" + item["id"] + "-status")
+                tdElement.html(item["status"])
+            });
             // Todo : update controls
         }
 
@@ -538,6 +535,7 @@
                 break;
 
                 case 'run_changed':
+
                 ws_run_changed(json["data"])
                 break;
 

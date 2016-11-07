@@ -212,7 +212,7 @@ def run_pipeline(self, run_id):
         subprocess.Popen(["lxc", "exec", run.lxd_container, lxd_run_file])
         self.notify_status("RUNNING")
     except:
-        return self.error('Unexpected error ' + str(sys.exc_info()[0]))
+        return self.error('Unexpected error ' + str(sys.exc_info()[0])) 
         raise
 
 
@@ -227,7 +227,7 @@ def terminate_run(self, run_id):
     if run is None :
         # TODO : log error
         return
-    self.notify_url = run.notify_url()
+    self.notify_url = run.notify_url
 
 
     # Stop container and clear resource
@@ -240,32 +240,35 @@ def terminate_run(self, run_id):
         raise
 
     # Register outputs files
-    print("outputs check : ", opath)
-    for f in os.listdir(opath):
+    root_path    = os.path.join(RUNS_DIR, run.lxd_container)
+    outputs_path = os.path.join(root_path, "outputs")
+    logs_path    = os.path.join(root_path, "logs")
+
+    print("Analyse", outputs_path)
+    for f in os.listdir(outputs_path):
         if os.path.isfile(f):
-            print ("output to mv : ", f)
             file_name = str(uuid.uuid4())
             file_path = os.path.join(FILES_DIR, file_name)
+            print (" - Move : ", f, " ==> ", file_path)
             # 1- move file to FILE directory
-            shutil.move(os.path.join(opath, f), file_path)
+            os.rename(os.path.join(outputs_path, f), file_path)
             # 2- create symlink
-            os.symlink(file_path, os.path.join(opath, f))
+            os.symlink(file_path, os.path.join(outputs_path, f))
 
             # 3- register in db
             pirusfile = PirusFile()
             pirusfile.import_data({
-                    "file_name"    : f,
-                    "file_type"    : os.path.splitext(f)[1][1:].strip().lower(),
-                    "file_path"    : file_path,
-                    "file_size"    : humansize(os.path.getsize(file_path)),
-                    "status"       : "OK",
+                    "name"         : f,
+                    "type"         : os.path.splitext(f)[1][1:].strip().lower(),
+                    "path"         : file_path,
+                    "size"         : os.path.getsize(file_path),
+                    "status"       : "CHECKED",
                     "create_date"  : str(datetime.datetime.now().timestamp()),
                     "md5sum"       : md5(file_path),
-                    "tags"         : tags,
-                    "comments"     : comments,
-                    "runs"         : { str(run.id) : "out" }
+                    "runs"         : [ str(run.id) ]
                 })
             pirusfile.save()
+        print (" - Not a file : ", f)
 
 
     

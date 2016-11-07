@@ -48,3 +48,21 @@ fieldset
     font-style: italic;
     font-size: 10px;
 }
+
+
+
+progress::-webkit-progress-value { background: #2659ad; }
+progress.progress-bar-danger::-webkit-progress-value { background: #ad2626; }
+progress.progress-bar-success::-webkit-progress-value { background: #26ad4e; }
+progress.progress-bar-warning::-webkit-progress-value { background: #ad7726; }
+
+
+progress.progress-bar-striped::-webkit-progress-value { 
+    background-image:
+       -webkit-linear-gradient(-45deg, 
+                               transparent 33%, rgba(0, 0, 0, .1) 33%, 
+                               rgba(0,0, 0, .1) 66%, transparent 66%),
+       -webkit-linear-gradient(top, 
+                               rgba(255, 255, 255, .25), 
+                               rgba(0, 0, 0, .25))
+}
