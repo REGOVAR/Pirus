@@ -4,7 +4,7 @@ function buildProgressBar(percentage, pbTheme, containerId) {
     var container = $("#" + containerId)
     var style="progress-bar "
 
-    if  (pbTheme == "ERROR")
+    if  (pbTheme == "ERROR" || pbTheme == "CANCELED")
         { style += "progress-bar-danger"}
     else if (pbTheme == "DONE" || pbTheme == "UPLOADED" || pbTheme == "CHECKED")
         { style += "progress-bar-success"}

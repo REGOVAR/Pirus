@@ -493,7 +493,7 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         run = Run.from_id(run_id)
         if run.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
-            subprocess.Popen(["lxc", "stop", run.lxd_container, "--force"])
+            subprocess.Popen(["lxc", "delete", run.lxd_container, "--force"])
             self.set_status(run, "CANCELED")
             return rest_success(run.export_client_data())
         return rest_error("Unable to stop the run " + str(run_id))
