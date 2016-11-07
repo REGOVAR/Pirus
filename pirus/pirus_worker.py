@@ -244,7 +244,10 @@ def terminate_run(self, run_id):
     outputs_path = os.path.join(root_path, "outputs")
     logs_path    = os.path.join(root_path, "logs")
 
+    run.end = str(datetime.datetime.now().timestamp())
+
     print("Analyse", outputs_path)
+    run.outputs = []
     for f in os.listdir(outputs_path):
         if os.path.isfile(f):
             file_name = str(uuid.uuid4())
@@ -268,9 +271,10 @@ def terminate_run(self, run_id):
                     "runs"         : [ str(run.id) ]
                 })
             pirusfile.save()
+            run.outputs.append(str(pirusfile.id))
         print (" - Not a file : ", f)
 
 
     
-    # It's done :)
+    run.save()
     self.notify_status("DONE")

@@ -360,7 +360,7 @@ class RunHandler:
         run = Run.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
-        path = os.path.join(location, run.lxd_image, "outputs/", filename)
+        path = os.path.join(location, run.lxd_container, "outputs/", filename)
 
         if not os.path.exists(path):
             return rest_error("File not found. " + filename + " doesn't exists for the run " + str(run_id))
@@ -426,9 +426,14 @@ class RunHandler:
     # Update the status of the run, and according to the new status will do specific action
     # Notify also every one via websocket that run status changed
     def set_status(self, run, new_status):
-        if run.status != "ERROR":
-            run.status = new_status
-            run.save()
+        # Avoid useless notification
+        # Impossible to change state of a run in error or canceled
+        if (new_status != "RUNNING" and run.status == new_status) or run.status in  ["ERROR", "CANCELED"]:
+            return
+
+        # Update status
+        run.status = new_status
+        run.save()
 
         #Need to do something according to the new status ?
         # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
@@ -442,6 +447,7 @@ class RunHandler:
         elif run.status == "FINISHING":
             terminate_run.delay(str(run.id))
         
+        # Push notification
         msg = {"action":"run_changed", "data" : [run.export_client_data()] }
         notify_all(None, json.dumps(msg))
 
@@ -466,25 +472,31 @@ class RunHandler:
     def get_pause(self, request):
         run_id  = request.match_info.get('run_id',  -1)
         run = Run.from_id(run_id)
-        subprocess.Popen(["lxc", "pause", run.lxd_container])
-        self.set_status(run, "PAUSE")
-        return rest_success(run.export_client_data())
+        if run.status in ["WAITING", "RUNNING"]:
+            subprocess.Popen(["lxc", "pause", run.lxd_container])
+            self.set_status(run, "PAUSE")
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to pause the run " + str(run_id))
 
 
     def get_play(self, request):
         run_id  = request.match_info.get('run_id',  -1)
         run = Run.from_id(run_id)
-        subprocess.Popen(["lxc", "start", run.lxd_container])
-        self.set_status(run, "RUNNING")
-        return rest_success(run.export_client_data())
+        if run.status == "PAUSE":
+            subprocess.Popen(["lxc", "start", run.lxd_container])
+            self.set_status(run, "RUNNING")
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to restart the run " + str(run_id))
 
 
     def get_stop(self, request):
         run_id  = request.match_info.get('run_id',  -1)
         run = Run.from_id(run_id)
-        subprocess.Popen(["lxc", "stop", run.lxd_container, "--force"])
-        self.set_status(run, "CANCELED")
-        return rest_success(run.export_client_data())
+        if run.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
+            subprocess.Popen(["lxc", "stop", run.lxd_container, "--force"])
+            self.set_status(run, "CANCELED")
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to stop the run " + str(run_id))
 
 
 

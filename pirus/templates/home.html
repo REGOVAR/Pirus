@@ -232,7 +232,7 @@
                         <td>{{ r["name"] }}<br><span class="details">{{ r["id"] }}</span></td>
                         <td id="run-{{ r["id"] }}-progress" style="vertical-align: middle;">
                             <div class="progress">
-                                <div class="progress-bar {% if r["status"] == "FAILLED" or r["status"] == "CANCELLED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}{% if r["status"] == "WAITING" or r["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
+                                <div class="progress-bar {% if r["status"] == "FAILLED" or r["status"] == "CANCELED" %}progress-bar-danger{% endif -%}{% if r["status"] == "RUN" %}progress-bar-striped active{% endif -%}{% if r["status"] == "DONE" %}progress-bar-success{% endif -%}{% if r["status"] == "WAITING" or r["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
                                     role="progressbar" aria-valuenow="{{ r["progress"]["value"] }}" aria-valuemin="{{ r["progress"]["min"] }}" aria-valuemax="{{ r["progress"]["max"] }}" 
                                     style="min-width: 2em; width: {{ r["progress"]["value"] }}%;">
                                     {{ r["progress"]["value"] }} %
@@ -243,7 +243,7 @@
                         <td style="vertical-align: middle;">
                             <div class="btn-group" role="group">
                                 <a class="btn btn-default btn-xs" title="Information about the run" href="http://{{ hostname }}/run/{{r["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"> info</i></a> 
-                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/log" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> log</i></a>
+                                <a class="btn btn-default btn-xs" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/out" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> log</i></a>
                                 <a class="btn btn-default btn-xs" title="Error log file" href="http://{{ hostname }}/run/{{r["id"]}}/err" target="_blanck"><i class="fa fa-file-text-o" aria-hidden="true"> err</i></a>
                             </div>
                             &nbsp;
@@ -255,13 +255,13 @@
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-warning btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Error log file" href="http://{{ hostname }}/run/{{r["id"]}}/err" target="_blanck">
+                                <a class="btn btn-warning btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Error log file" href="http://{{ hostname }}/run/{{r["id"]}}/err" target="_blanck">
                                     <i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
-                                <a class="btn btn-default btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Information about the run" href="http://{{ hostname }}/run/{{r["id"]}}" target="_blanck">
+                                <a class="btn btn-default btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Cancel the run" href="http://{{ hostname }}/run/{{r["id"]}}/stop" target="_blanck">
                                     <i class="fa fa-stop" aria-hidden="true"></i></a> 
-                                <a class="btn btn-default btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/log" target="_blanck">
+                                <a class="btn btn-default btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Start the run" href="http://{{ hostname }}/run/{{r["id"]}}/play" target="_blanck">
                                     <i class="fa fa-play" aria-hidden="true"></i></a>
-                                <a class="btn btn-default btn-xs {% if r["status"] == "DONE" %}disabled{% endif -%}" title="Output log file" href="http://{{ hostname }}/run/{{r["id"]}}/log" target="_blanck">
+                                <a class="btn btn-default btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Pause the run" href="http://{{ hostname }}/run/{{r["id"]}}/pause" target="_blanck">
                                     <i class="fa fa-pause" aria-hidden="true"></i></a>
                             </div>
                         </td>

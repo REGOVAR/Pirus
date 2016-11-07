@@ -514,6 +514,8 @@ class Run(Document):
                 result.update({"id" : str(self.id)})
             elif k == "pipeline_id":
                 result.update({"pipeline_id" : str(self.pipeline_id)})
+            elif k == "config":
+                result.update({"config" : json.loads(self.config)})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -584,7 +586,6 @@ class Run(Document):
         config_data = json.loads(run.config)
         config_data["pirus"]["notify_url"] = run.notify_url
         run.config = json.dumps(config_data)
-        run.save()
 
         # Update input files to indicate that they will be used by this run
         for file_id in run.inputs:
@@ -593,8 +594,9 @@ class Run(Document):
                 # This file doesn't exists, so we will ignore it
                 run.inputs.remove(file_id)
             elif run.id not in f.runs :
-                f.runs.append(run.id)
-
+                f.runs.append(str(run.id))
+                f.save()
         
         # OK, run created and waiting to be start
+        run.save()
         return run
