@@ -177,7 +177,6 @@ def run_pipeline(self, run_id):
 
     for file_id in run.inputs:
         f = PirusFile.from_id(file_id)
-        #os.symlink(f.path, os.path.join(inputs_path, f.name))
         link_path = os.path.join(inputs_path, f.name)
         os.link(f.path, link_path)
         os.chmod(link_path, 0o644)
@@ -190,7 +189,7 @@ def run_pipeline(self, run_id):
         print(run_file)
         with open(run_file, 'w') as f:
             f.write("#!/bin/bash\n")
-            f.write(pipeline.lxd_run_cmd + " 1> " + os.path.join(pipeline.lxd_logs_path, 'out.log') + " 2> " + os.path.join(pipeline.lxd_logs_path, "err.log\n"))
+            f.write(pipeline.lxd_run_cmd + " 1> " + os.path.join(pipeline.lxd_logs_path, 'out.log') + " 2> " + os.path.join(pipeline.lxd_logs_path, "err.log || curl -X POST -d '{\"status\" : \"ERROR\"}' " + run.notify_url + "\n"))
             f.write("curl -X POST -d '{\"status\" : \"FINISHING\"}' " + run.notify_url + "\n")
             os.chmod(run_file, 0o777)
 
@@ -260,14 +259,14 @@ def terminate_run(self, run_id):
     print("Analyse", outputs_path)
     run.outputs = []
     for f in os.listdir(outputs_path):
-        if os.path.isfile(s.path.join(outputs_path, f)):
+        if os.path.isfile(os.path.join(outputs_path, f)):
             file_name = str(uuid.uuid4())
             file_path = os.path.join(FILES_DIR, file_name)
             print (" - Move : ", f, " ==> ", file_path)
             # 1- move file to FILE directory
             os.rename(os.path.join(outputs_path, f), file_path)
-            # 2- create symlink
-            os.link(file_path, os.path.join(outputs_path, f))
+            # 2- create link
+            # os.link(file_path, os.path.join(outputs_path, f))
 
             # 3- register in db
             pirusfile = PirusFile()
@@ -276,15 +275,15 @@ def terminate_run(self, run_id):
                     "type"         : os.path.splitext(f)[1][1:].strip().lower(),
                     "path"         : file_path,
                     "size"         : os.path.getsize(file_path),
+                    "upload_offset": os.path.getsize(file_path),
                     "status"       : "CHECKED",
                     "create_date"  : str(datetime.datetime.now().timestamp()),
                     "md5sum"       : md5(file_path),
-                    "runs"         : [ str(run.id) ]
+                    "runs"         : [ str(run.id) ],
+                    "tags"         : [run.name, "result", ""]
                 })
             pirusfile.save()
             run.outputs.append(str(pirusfile.id))
-        print (" - Not a file : ", f)
-
 
     
     run.save()
