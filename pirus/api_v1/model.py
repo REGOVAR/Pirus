@@ -245,10 +245,10 @@ class Pipeline(Document):
                 "pipeline_file" : os.path.join(TEMP_DIR, str(uuid.uuid4())),
                 "size"          : file_size,
                 "upload_offset" : 0,
-                "status"        : "UPLOADING"
-            })
+                "status"        : "WAITING"
+            })  
         pipe.save()
-        pipe.upload_url = "http://" + HOSTNAME + "/pipeline/upload/" + str(self.id)
+        pipe.upload_url = "http://" + HOSTNAME + "/pipeline/upload/" + str(pipe.id)
         pipe.save()
         return pipe
 
@@ -382,14 +382,12 @@ class Pipeline(Document):
             "lxd_db_path"      : metadata["databases"],
             "lxd_run_cmd"      : metadata["run"],
             "form_file"        : form_file,
-            "logo_file"        : icon_file,
+            "icon_file"        : icon_file,
             "lxd_alias"        : lxd_alias,
             "pipeline_file"    : pipeline_file,
             "size"             : pipeline.size,
             "upload_offset"    : pipeline.upload_offset,
-            "status"           : "INSTALLING",
-            "icon_url"         : "http://" + HOSTNAME + "/pipeline/" + str(pipeline.id) + + "/" + os.path.basename(icon_file),
-            "form_url"         : "http://" + HOSTNAME + "/pipeline/" + str(pipeline.id) + "/form.json"
+            "status"           : "INSTALLING"
         })
         try:
             pipeline.import_data(metadata)
@@ -477,7 +475,7 @@ class Run(Document):
     end        = StringField()
     status     = StringField()  # WAITING, PAUSE, INITIALIZING, RUNNING, FINISHING, ERROR, DONE, CANCELED
     inputs     = ListField(StringField())
-    outputs    = StringField()
+    outputs    = ListField(StringField())
     progress   = DynamicField(required=True)
 
     url        = StringField()

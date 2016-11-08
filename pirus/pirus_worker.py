@@ -139,11 +139,12 @@ def run_pipeline(self, run_id):
             return 1
         
     # Inputs files ready to use, looking for lxd resources now
-    count = 0
-    for lxd_container in lxd_client.containers.all():
-        if lxd_container.name.startswith(LXD_CONTAINER_PREFIX) and lxd_container.status == 'Running':
-            count += 1
-    if count >= LXD_MAX:
+    # count = 0
+    # for lxd_container in lxd_client.containers.all():
+    #     if lxd_container.name.startswith(LXD_CONTAINER_PREFIX) and lxd_container.status == 'Running':
+    #         count += 1
+    count = len(Run.objects(status="RUNNING")) + len(Run.objects(status="INITIALIZING")) + len(Run.objects(status="FINISHING"))
+    if len(Run.objects(status="RUNNING")) >= LXD_MAX:
         # too many run in progress, we keep the run in the waiting status
         return 1
 
@@ -171,12 +172,15 @@ def run_pipeline(self, run_id):
     conf_file = os.path.join(inputs_path, "config.json")
     data = json.loads(run.config)
     with open(conf_file, 'w') as f:
-        f.write(json.dumps(data))
+        f.write(json.dumps(data, sort_keys=True, indent=4))
         os.chmod(conf_file, 0o777)
 
     for file_id in run.inputs:
         f = PirusFile.from_id(file_id)
-        os.symlink(f.path, os.path.join(inputs_path, f.name))
+        #os.symlink(f.path, os.path.join(inputs_path, f.name))
+        link_path = os.path.join(inputs_path, f.name)
+        os.link(f.path, link_path)
+        os.chmod(link_path, 0o644)
 
     # Setting up the lxc container for the run
     try:
@@ -194,6 +198,7 @@ def run_pipeline(self, run_id):
         subprocess.call(["lxc", "init", run.lxd_image, run.lxd_container])
         # set up env
         subprocess.call(["lxc", "config", "set", run.lxd_container, "environment.PIRUS_NOTIFY_URL", self.notify_url ])
+        subprocess.call(["lxc", "config", "set", run.lxd_container, "environment.PIRUS_CONFIG_FILE", os.path.join(pipeline.lxd_inputs_path, "config.json") ])
         # set up devices
         subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_inputs",  "disk", "source="+inputs_path,   "path=" + pipeline.lxd_inputs_path[1:], "readonly=True"])
         subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_outputs", "disk", "source="+outputs_path,  "path=" + pipeline.lxd_outputs_path[1:]])
@@ -208,7 +213,11 @@ def run_pipeline(self, run_id):
         subprocess.call(["lxc", "start", run.lxd_container])
         lxd_run_file = os.path.join("/", os.path.basename(run_file))
         subprocess.call(["lxc", "file", "push", run_file, run.lxd_container + lxd_run_file])
-        subprocess.Popen(["lxc", "exec", run.lxd_container, "chmod", "+x", lxd_run_file])
+        # for file_id in run.inputs:
+        #     f = PirusFile.from_id(file_id)
+        #     print ("push " + f.path + " to " + run.lxd_container + os.path.join(pipeline.lxd_inputs_path, f.name))
+        #     subprocess.call(["lxc", "file", "push", f.path, run.lxd_container + os.path.join(pipeline.lxd_inputs_path, f.name)])
+        subprocess.call(["lxc", "exec", run.lxd_container, "chmod", "+x", lxd_run_file])
         subprocess.Popen(["lxc", "exec", run.lxd_container, lxd_run_file])
         self.notify_status("RUNNING")
     except:
@@ -221,6 +230,7 @@ def run_pipeline(self, run_id):
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def terminate_run(self, run_id):
     # Init celery task
+
     from api_v1.model import Run, PirusFile, Pipeline
     connect('pirus')
     run = Run.from_id(run_id)
@@ -228,6 +238,7 @@ def terminate_run(self, run_id):
         # TODO : log error
         return
     self.notify_url = run.notify_url
+
 
 
     # Stop container and clear resource
@@ -249,14 +260,14 @@ def terminate_run(self, run_id):
     print("Analyse", outputs_path)
     run.outputs = []
     for f in os.listdir(outputs_path):
-        if os.path.isfile(f):
+        if os.path.isfile(s.path.join(outputs_path, f)):
             file_name = str(uuid.uuid4())
             file_path = os.path.join(FILES_DIR, file_name)
             print (" - Move : ", f, " ==> ", file_path)
             # 1- move file to FILE directory
             os.rename(os.path.join(outputs_path, f), file_path)
             # 2- create symlink
-            os.symlink(file_path, os.path.join(outputs_path, f))
+            os.link(file_path, os.path.join(outputs_path, f))
 
             # 3- register in db
             pirusfile = PirusFile()

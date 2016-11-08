@@ -177,6 +177,17 @@
                     </thead>
                     {% for p in pipes %}
                     <tr>
+                    {% if p["status"] in ["UPLOADING", "PAUSE"] %}
+                        <td style="vertical-align: middle;"><i class="fa fa-download" style="font-size: 30px; color:#337ab7;" aria-hidden="true"></i> &nbsp; {{ p["name"] }}</td>
+                        <td style="vertical-align: middle;">Upload in progress</td>
+                        <td style="vertical-align: middle;"><progress value="{{ p["upload_offset"] }}" max="{{ p["size"] }}" ></progress> {{ p["status"] }}</td> 
+                        <td style="vertical-align: middle;">
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-default btn-xs" title="Uninstall the pipeline package" onclick="javascript:delete_pipeline('{{p["id"]}}')"><i class="fa fa-trash" aria-hidden="true"></i></a> 
+                                <a class="btn btn-default btn-xs" title="Information about the pipeline" href="http://{{ hostname }}/pipeline/{{p["id"]}}" target="_blanck"><i class="fa fa-info" aria-hidden="true"></i></a>
+                            </div>
+                        </td>
+                    {% else %}
                         <td style="vertical-align: middle;"><img src="{{ p["icon_url"] }}" style="height:30px; width:30px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i></td>
                         <td style="vertical-align: middle;">{{ p["description"] }}</td>
                         <td style="vertical-align: middle;"><progress value="{{ p["upload_offset"] }}" max="{{ p["size"] }}" ></progress> {{ p["status"] }}</td> 
@@ -189,6 +200,7 @@
                             &nbsp;
                             <a class="btn btn-success btn-xs" title="Run the pipeline" data-toggle="modal"  href="#runConfigModal" onclick="javascript:init_run('{{p["id"]}}')"><i class="fa fa-play" aria-hidden="true"></i></a>
                         </td>
+                    {% endif %}
                     </tr>
                     {% endfor %}
                 </table>
@@ -380,7 +392,7 @@
                         data = jsonFile["data"];
                         for (var i=0; i<data.length; i++)
                         {
-                            json_files[i] = data[i]["name"] + " [" + data[i]["id"] + "]"
+                            json_files[i] = data[i]["name"]// + " [" + data[i]["id"] + "]"
                         }
                     })
                     json_final = json_final.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
