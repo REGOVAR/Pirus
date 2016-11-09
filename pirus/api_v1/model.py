@@ -598,7 +598,7 @@ class Run(Document):
             "lxd_container" : lxd_container,
             "lxd_image" : pipeline.lxd_alias,
             "start" : str(datetime.datetime.now().timestamp()),
-            "status" : "INITIALIZING",
+            "status" : "WAITING",
             "config" : json.dumps(config_data),
             "inputs" : inputs_data,
             "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}

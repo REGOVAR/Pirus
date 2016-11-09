@@ -270,7 +270,7 @@
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-warning btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Error log file" href="http://{{ hostname }}/run/{{r["id"]}}/err" target="_blanck">
+                                <a class="btn btn-warning btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}adisabled{% endif -%}" title="Monitoring the run" href="#runMonitoring" onclick="javascript:monitor_run('{{r["id"]}}')" data-toggle="modal">
                                     <i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
                                 <a class="btn btn-default btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Cancel the run" href="http://{{ hostname }}/run/{{r["id"]}}/stop" target="_blanck">
                                     <i class="fa fa-stop" aria-hidden="true"></i></a> 
@@ -315,10 +315,10 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title" id="myModalLabel"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Browse file </h4>
+                            <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Browse file </h4>
                         </div>
                         <div class="modal-body">
-                            <p id="runBrowserContainer">Comming soon !</p>
+                            <p id="runBrowserContainer"></p>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                             </div>
@@ -333,13 +333,52 @@
                     <div class="modal-content">
                         <div class="modal-header">
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                            <h4 class="modal-title" id="myModalLabel"><i class="fa fa-play" aria-hidden="true"></i> Configure the run</h4>
+                            <h4 class="modal-title"><i class="fa fa-play" aria-hidden="true"></i> Configure the run</h4>
                         </div>
                         <div class="modal-body">
                             <p id="runFormContainer"></p>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                                 <p id="runButtonContainer"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="modal fade" id="runMonitoring" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content" style="width: 1000px; margin-left: -200px;">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            <h4 class="modal-title"><i class="fa fa-tachometer" aria-hidden="true"></i> Monitoring <span id="runMonitoringName"> toto</span> </h4>
+                        </div>
+                        <div class="modal-body" id="runMonitoringContainer">
+                            <nav class="navbar navbar-default" style="margin-top: -16px; margin-left: -15px; margin-right: -15px;">
+                                <div class="container">
+                                    <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
+                                        <ul class="nav navbar-nav">
+                                            <li class="active"><a data-toggle="tab" href="#monitoringOutLog"><i class="fa fa-tasks" aria-hidden="true"></i> Status</a></li>
+                                            <li><a data-toggle="tab" href="#monitoringOutLog"><i class="fa fa-desktop" aria-hidden="true"></i> StdOut</a></li>
+                                            <li><a data-toggle="tab" href="#monitoringErrLog"><i class="fa fa-desktop" aria-hidden="true"></i> StdErr</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </nav>
+                            <div class="tab-content">
+                                <div id="monitoringDetails" class="tab-pane fade in active">
+                                    <p id="runMonitoringDetails"></p>
+                                </div>
+                                <div id="monitoringOutLog" class="tab-pane fade">
+                                    <pre id="runMonitoringStdout"></pre>
+                                </div>
+                                <div id="monitoringErrLog" class="tab-pane fade">
+                                    <pre id="runMonitoringStderr"></pre>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                             </div>
                         </div>
                     </div>
@@ -426,6 +465,21 @@
             })
         }
 
+        function monitor_run(run_id)
+        {
+            $("#runMonitoringName").text(run_id)
+            $.ajax({ url: rootURL + "/run/" + run_id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
+            {
+                data = jsonFile["data"];
+                $("#runMonitoringDetails").html("<ul><li>Processes : " + data["Processes"] + "</li><li>Memory (current) : " + data["Memory (current)"] + "</li></ul>")
+
+                $("#runMonitoringStdout").text(data["out_tail"])
+                $("#runMonitoringStdout").animate({ scrollTop: $("#runMonitoringStdout").height() }, 1000);
+
+                $("#runMonitoringStderr").text(data["err_tail"])
+                $("#runMonitoringStderr").animate({ scrollTop: $("#runMonitoringStderr").height() }, 1000);
+            })
+        }
 
 
         function browse_io(run_id, type)

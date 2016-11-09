@@ -23,7 +23,7 @@ from mongoengine import *
 
 from config import *
 from framework import *
-from pirus_worker import run_pipeline
+from pirus_worker import run_pipeline, terminate_run
 from api_v1.model import *
 from api_v1.tus import tus_manager
 
@@ -221,24 +221,19 @@ class FileHandler:
 
     # Resumable download implement the TUS.IO protocol.
     def tus_config(self, request):
-        print ("tus_config", request)
         return tus_manager.options(request)
 
     def tus_upload_init(self, request):
-        print ("tus_upload_init", request)
         return tus_manager.creation(request)
 
     def tus_upload_resume(self, request):
-        print ("tus_upload_resume", request)
         return tus_manager.resume(request)
 
     async def tus_upload_chunk(self, request):
-        print ("tus_upload_chunk", request)
         result = await tus_manager.patch(request)
         return result
 
     def tus_upload_delete(self, request):
-        print ("tus_upload_delete", request)
         return tus_manager.delete_file(request)
 
 
@@ -291,7 +286,6 @@ class FileHandler:
 
 
 
-
 class PipelineHandler:
     def __init__(self):
         pass
@@ -322,24 +316,19 @@ class PipelineHandler:
 
     # Resumable download implement the TUS.IO protocol.
     def tus_config(self, request):
-        print ("tus_config", request)
         return tus_manager.options(request)
 
     def tus_upload_init(self, request):
-        print ("tus_upload_init", request)
         return tus_manager.creation(request)
 
     def tus_upload_resume(self, request):
-        print ("tus_upload_resume", request)
         return tus_manager.resume(request)
 
     async def tus_upload_chunk(self, request):
-        print ("tus_upload_chunk", request)
         result = await tus_manager.patch(request)
         return result
 
     def tus_upload_delete(self, request):
-        print ("tus_upload_delete", request)
         return tus_manager.delete_file(request)
 
 
@@ -439,7 +428,7 @@ class RunHandler:
         # 1- Retrieve data from request
         data = await request.json()
         run_id = request.match_info.get('run_id', -1)
-        run = Run.from_private_id(run_id)
+        run = Run.from_id(run_id)
         if run is not None:
             if "progress" in data.keys():
                 run.progress = data["progress"]
@@ -454,6 +443,12 @@ class RunHandler:
     # Update the status of the run, and according to the new status will do specific action
     # Notify also every one via websocket that run status changed
     def set_status(self, run, new_status):
+        # Avoid useless notification
+        # Impossible to change state of a run in error or canceled
+        if (new_status != "RUNNING" and run.status == new_status) or run.status in  ["ERROR", "CANCELED"]:
+            return
+
+        # Update status
         run.status = new_status
         run.save()
 
@@ -461,14 +456,16 @@ class RunHandler:
         # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
         if run.status in ["PAUSE", "ERROR", "DONE", "CANCELED"]:
             next_run = Run.objects(status="WAITING").order_by('start')
-            if next_run is not []:
+            if len(next_run) > 0:
                 if next_run[0].status == "PAUSE":
-                    start_run.delay(next_run[0].id)
+                    start_run.delay(str(next_run[0].id))
                 else :
-                    run_pipeline.delay(next_run[0].id)
-        
-        msg = {"action":"run_changed", "data" : [json.dumps(run.export_client_data())] }
-        notify_all(None, str(msg))
+                    run_pipeline.delay(str(next_run[0].id))
+        elif run.status == "FINISHING":
+            terminate_run.delay(str(run.id))
+        # Push notification
+        msg = {"action":"run_changed", "data" : [run.export_client_data()] }
+        notify_all(None, json.dumps(msg))
 
 
 
@@ -490,27 +487,68 @@ class RunHandler:
 
     def get_pause(self, request):
         run_id  = request.match_info.get('run_id',  -1)
+        if run_id == -1:
+            return rest_error("Id not found")
         run = Run.from_id(run_id)
-        subprocess.Popen(["lxc", "pause", run.lxd_container])
-        self.set_status(run, "PAUSE")
-        return rest_success(run.export_client_data())
+        if run == None:
+            return rest_error("Unable to find the run with id " + str(run_id))
+        if run.status in ["WAITING", "RUNNING"]:
+            subprocess.Popen(["lxc", "pause", run.lxd_container])
+            self.set_status(run, "PAUSE")
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to pause the run " + str(run_id))
 
 
     def get_play(self, request):
         run_id  = request.match_info.get('run_id',  -1)
+        if run_id == -1:
+            return rest_error("Id not found")
         run = Run.from_id(run_id)
-        subprocess.Popen(["lxc", "start", run.lxd_container])
-        self.set_status(run, "RUNNING")
-        return rest_success(run.export_client_data())
+        if run == None:
+            return rest_error("Unable to find the run with id " + str(run_id))
+        if run.status == "PAUSE":
+            subprocess.Popen(["lxc", "start", run.lxd_container])
+            self.set_status(run, "RUNNING")
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to restart the run " + str(run_id))
 
 
     def get_stop(self, request):
         run_id  = request.match_info.get('run_id',  -1)
+        if run_id == -1:
+            return rest_error("Id not found")
         run = Run.from_id(run_id)
-        subprocess.Popen(["lxc", "stop", run.lxd_container, "--force"])
-        self.set_status(run, "CANCELED")
-        return rest_success(run.export_client_data())
+        if run == None:
+            return rest_error("Unable to find the run with id " + str(run_id))
+        if run.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
+            subprocess.Popen(["lxc", "delete", run.lxd_container, "--force"])
+            self.set_status(run, "CANCELED")
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to stop the run " + str(run_id))
 
+
+    def get_monitoring(self, request):
+        run_id  = request.match_info.get('run_id',  -1)
+        if run_id == -1:
+            return rest_error("Id not found")
+        run = Run.from_id(run_id)
+        if run == None:
+            return rest_error("Unable to find the run with id " + str(run_id))
+        if run.status in ["INITIALIZING", "FINISHING", "ERROR", "DONE", "CANCELED"]:
+            return rest_error("No monitoring data for the run " + str(run_id))
+
+        out = subprocess.check_output(["lxc", "info", run.lxd_container])
+        result = {}
+        for l in out.decode().split('\n'):
+            data = l.split(': ')
+            if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
+                result.update({data[0].strip(): data[1]})
+        print(os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"))
+        result.update({
+            "out_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode(), 
+            "err_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
+        })
+        return rest_success(result)
 
 
 
