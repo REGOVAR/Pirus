@@ -270,7 +270,7 @@
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-warning btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}adisabled{% endif -%}" title="Monitoring the run" href="#runMonitoring" onclick="javascript:monitor_run('{{r["id"]}}')" data-toggle="modal">
+                                <a class="btn btn-warning btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Monitoring the run" href="#runMonitoring" onclick="javascript:monitor_run('{{r["id"]}}')" data-toggle="modal">
                                     <i class="fa fa-tachometer" aria-hidden="true"> Monitor</i></a>
                                 <a class="btn btn-default btn-xs {% if r["status"] in ["DONE", "ERROR", "CANCELED"] %}disabled{% endif -%}" title="Cancel the run" href="http://{{ hostname }}/run/{{r["id"]}}/stop" target="_blanck">
                                     <i class="fa fa-stop" aria-hidden="true"></i></a> 
