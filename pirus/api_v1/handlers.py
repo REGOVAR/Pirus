@@ -112,12 +112,18 @@ class WebsiteHandler:
 
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
-        return {
+        data = {
             "runs"     : [r.export_client_data() for r in Run.objects.all().order_by('-start')], 
             "pipes"    : [f.export_client_data() for f in Pipeline.objects.all().order_by('-name')],
             "files"    : [p.export_client_data() for p in PirusFile.objects.all().order_by('-create_date')],
             "hostname" : HOSTNAME
         }
+
+        for f in data["files"]:
+            f.update({"size" : humansize(f["size"])})
+
+
+        return data
 
     def get_config(self, request):
         return rest_success({

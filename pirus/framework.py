@@ -91,8 +91,8 @@ def plugin_running_task(task_id):
 
 
 def humansize(nbytes):
-    suffixes = ['b', 'Ko', 'Mo', 'Go', 'To', 'Po']
-    if nbytes == 0: return '0 B'
+    suffixes = ['o', 'Ko', 'Mo', 'Go', 'To', 'Po']
+    if nbytes == 0: return '0 o'
     i = 0
     while nbytes >= 1024 and i < len(suffixes)-1:
         nbytes /= 1024.
