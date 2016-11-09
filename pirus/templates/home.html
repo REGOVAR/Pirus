@@ -171,7 +171,7 @@
 
                 <br/>
 
-                
+
                 <h1 class="content-subhead"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipelines</h1>
 
                 {% if pipes|length ==0 %}
@@ -263,9 +263,9 @@
                             </div>
                             &nbsp;
                             <div class="btn-group" role="group">
-                                <a class="btn btn-default btn-xs" title="Browse input files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_inputs('{{r["id"]}}')">
+                                <a class="btn btn-default btn-xs" title="Browse input files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_io('{{r["id"]}}', 'inputs')">
                                     <i class="fa fa-folder-open-o" aria-hidden="true"> inputs</i></a> 
-                                <a class="btn btn-default btn-xs" title="Browse output files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_outputs('{{r["id"]}}')">
+                                <a class="btn btn-default btn-xs" title="Browse output files" data-toggle="modal" href="#runBrowseFile" onclick="javascript:browse_io('{{r["id"]}}', 'outputs')">
                                     <i class="fa fa-folder-open-o" aria-hidden="true"> outputs</i></a> 
                             </div>
                             &nbsp;
@@ -427,6 +427,21 @@
         }
 
 
+
+        function browse_io(run_id, type)
+        {
+            $.ajax({ url: rootURL + "/run/" + run_id + "/io", type: "GET", async: false}).done(function(jsonFile)
+            {
+                data = jsonFile["data"];
+                html = "<ul>"
+                for (var i=0; i<data[type].length; i++)
+                {
+                   html += "<li><a href=\"" + rootURL + "/dl/f/" + data[type][i]["id"] + "\" title=\"Download\">" + data[type][i]["name"] + "</a> (" + humansize(data[type][i]["size"]) + ")</li>"
+                }
+                html += "</ul>"
+                $("#runBrowserContainer").html(html)
+            })
+        }
 
 
 

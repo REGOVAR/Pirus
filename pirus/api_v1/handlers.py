@@ -376,16 +376,17 @@ class RunHandler:
         run = Run.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
-        path = os.path.join(location, run.private_id, filename)
+        path = os.path.join(location, run.lxd_container, filename)
 
         if not os.path.exists(path):
             return rest_error("File not found. " + filename + " doesn't exists for the run " + str(run_id))
         content = ""
-        with open(path, 'r') as content_file:
-            content = content_file.read()
+        if os.path.isfile(path):
+            with open(path, 'br') as content_file:
+                file = content_file.read()
         return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment'}),
-            body=str.encode(content)
+            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+filename}),
+            body=file
         )
 
     def get_olog(self, request):
@@ -412,10 +413,21 @@ class RunHandler:
         run_id = request.match_info.get('run_id', -1)
         return self.download_file(run_id, "logs/pirus.log")
 
-    def get_files(self, request):
+    def get_io(self, request):
         run_id  = request.match_info.get('run_id',  -1)
-        id = request.match_info.get('id', -1)
-        return self.download_file(run_id, "outputs/io.json")
+        if run_id == -1:
+            return rest_error("Id not found")
+        run = Run.from_id(run_id)
+        if run == None:
+            return rest_error("Unable to find the run with id " + str(run_id))
+        result={"inputs" : [], "outputs":[]}
+        # Retrieve inputs files data of the run
+        files = PirusFile.from_ids(run.inputs)
+        result["inputs"] = [a.export_client_data() for a in files]
+        # Retrieve outputs files data of the run
+        files = PirusFile.from_ids(run.outputs)
+        result["outputs"] = [a.export_client_data() for a in files]
+        return rest_success(result)
 
     def get_file(self, request):
         run_id  = request.match_info.get('run_id',  -1)

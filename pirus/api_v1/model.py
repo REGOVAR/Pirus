@@ -110,6 +110,15 @@ class PirusFile(Document):
         return file
 
     @staticmethod
+    def from_ids(ids):
+        result = []
+        for id in ids:
+            f = PirusFile.from_id(id)
+            if f is not None:
+                result.append(f)
+        return result
+
+    @staticmethod
     def remove(id):
         file = PirusFile.from_id(id)
         if file != None:
@@ -260,6 +269,14 @@ class Pipeline(Document):
         pipe = Pipeline.objects.get(pk=pipe_id)
         return pipe
 
+    @staticmethod
+    def from_ids(ids):
+        result = []
+        for id in ids:
+            p = Pipeline.from_id(id)
+            if p is not None:
+                result.append(p)
+        return result
 
     @staticmethod
     def remove(pipe_id):
@@ -549,6 +566,15 @@ class Run(Document):
             return None;
         run = Run.objects.get(pk=run_id)
         return run
+
+    @staticmethod
+    def from_ids(ids):
+        result = []
+        for id in ids:
+            r = Run.from_id(id)
+            if r is not None:
+                result.append(r)
+        return result
 
     @staticmethod
     def launch_run(pipeline_id, config_data, inputs_data):

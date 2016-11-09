@@ -42,3 +42,20 @@ function addFileEntry(fileId) {
         $('#filesList').DataTable();
     })
 }
+
+
+function humansize(nbytes)
+{
+    var suffixes = ['o', 'Ko', 'Mo', 'Go', 'To', 'Po']
+    if (nbytes == 0) return '0 o'
+
+    var i = 0
+    while (nbytes >= 1024 && i < suffixes.length-1)
+    {
+        nbytes /= 1024.
+        i += 1
+    }
+    f = Math.round(nbytes * 100) / 100
+    return f + " " + suffixes[i]
+
+}
