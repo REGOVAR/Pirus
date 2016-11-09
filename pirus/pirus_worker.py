@@ -84,7 +84,7 @@ class PirusTask(Task):
 
     def error(self, msg:str, error_code:int=500):
         # TODO : some log ?...
-        print(error_code, " : ", msg)
+        print(error_code + " : " + msg)
         self.notify_status('ERROR')
         return error_code
 
@@ -189,7 +189,8 @@ def run_pipeline(self, run_id):
         print(run_file)
         with open(run_file, 'w') as f:
             f.write("#!/bin/bash\n")
-            f.write(pipeline.lxd_run_cmd + " 1> " + os.path.join(pipeline.lxd_logs_path, 'out.log') + " 2> " + os.path.join(pipeline.lxd_logs_path, "err.log || curl -X POST -d '{\"status\" : \"ERROR\"}' " + run.notify_url + "\n"))
+            f.write(pipeline.lxd_run_cmd + " 1> " + os.path.join(pipeline.lxd_logs_path, 'out.log') + " 2> " + os.path.join(pipeline.lxd_logs_path, "err.log\n")) #  || curl -X POST -d '{\"status\" : \"ERROR\"}' " + run.notify_url + "
+            f.write("chown -Rf " + str(PIRUS_UID) + ":" + str(PIRUS_GID) + " " + pipeline.lxd_outputs_path + "\n")
             f.write("curl -X POST -d '{\"status\" : \"FINISHING\"}' " + run.notify_url + "\n")
             os.chmod(run_file, 0o777)
 

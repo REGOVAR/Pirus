@@ -30,6 +30,8 @@ NOTIFY_URL     = "http://" + HOSTNAME + "/run/notify/"
 
 
 # LXD
+PIRUS_UID      = 1000
+PIRUS_GID      = PIRUS_UID
 LXD_UID        = 165537
 LXD_GID        = LXD_UID
 LXD_MAX        = 2
