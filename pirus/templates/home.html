@@ -359,7 +359,7 @@
                                 <div class="container">
                                     <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
                                         <ul class="nav navbar-nav">
-                                            <li class="active"><a data-toggle="tab" href="#monitoringOutLog"><i class="fa fa-tasks" aria-hidden="true"></i> Status</a></li>
+                                            <li class="active"><a data-toggle="tab" href="#monitoringDetails"><i class="fa fa-tasks" aria-hidden="true"></i> Status</a></li>
                                             <li><a data-toggle="tab" href="#monitoringOutLog"><i class="fa fa-desktop" aria-hidden="true"></i> StdOut</a></li>
                                             <li><a data-toggle="tab" href="#monitoringErrLog"><i class="fa fa-desktop" aria-hidden="true"></i> StdErr</a></li>
                                         </ul>
@@ -378,6 +378,7 @@
                                 </div>
                             </div>
                             <div class="modal-footer">
+                                <button id="runMonitoringRefreshBtn" type="button" class="btn btn-primary" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button> &nbsp;
                                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                             </div>
                         </div>
@@ -474,10 +475,13 @@
                 $("#runMonitoringDetails").html("<ul><li>Processes : " + data["Processes"] + "</li><li>Memory (current) : " + data["Memory (current)"] + "</li></ul>")
 
                 $("#runMonitoringStdout").text(data["out_tail"])
-                $("#runMonitoringStdout").animate({ scrollTop: $("#runMonitoringStdout").height() }, 1000);
+                $("#runMonitoringStdout").animate({scrollTop : $("#runMonitoringStdout")[0].scrollHeight }, 1000 );
 
                 $("#runMonitoringStderr").text(data["err_tail"])
-                $("#runMonitoringStderr").animate({ scrollTop: $("#runMonitoringStderr").height() }, 1000);
+                $("#runMonitoringStderr").animate({scrollTop : $("#runMonitoringStderr")[0].scrollHeight}, 1000 );
+
+                $("#runMonitoringRefreshBtn").attr("onclick", "javascript:monitor_run('"+run_id+"')")
+                
             })
         }
 
