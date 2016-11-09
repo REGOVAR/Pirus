@@ -157,6 +157,21 @@
             <!-- PIPELINES -->
             <!--           -->
             <div id="pipes" class="tab-pane fade">
+                <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
+
+                <input type="hidden" id="tusPipeEndpoint" name="tusPipeEndpoint" value="http://{{ hostname }}/pipeline/upload">
+                <input type="hidden" id="tusPipeChunkSize" name="tusPipeChunkSize" value="256000">
+                <input type="file" id="tusPipeInput">
+                <br/>
+                <div id="tusPipeProgress">
+                    <div class="alert alert-success" id="support-alert">
+                        <b>Ready !</b> Start by selecting the pipeline you want to install. Upload will start automaticaly.
+                    </div>
+                </div>
+
+                <br/>
+
+                
                 <h1 class="content-subhead"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipelines</h1>
 
                 {% if pipes|length ==0 %}
@@ -204,17 +219,7 @@
                 </table>
                 {% endif %}
 
-                <h1 class="content-subhead"><i class="fa fa-plus" aria-hidden="true"></i> Install a new pipeline</h1>
-
-                <input type="hidden" id="tusPipeEndpoint" name="tusPipeEndpoint" value="http://{{ hostname }}/pipeline/upload">
-                <input type="hidden" id="tusPipeChunkSize" name="tusPipeChunkSize" value="256000">
-                <input type="file" id="tusPipeInput">
-                <br/>
-                <div id="tusPipeProgress">
-                    <div class="alert alert-success" id="support-alert">
-                        <b>Ready !</b> Start by selecting the pipeline you want to install. Upload will start automaticaly.
-                    </div>
-                </div>
+                
             </div>
 
 
