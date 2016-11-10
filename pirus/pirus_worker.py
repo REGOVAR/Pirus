@@ -95,7 +95,7 @@ class PirusTask(Task):
 
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def run_pipeline(self, run_id):
+def run_start(self, run_id):
     from api_v1.model import Run, PirusFile, Pipeline
     connect('pirus')
 
@@ -240,16 +240,6 @@ def terminate_run(self, run_id):
     self.notify_url = run.notify_url
 
 
-
-    # Stop container and clear resource
-    try:
-        # Clean outputs
-        subprocess.call(["lxc", "exec", run.lxd_container, "--", "chmod", "755", "-Rf", "/pipeline"])
-        subprocess.call(["lxc", "delete", run.lxd_container, "--force"])
-    except:
-        return self.error('Unexpected error ' + str(sys.exc_info()[0]))
-        raise
-
     # Register outputs files
     root_path    = os.path.join(RUNS_DIR, run.lxd_container)
     outputs_path = os.path.join(root_path, "outputs")
@@ -265,7 +255,7 @@ def terminate_run(self, run_id):
             file_path = os.path.join(FILES_DIR, file_name)
             print (" - Move : ", f, " ==> ", file_path)
             # 1- move file to FILE directory
-            os.rename(os.path.join(outputs_path, f), file_path)
+            shutil.copyfile(os.path.join(outputs_path, f), file_path)
             # 2- create link
             # os.link(file_path, os.path.join(outputs_path, f))
 
@@ -285,6 +275,16 @@ def terminate_run(self, run_id):
                 })
             pirusfile.save()
             run.outputs.append(str(pirusfile.id))
+
+    # Stop container and clear resource
+    try:
+        # Clean outputs
+        subprocess.call(["cp", os.path.join(root_path, "outputs/*"), "--", "chmod", "755", "-Rf", "/pipeline"])
+        subprocess.call(["lxc", "delete", run.lxd_container, "--force"])
+    except:
+        return self.error('Unexpected error ' + str(sys.exc_info()[0]))
+        raise
+
 
     
     run.save()

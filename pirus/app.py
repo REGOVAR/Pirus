@@ -10,7 +10,6 @@ from mongoengine import *
 
 # Pirus package
 from config import *
-from pirus_worker import run_pipeline
 from framework import app
 from api_v1 import *
 

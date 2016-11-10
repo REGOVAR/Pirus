@@ -23,7 +23,7 @@ from mongoengine import *
 
 from config import *
 from framework import *
-from pirus_worker import run_pipeline, terminate_run
+from pirus_worker import run_start, terminate_run
 from api_v1.model import *
 from api_v1.tus import tus_manager
 
@@ -460,7 +460,7 @@ class RunHandler:
                 if next_run[0].status == "PAUSE":
                     start_run.delay(str(next_run[0].id))
                 else :
-                    run_pipeline.delay(str(next_run[0].id))
+                    run_start.delay(str(next_run[0].id))
         elif run.status == "FINISHING":
             terminate_run.delay(str(run.id))
         # Push notification
@@ -481,7 +481,7 @@ class RunHandler:
         if run is None:
             return error
         # start run
-        run_pipeline.delay(str(run.id))
+        run_start.delay(str(run.id))
         return rest_success(run.export_client_data())
 
 
@@ -543,7 +543,7 @@ class RunHandler:
             data = l.split(': ')
             if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
                 result.update({data[0].strip(): data[1]})
-        print(os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"))
+                
         result.update({
             "out_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode(), 
             "err_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
