@@ -74,7 +74,7 @@ var browser_file_tpl = "<tr class=\"treegrid-{0} treegrid-parent-{1}\"><td> {2}<
 
 function init_pirus_browser()
 {
-    $.ajax({ url: rootURL + "/pipeline?sublvl=1", type: "GET"}).done(function(jsonFile)
+    $.ajax({ url: rootURL + "/pipeline?sublvl=2", type: "GET"}).done(function(jsonFile)
     {
         var data = jsonFile["data"];
         var html = ""
@@ -105,7 +105,7 @@ function init_pirus_browser()
                 var r_status      = buildProgressBar(r_percentage, run["status"], null)
                 var r_description = run["description"]
                 var r_name        = run["name"]
-                var r_class       = (run["status"] == "DONE") ? "text-success" : (run["status"] == "ERROR" || run["status"] == "CANCELED" ) ? "text-danger" : ""
+                var r_class       = (run["status"] == "DONE") ? "text-success" : (run["status"] == "ERROR" || run["status"] == "CANCELED" ) ? "text-danger" : (run["status"] == "PAUSE" || run["status"] == "WAITING" ) ? "text-warning" :""
                 html += browser_run_tpl.format(run["id"], pipe["id"], r_name, r_description, r_status, r_class)
 
                 html += browser_folder_tpl.format(run["id"]+"i", run["id"], "Inputs")
@@ -115,7 +115,7 @@ function init_pirus_browser()
                     var f_percentage  = (file["upload_offset"] / file["size"] * 100).toFixed(0)
                     var f_status      = buildProgressBar(f_percentage, file["status"], null)
                     var f_comments    = file["comments"]
-                    var f_name        = file["name"] + "(" + humansize(file["size"]) + ")"
+                    var f_name        = file["name"] + "(" + humansize(file["upload_offset"]) + ")"
                     html += browser_file_tpl.format(run["id"]+"i"+file["id"], run["id"]+"i", f_name, f_comments, f_status)
                 }
 
@@ -126,7 +126,7 @@ function init_pirus_browser()
                     var f_percentage  = (file["upload_offset"] / file["size"] * 100).toFixed(0)
                     var f_status      = buildProgressBar(f_percentage, file["status"], null)
                     var f_comments    = file["comments"]
-                    var f_name        = file["name"] + "(" + humansize(file["size"]) + ")"
+                    var f_name        = file["name"] + "(" + humansize(file["upload_offset"]) + ")"
                     html += browser_file_tpl.format(run["id"]+"o"+file["id"], run["id"]+"o", f_name, f_comments, f_status)
                 }
 
