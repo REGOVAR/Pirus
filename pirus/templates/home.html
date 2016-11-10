@@ -17,6 +17,10 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.12/css/dataTables.bootstrap.min.css"/>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.12/js/dataTables.bootstrap.min.js"></script>
+    <!-- Treegrid -->
+    <link rel="stylesheet" href="/assets/treegrid/css/jquery.treegrid.css">
+    <script type="text/javascript" src="/assets/treegrid/js/jquery.treegrid.js"></script>
+    <script type="text/javascript" src="/assets/treegrid/js/jquery.treegrid.bootstrap3.js"></script>
     <!-- Latest compiled and minified JavaScript -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
 
@@ -33,7 +37,7 @@
 </head>
 <body>
     <div style="position: fixed; top:0; left:0; z-index:2000;">
-        <img src="/assets/logo.png" width="100px" />
+        <img src="/assets/img/logo.png" width="100px" />
     </div>
 
     <nav class="navbar navbar-default navbar-fixed-top navbar-inverse">
@@ -72,7 +76,7 @@
                 <ul id="userList"></ul>
                 -->
                 <div class="row">
-                    <div class="col-md-4"><img src="/assets/resume.png" width="300px" /></div>
+                    <div class="col-md-4"><img src="/assets/img/resume.png" width="300px" /></div>
                     <div class="col-md-8">
                         <p style="margin-top: 130px;">Pirus is a tool that allow you to manage and run informatic's pipeline.</p>
                         <p>So there is 3 mains objects that you can manipulates :<ul>
@@ -84,16 +88,28 @@
                     </div>
                 </div>
 
-                <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i> What can I do ?</h1>
-                <button type="button" class="btn btn-primary" style="width:300px; display:block; margin-bottom:10px; text-align: left">
-                    <i class="fa fa-file-o" aria-hidden="true"></i> 1. Install a new Pipeline</button>
-                <button type="button" class="btn btn-primary" style="width:300px; display:block; margin-bottom:10px; text-align: left">
-                    <i class="fa fa-puzzle-piece" aria-hidden="true"></i> 2. Upload some input's files</button>
-                <button type="button" class="btn btn-primary" style="width:300px; display:block; margin-bottom:10px; text-align: left">
-                    <i class="fa fa-tasks" aria-hidden="true"></i> 3. Create a run from an existing pipeline</button>
-                <button type="button" class="btn btn-primary" style="width:300px; display:block; margin-bottom:10px; text-align: left">
-                    <i class="fa fa-file-o" aria-hidden="true"></i> 4. Retrieve results of my run</button>
 
+                <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i> Pirus browser</h1>
+
+                <button type="button" class="btn btn-primary"><i class="fa fa-puzzle-piece" aria-hidden="true"></i> Install a new Pipeline</button>
+                &nbsp; &nbsp;
+                <button type="button" class="btn btn-primary"><i class="fa fa-upload" aria-hidden="true"></i> Upload an input's file</button>
+
+                <div class="row">
+                    <div class="col-md-12">
+                        <table class="tree" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Run</th>
+                                    <th>Description</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pirusBrowser">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
 
@@ -586,6 +602,7 @@
         $(document).ready(function()
         {
             update_datagrid();
+            init_pirus_browser();
         });
 
 

@@ -64,17 +64,7 @@ class TusFileWrapper:
     def new_upload(request, filename, file_size):
         # Create and return the wrapper to manipulate the uploading file
         if "/file/upload" in request.raw_path :
-            pfile   = PirusFile()
-            pfile.import_data({
-                    "name"          : filename,
-                    "type"          : os.path.splitext(filename)[1][1:].strip().lower(),
-                    "path"          : os.path.join(TEMP_DIR, str(uuid.uuid4())),
-                    "size"          : file_size,
-                    "upload_offset" : 0,
-                    "status"        : "UPLOADING",
-                    "create_date"   : str(datetime.datetime.now().timestamp())
-                })
-            pfile.save()
+            pfile   = PirusFile.new_from_tus(filename, file_size)
             return PirusFileWrapper(pfile.id)
 
         if "/pipeline/upload" in request.raw_path :

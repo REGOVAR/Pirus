@@ -39,7 +39,6 @@ def notify_all(src, msg):
             ws[0].send_str(msg)
 
 
-
 def process_generic_get(query_string, allowed_fields):
         # 1- retrieve query parameters
         get_params = MultiDict(parse_qsl(query_string))
@@ -112,10 +111,11 @@ class WebsiteHandler:
 
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
+        sub_level_loading = request.match_info.get('sublvl', 0)
         data = {
-            "runs"     : [r.export_client_data() for r in Run.objects.all().order_by('-start')], 
-            "pipes"    : [f.export_client_data() for f in Pipeline.objects.all().order_by('-name')],
-            "files"    : [p.export_client_data() for p in PirusFile.objects.all().order_by('-create_date')],
+            "runs"     : [r.export_client_data(sub_level_loading) for r in Run.objects.all().order_by('-start')], 
+            "pipes"    : [f.export_client_data(sub_level_loading) for f in Pipeline.objects.all().order_by('-name')],
+            "files"    : [p.export_client_data(sub_level_loading) for p in PirusFile.objects.all().order_by('-create_date')],
             "hostname" : HOSTNAME
         }
 
@@ -152,8 +152,9 @@ class FileHandler:
     def get(self, request):
         # Generic processing of the get query
         fields, query, order, offset, limit = process_generic_get(request.query_string, PirusFile.public_fields)
+        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Return result of the query for PirusFile 
-        return rest_success([p.export_client_data(fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]])
+        return rest_success([p.export_client_data(sub_level_loading, fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]])
 
 
     def edit_infos(self, request):
@@ -212,9 +213,11 @@ class FileHandler:
 
     def get_details(self, request):
         id = request.match_info.get('file_id', -1)
-        if id == -1:
-            return rest_error("Unknow file id " + str(id))
-        return rest_success(PirusFile.objects.get(pk=id).export_client_data())
+        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        file = PirusFile.from_id(pipe_id)
+        if file == None:
+            return rest_error("No file with id " + str(pipe_id))
+        return rest_success(file.export_client_data(sub_level_loading))
 
 
 
@@ -245,8 +248,6 @@ class FileHandler:
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
         id = request.match_info.get('file_id', -1)
-        if id == -1:
-            return rest_error("No file id provided")
         pirus_file = PirusFile.from_id(id)
         if pirus_file == None:
             return rest_error("File with id " + str(id) + "doesn't exits.")
@@ -263,9 +264,9 @@ class FileHandler:
         # 1- Retrieve request parameters
         pipe_id = request.match_info.get('pipe_id', -1)
         filename = request.match_info.get('filename', None)
-        if pipe_id == -1:
-            return rest_error("Unknow pipeline id " + str(pipe_id))
         pipeline = Pipeline.from_id(pipe_id)
+        if pipeline == None:
+            return rest_error("No pipeline with id " + str(pipe_id))
         if filename == None:
             return rest_error("No filename provided")
         path = os.path.join(pipeline.root_path, filename)
@@ -292,26 +293,29 @@ class PipelineHandler:
 
     def get(self, request):
         fields, query, order, offset, limit = process_generic_get(request.query_string, Pipeline.public_fields)
-        return rest_success([p.export_client_data(fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]])   
+        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        print ("PipelineHandler.get(sublvl=" + str(sub_level_loading) + ")")
+        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]])   
 
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
         pipe_id = request.match_info.get('pipe_id', -1)
-        if pipe_id == -1:
-            return rest_error("Unknow pipeline id " + str(pipe_id))
         try:
             pipeline = Pipeline.remove(pipe_id)
         except Exception as error:
             # TODO : manage error
-            return rest_error("Server Error : The following occure during installation of the pipeline. " + error.msg)
+            return rest_error("Server Error : The following occure during deletion of the pipeline . " + error.msg)
         return rest_success("Pipeline " + str(pipe_id) + " deleted.")
 
 
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
-        if pipe_id == -1:
-            return rest_error("Unknow pipeline id " + str(pipe_id))
-        return rest_success(Pipeline.objects.get(pk=pipe_id).export_client_data())
+        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        pipe = Pipeline.from_id(pipe_id)
+        if pipe == None:
+            return rest_error("No pipeline with id " + str(pipe_id))
+        print ("PipelineHandler.get_details('" + str(pipe_id) + "', sublvl=" + str(sub_level_loading) + ")")
+        return rest_success(pipe.export_client_data(sub_level_loading))
 
 
     # Resumable download implement the TUS.IO protocol.
@@ -342,7 +346,8 @@ class RunHandler:
 
     def get(self, request):
         fields, query, order, offset, limit = process_generic_get(request.query_string, Run.public_fields)
-        return rest_success([p.export_client_data(fields) for p in Run.objects(__raw__=query).order_by(*order)[offset:limit]])
+        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Run.objects(__raw__=query).order_by(*order)[offset:limit]])
 
 
     def delete(self, request):
@@ -353,18 +358,17 @@ class RunHandler:
 
     def get_details(self, request):
         run_id = request.match_info.get('run_id', -1)
+        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         run = Run.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
-        return rest_success(run.export_client_data())
+        return rest_success(run.export_client_data(sub_level_loading))
 
 
     def download_file(self, run_id, filename, location=RUNS_DIR):
-        if run_id == -1:
-            return rest_error("Id not found")
         run = Run.from_id(run_id)
         if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
+            return rest_error("No run with id " + str(run_id))
         path = os.path.join(location, run.lxd_container, filename)
 
         if not os.path.exists(path):

@@ -62,3 +62,25 @@ pre
     overflow: auto;
     max-height: 400px;
 }
+
+
+.tree
+{
+    font-size: 18px;
+}
+.tree tr:hover
+{
+    background: #dde;
+}
+
+
+
+.onHoverBtn a .fa{
+  visibility: hidden; 
+  opacity: 0;
+  transition: visibility 0s, opacity 0.3s linear;
+}
+.onHoverBtn:hover a .fa { 
+  visibility:visible;
+  opacity: 1;
+}

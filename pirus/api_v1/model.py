@@ -22,7 +22,7 @@ from framework import *
 
 
 class PirusFile(Document):
-    public_fields = ["id", "name", "type", "size", "status", "upload_offset", "comments", "runs", "create_date", "tags", "md5sum", "url"]
+    public_fields = ["id", "name", "type", "size", "status", "upload_offset", "comments", "runs", "create_date", "tags", "md5sum", "url", "upload_url"]
 
     name          = StringField(required=True)
     type          = StringField()
@@ -35,10 +35,12 @@ class PirusFile(Document):
     create_date   = StringField()
     tags          = ListField(StringField())
     md5sum        = StringField()
+    url           = StringField()
+    upload_url    = StringField()
 
 
     def __str__(self):
-        return self.name + " (" + self.size + ") : " + self.path
+        return self.name + " (" + str(self.size) + ") : " + self.path
 
 
     def export_server_data(self):
@@ -54,15 +56,13 @@ class PirusFile(Document):
             "create_date"   : self.create_date,
             "tags"          : self.tags,
             "md5sum"        : self.md5sum,
-            "id"            : str(self.id)
+            "id"            : str(self.id),
+            "url"           : self.url,
+            "upload_url"    : self.upload_url
         }
 
-    def url(self):
-        return "http://" + HOSTNAME + "/dl/f/" + str(self.id)
-    def upload_url(self):
-        return "http://" + HOSTNAME + "/file/upload/" + str(self.id)
 
-    def export_client_data(self, fields=None):
+    def export_client_data(self, sub_level_loading=0, fields=None):
         result = {}
         if fields is None:
             fields = PirusFile.public_fields
@@ -70,8 +70,11 @@ class PirusFile(Document):
         for k in fields:
             if k == "id":
                 result.update({"id" : str(self.id)})
-            elif k == "url":
-                result.update({"url" : self.url()})
+            elif k == "runs":
+                if sub_level_loading == 0:
+                    result.update({"runs" : [{"id" : str(r.id), "name" : r.name, "url": r.url} for r in Run.from_ids(self.runs)]})
+                else:
+                    result.update({"runs" : [r.export_client_data(sub_level_loading-1) for r in Run.from_ids(self.runs)]})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -103,11 +106,29 @@ class PirusFile(Document):
 
 
     @staticmethod
+    def new_from_tus(filename, file_size):
+        pfile   = PirusFile()
+        pfile.import_data({
+                "name"          : filename,
+                "type"          : os.path.splitext(filename)[1][1:].strip().lower(),
+                "path"          : os.path.join(TEMP_DIR, str(uuid.uuid4())),
+                "size"          : file_size,
+                "upload_offset" : 0,
+                "status"        : "UPLOADING",
+                "create_date"   : str(datetime.datetime.now().timestamp())
+            })
+        pfile.save()
+        pfile.url = "http://" + HOSTNAME + "/dl/f/" + str(self.id)
+        pfile.upload_url = "http://" + HOSTNAME + "/file/upload/" + str(self.id)
+        pfile.save()
+        return pfile
+
+    @staticmethod
     def from_id(id):
         if not ObjectId.is_valid(id):
             return None;
-        file = PirusFile.objects.get(pk=id)
-        return file
+        file = PirusFile.objects(pk=id)
+        return file[0] if len(file) > 0 else None
 
     @staticmethod
     def from_ids(ids):
@@ -133,7 +154,7 @@ class PirusFile(Document):
 
 class Pipeline(Document):
     # Static
-    public_fields    = ["name", "description", "version", "pirus_api", "license", "developers", "size", "upload_offset", "status", "id", "icon_url", "form_url"]
+    public_fields    = ["name", "description", "version", "pirus_api", "license", "developers", "size", "upload_offset", "status", "id", "icon_url", "form_url", "url", "upload_url"]
     # Metadata
     name             = StringField(required=True)
     description      = StringField()
@@ -144,6 +165,7 @@ class Pipeline(Document):
     icon_url         = StringField()
     form_url         = StringField()
     upload_url       = StringField()
+    url              = StringField()
     # Upload data
     size             = IntField(required=True)
     upload_offset    = IntField(required=True)
@@ -185,11 +207,13 @@ class Pipeline(Document):
             "lxd_db_path"      : self.lxd_db_path,
             "lxd_run_cmd"      : self.lxd_run_cmd,
             "form_file"        : self.form_file,
-            "icon_file"        : self.icon_file
+            "icon_file"        : self.icon_file,
+            "url"              : self.url,
+            "upload_url"       : self.upload_url
         }
 
 
-    def export_client_data(self, fields=None):
+    def export_client_data(self, sub_level_loading=0, fields=None):
         result = {}
         if fields is None:
             fields = Pipeline.public_fields
@@ -199,6 +223,9 @@ class Pipeline(Document):
                 result.update({"id" : str(self.id)})
             else:
                 result.update({k : eval("self."+k)})
+        # Sublevel loading ? (Children of Pipeline are Run that are using it)
+        if sub_level_loading > 0:
+            result.update({"runs" : [r.export_client_data(sub_level_loading-1) for r in Run.objects(pipeline_id=self.id)]}) 
         return result
 
 
@@ -257,6 +284,7 @@ class Pipeline(Document):
                 "status"        : "WAITING"
             })  
         pipe.save()
+        pipe.url = "http://" + HOSTNAME + "/pipeline/" + str(pipe.id)
         pipe.upload_url = "http://" + HOSTNAME + "/pipeline/upload/" + str(pipe.id)
         pipe.save()
         return pipe
@@ -266,8 +294,8 @@ class Pipeline(Document):
     def from_id(pipe_id):
         if not ObjectId.is_valid(pipe_id):
             return None;
-        pipe = Pipeline.objects.get(pk=pipe_id)
-        return pipe
+        pipe = Pipeline.objects(pk=pipe_id)
+        return pipe[0] if len(pipe) > 0 else None
 
     @staticmethod
     def from_ids(ids):
@@ -481,7 +509,7 @@ class Pipeline(Document):
 
 
 class Run(Document):
-    public_fields = ["id", "pipeline_id", "name", "config", "start", "end", "status", "inputs", "outputs", "progress"]
+    public_fields = ["id", "pipeline_id", "name", "config", "start", "end", "status", "inputs", "outputs", "progress", "url"]
 
     pipeline_id = ObjectIdField(required=True) # id of the pipe used for this run
     lxd_container  = StringField()
@@ -515,11 +543,13 @@ class Run(Document):
             "status"    : self.status,
             "inputs"    : self.inputs,
             "outputs"   : self.outputs,
-            "progress"  : self.progress
+            "progress"  : self.progress,
+            "url"       : self.url,
+            "notify_url": self.notify_url
         }
 
 
-    def export_client_data(self, fields=None):
+    def export_client_data(self, sub_level_loading=0, fields=None):
         result = {}
         if fields is None:
             fields = Run.public_fields
@@ -531,6 +561,16 @@ class Run(Document):
                 result.update({"pipeline_id" : str(self.pipeline_id)})
             elif k == "config":
                 result.update({"config" : json.loads(self.config)})
+            elif k == "inputs":
+                if sub_level_loading == 0:
+                    result.update({"inputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.inputs)]})
+                else:
+                    result.update({"inputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.inputs)]})
+            elif k == "outputs":
+                if sub_level_loading == 0:
+                    result.update({"outputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.outputs)]})
+                else:
+                    result.update({"outputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.outputs)]})
             else:
                 result.update({k : eval("self."+k)})
         return result
@@ -564,8 +604,8 @@ class Run(Document):
     def from_id(run_id):
         if not ObjectId.is_valid(run_id):
             return None;
-        run = Run.objects.get(pk=run_id)
-        return run
+        run = Run.objects(pk=run_id)
+        return run[0] if len(run) > 0 else None
 
     @staticmethod
     def from_ids(ids):
