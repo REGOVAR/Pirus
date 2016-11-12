@@ -14,7 +14,6 @@ You need to have `MongoDB <https://docs.mongodb.com/manual/tutorial/install-mong
         sudo apt install rabbitmq-server
         sudo apt install mongodb
         sudo apt install lxd
-	sudo apt install redis-server
 	
 You may need also to install ::
 
