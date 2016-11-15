@@ -271,7 +271,7 @@ def terminate_run(self, run_id):
                     "create_date"  : str(datetime.datetime.now().timestamp()),
                     "md5sum"       : md5(file_path),
                     "runs"         : [ str(run.id) ],
-                    "tags"         : [run.name, "result", ""]
+                    "tags"         : []
                 })
             pirusfile.save()
             run.outputs.append(str(pirusfile.id))
@@ -279,7 +279,7 @@ def terminate_run(self, run_id):
     # Stop container and clear resource
     try:
         # Clean outputs
-        subprocess.call(["cp", os.path.join(root_path, "outputs/*"), "--", "chmod", "755", "-Rf", "/pipeline"])
+        subprocess.call(["lxc", "exec", run.lxd_container, "--", "rm", ""])
         subprocess.call(["lxc", "delete", run.lxd_container, "--force"])
     except:
         return self.error('Unexpected error ' + str(sys.exc_info()[0]))

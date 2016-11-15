@@ -84,3 +84,7 @@ pre
   visibility:visible;
   opacity: 1;
 }
+
+.dataTables_info, .dataTables_length {
+    display: none;
+}

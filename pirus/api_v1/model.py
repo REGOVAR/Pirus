@@ -314,7 +314,10 @@ class Pipeline(Document):
             if pipe.root_path is not None:
                 shutil.rmtree(pipe.root_path)
             if os.path.exists(pipe.pipeline_file):
-                shutil.rmtree(pipe.pipeline_file)
+                if os.path.isdir(pipe.pipeline_file):
+                    shutil.rmtree(pipe.pipeline_file)
+                else:
+                    os.unlink(pipe.pipeline_file)
             # Clean LXD
             if pipe.lxd_alias is not None:
                 try:
