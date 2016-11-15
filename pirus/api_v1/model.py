@@ -21,8 +21,19 @@ from config import *
 from framework import *
 
 
+class PirusActivity(Document):
+    label         = StringField(required=True)
+    type          = StringField()  # FILE, RUN, PIPE, SYSTEM
+    data          = DynamicField()
+    date          = StringField()
+    url           = StringField()
+
+
+
+
+
 class PirusFile(Document):
-    public_fields = ["id", "name", "type", "size", "status", "upload_offset", "comments", "runs", "create_date", "tags", "md5sum", "url", "upload_url"]
+    public_fields = ["id", "name", "type", "size", "status", "upload_offset", "comments", "runs", "create_date", "tags", "md5sum", "url", "upload_url", "source"]
 
     name          = StringField(required=True)
     type          = StringField()
@@ -37,6 +48,7 @@ class PirusFile(Document):
     md5sum        = StringField()
     url           = StringField()
     upload_url    = StringField()
+    source        = DynamicField()
 
 
     def __str__(self):
@@ -70,6 +82,9 @@ class PirusFile(Document):
         for k in fields:
             if k == "id":
                 result.update({"id" : str(self.id)})
+            elif k =="create_date":
+                d =  datetime.datetime.fromtimestamp(float(self.create_date))
+                result.update({"create_date" : str(d.year) + "/" + str(d.month) + "/" + str(d.day) + " - " + str(d.hour) + ":" + str(d.minute)})
             elif k == "runs":
                 if sub_level_loading == 0:
                     result.update({"runs" : [{"id" : str(r.id), "name" : r.name, "url": r.url} for r in Run.from_ids(self.runs)]})
@@ -115,7 +130,8 @@ class PirusFile(Document):
                 "size"          : file_size,
                 "upload_offset" : 0,
                 "status"        : "UPLOADING",
-                "create_date"   : str(datetime.datetime.now().timestamp())
+                "create_date"   : str(datetime.datetime.now().timestamp()),
+                "source"        : {"type" : "upload"}
             })
         pfile.save()
         pfile.url = "http://" + HOSTNAME + "/dl/f/" + str(self.id)

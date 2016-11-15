@@ -271,7 +271,7 @@ def terminate_run(self, run_id):
                     "create_date"  : str(datetime.datetime.now().timestamp()),
                     "md5sum"       : md5(file_path),
                     "runs"         : [ str(run.id) ],
-                    "tags"         : []
+                    "source"       : {"type" : "output", "run_id" : str(run.id), "run_name" : run.name}
                 })
             pirusfile.save()
             run.outputs.append(str(pirusfile.id))
