@@ -153,8 +153,15 @@ class FileHandler:
         # Generic processing of the get query
         fields, query, order, offset, limit = process_generic_get(request.query_string, PirusFile.public_fields)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        # Get range meta data
+        range_data = {
+            "range_offset" : offset,
+            "range_limit"  : limit,
+            "range_total"  : PirusFile.objects.count(),
+            "range_max"    : RANGE_MAX,
+        }
         # Return result of the query for PirusFile 
-        return rest_success([p.export_client_data(sub_level_loading, fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]])
+        return rest_success([p.export_client_data(sub_level_loading, fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]], range_data)
 
 
     def edit_infos(self, request):
@@ -294,8 +301,14 @@ class PipelineHandler:
     def get(self, request):
         fields, query, order, offset, limit = process_generic_get(request.query_string, Pipeline.public_fields)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        print ("PipelineHandler.get(sublvl=" + str(sub_level_loading) + ")")
-        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]])   
+        # Get range meta data
+        range_data = {
+            "range_offset" : offset,
+            "range_limit"  : limit,
+            "range_total"  : Pipeline.objects.count(),
+            "range_max"    : RANGE_MAX,
+        }
+        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]], range_data)   
 
     def delete(self, request):
         # 1- Retrieve pirus pipeline from post request
@@ -347,7 +360,14 @@ class RunHandler:
     def get(self, request):
         fields, query, order, offset, limit = process_generic_get(request.query_string, Run.public_fields)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Run.objects(__raw__=query).order_by(*order)[offset:limit]])
+        # Get range meta data
+        range_data = {
+            "range_offset" : offset,
+            "range_limit"  : limit,
+            "range_total"  : Run.objects.count(),
+            "range_max"    : RANGE_MAX,
+        }
+        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Run.objects(__raw__=query).order_by(*order)[offset:limit]], range_data)
 
 
     def delete(self, request):
