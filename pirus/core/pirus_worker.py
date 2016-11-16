@@ -6,23 +6,28 @@ import os
 import sys
 import time
 import requests
-import logging
 import json
 import pylxd
 import subprocess
 import shutil
 import uuid
 
-from mongoengine import *
+
 from celery import Celery, Task
 from config import *
-from framework import *
+from core.framework import *
+from core.model import *
 
 
 
 
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# INIT OBJECTS
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# CELERY 
 app = Celery('pirus_worker')
 app.conf.update(
     BROKER_URL = 'amqp://guest@localhost',
@@ -39,7 +44,7 @@ app.conf.update(
     CELERY_ENABLE_UTC = True,
 )
 
-
+# LXD
 lxd_client = pylxd.Client()
 
 
@@ -48,18 +53,6 @@ lxd_client = pylxd.Client()
 
 
 
-
-
-def execute(cmd, olog=None, elog=None):
-    subprocess.call(cmd)
-    # with subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
-    #     # TODO FIXME => logging realtime not working :( ...
-    #     out = str(proc.stdout.read())
-    #     err = str(proc.stderr.read())
-    #     if out != "":
-    #         olog.info(out)
-    #     if err != "":
-    #         elog.info(err)
 
 
 
@@ -95,9 +88,8 @@ class PirusTask(Task):
 
 
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
-def run_start(self, run_id):
-    from api_v1.model import Run, PirusFile, Pipeline
-    connect('pirus')
+def start_run(self, run_id):
+    from core.model import Run, PirusFile, Pipeline
 
     run = Run.from_id(run_id)
     if run is None :
@@ -231,8 +223,7 @@ def run_start(self, run_id):
 def terminate_run(self, run_id):
     # Init celery task
 
-    from api_v1.model import Run, PirusFile, Pipeline
-    connect('pirus')
+    from core.model import Run, PirusFile, Pipeline
     run = Run.from_id(run_id)
     if run is None :
         # TODO : log error

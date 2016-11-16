@@ -18,18 +18,25 @@ from bson.objectid import ObjectId
 
 
 from config import *
-from framework import *
-
-
-class PirusActivity(Document):
-    label         = StringField(required=True)
-    type          = StringField()  # FILE, RUN, PIPE, SYSTEM
-    data          = DynamicField()
-    date          = StringField()
-    url           = StringField()
+from core.framework import *
 
 
 
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# DATABASE CONNECTION
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+connect('pirus')
+
+
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# MODEL DEFINITION
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 
 class PirusFile(Document):
@@ -139,12 +146,14 @@ class PirusFile(Document):
         pfile.save()
         return pfile
 
+
     @staticmethod
     def from_id(id):
         if not ObjectId.is_valid(id):
             return None;
         file = PirusFile.objects(pk=id)
         return file[0] if len(file) > 0 else None
+
 
     @staticmethod
     def from_ids(ids):
@@ -154,13 +163,6 @@ class PirusFile(Document):
             if f is not None:
                 result.append(f)
         return result
-
-    @staticmethod
-    def remove(id):
-        file = PirusFile.from_id(id)
-        if file != None:
-            shutil.rmtree(file.path)
-            file.delete()
 
 
 
@@ -313,6 +315,7 @@ class Pipeline(Document):
         pipe = Pipeline.objects(pk=pipe_id)
         return pipe[0] if len(pipe) > 0 else None
 
+        
     @staticmethod
     def from_ids(ids):
         result = []
@@ -321,196 +324,6 @@ class Pipeline(Document):
             if p is not None:
                 result.append(p)
         return result
-
-    @staticmethod
-    def remove(pipe_id):
-        pipe = Pipeline.from_id(pipe_id)
-        if pipe != None:
-            # Clean filesystem
-            if pipe.root_path is not None:
-                shutil.rmtree(pipe.root_path)
-            if os.path.exists(pipe.pipeline_file):
-                if os.path.isdir(pipe.pipeline_file):
-                    shutil.rmtree(pipe.pipeline_file)
-                else:
-                    os.unlink(pipe.pipeline_file)
-            # Clean LXD
-            if pipe.lxd_alias is not None:
-                try:
-                    cmd = ["lxc", "image", "delete", pipe.lxd_alias]
-                    out_tmp = '/tmp/' + pipe.lxd_alias + '-out'
-                    err_tmp = '/tmp/' + pipe.lxd_alias + '-err'
-                    subprocess.call(cmd, stdout=open(out_tmp, "r+"), stderr=open(err_tmp, "r+"))
-                except Exception as err:
-                    plog.info('W: Unable to clean LXD for the pipe : ' + pipe.lxd_alias)
-            # Clean DB
-            pipe.delete()
-
-
-    @staticmethod
-    def install(pipe_id):
-
-        pipeline = Pipeline.from_id(pipe_id)
-        if pipeline == None or pipeline.size != pipeline.upload_offset or pipeline.status != "UPLOADING":
-            return None
-
-
-        lxd_alias     = str(uuid.uuid4())
-        root_path     = os.path.join(PIPELINES_DIR, lxd_alias)
-        old_file      = pipeline.pipeline_file
-        pipeline_file = os.path.join(root_path, pipeline.name)
-
-        # 1- Copy file into final folder
-        plog.info('I: Installation of the pipeline package : ' + root_path)
-        os.makedirs(root_path)
-        os.rename(old_file, pipeline_file)
-        os.chmod(pipeline_file, 0o777)
-
-        # 2- Extract pipeline metadata
-        # TODO : instead of testing import json then yaml, loading only yaml should be enough. to be tested
-        try:
-            tar = tarfile.open(pipeline_file)
-            tar_data = [info for info in tar.getmembers() if info.name == "metadata.yaml"]
-            metadata = tar.extractfile(member=tar_data[0])
-            metadata = metadata.read()
-            try:
-                # try json ?
-                metadata = json.loads(metadata.decode())
-            except:
-                # try yaml ?
-                metadata = yaml.load(metadata)
-            metadata = metadata["pirus"]
-        except:
-            # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of ' + pipeline_file)
-            raise PirusException("XXXX", "Unable to extract package. Corrupted file or wrong format")
-        plog.info('I:    [OK     ] Extraction of metadata from ' + pipeline_file)
-
-        # 2- Check that mandatory fields exists
-        missing = ""
-        for k in MANIFEST["mandatory"].keys():
-            if k not in metadata.keys():
-                missing += k + ", "                
-        if missing != "":
-            missing = missing[:-2]
-            plog.info('E:    [FAILLED] Checking validity of metadata (missing : ' + missing + ")")
-            raise PirusException("XXXX", "Bad pirus pipeline format. Mandory fields missing in the metadata : " + missing)
-        plog.info('I:    [OK     ] Checking validity of metadata')
-
-        # 3- Default value for optional fields in mandatory file
-        for k in MANIFEST["default"].keys():
-            if k not in metadata.keys():
-                metadata[k] = MANIFEST["default"][k]
-
-        # 4- Extract pirus technicals files from the tar file
-        try:
-            if metadata["form"] is not None:
-                source     = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
-                tar_data   = [info for info in tar.getmembers() if info.name == source]
-                file       = tar.extractfile(member=tar_data[0])
-                source     = os.path.join(root_path, source)
-                form_file  = os.path.join(root_path, "form.json")
-                with open(form_file, 'bw+') as f:
-                    f.write(file.read())
-            else :
-                form_file = os.path.join(root_path, "form.json")
-                with open(form_file, 'w+') as f:
-                    f.write("{}")
-
-            source = PIPELINE_DEFAULT_ICON_PATH
-            icon_file = os.path.join(root_path, "icon.png")
-            if metadata["icon"] is not None:
-                source = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
-                tar_data = [info for info in tar.getmembers() if info.name == source]
-                file = tar.extractfile(member=tar_data[0])
-                source = os.path.join(root_path, source)
-                icon_file = os.path.join(root_path, os.path.basename(metadata['icon']))
-                with open(icon_file, 'bw+') as f:
-                    f.write(file.read())
-            else:
-                shutil.copyfile(source, icon_file)
-        except:
-            # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of ' + pipeline_file)
-            raise PirusException("XXXX", "Error occure during extraction of pipeline technical files (form.json / icon)")
-        plog.info('I:    [OK     ] Extraction of pipeline technical files (form.json / icon)')
-
-
-        # 5- Save pipeline into database
-        lxd_alias = LXD_IMAGE_PREFIX + lxd_alias
-        metadata.update({
-            "root_path"        : root_path,
-            "lxd_inputs_path"  : metadata["inputs"],
-            "lxd_outputs_path" : metadata["outputs"],
-            "lxd_logs_path"    : metadata["logs"],
-            "lxd_db_path"      : metadata["databases"],
-            "lxd_run_cmd"      : metadata["run"],
-            "form_file"        : form_file,
-            "icon_file"        : icon_file,
-            "lxd_alias"        : lxd_alias,
-            "pipeline_file"    : pipeline_file,
-            "size"             : pipeline.size,
-            "upload_offset"    : pipeline.upload_offset,
-            "status"           : "INSTALLING"
-        })
-        try:
-            pipeline.import_data(metadata)
-            pipeline.save()
-        except Exception as err:
-            # TODO : manage error
-            print(err)
-            plog.info('E:    [FAILLED] Save pipeline information in database.')
-            raise PirusException("XXXX", "Failed to save pipeling info into the database.")
-        plog.info('I:    [OK     ] Save pipeline information in database with id='+ str(pipeline.id))
-
-        # 6- Install lxd container
-        cmd = ["lxc", "image", "import", pipeline_file, "--alias", lxd_alias]
-        try:
-            out_tmp = '/tmp/' + lxd_alias + '-out'
-            err_tmp = '/tmp/' + lxd_alias + '-err'
-            subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
-
-        except Exception as err:
-            # TODO : manage error
-            print(err)
-            plog.info('E:    [FAILLED] Installation of the lxd image. ($: ' + " ".join(cmd) + ")")
-            raise PirusException("XXXX", "Failed to install pipeline lxd image.")
-
-
-        err = open(err_tmp, "r").read()
-        if err != "":
-            # TODO : manage error
-            plog.info('E:    [FAILLED] Lxd image. ($: ' + " ".join(cmd) + ")")
-            plog.info('--------------------------')
-            plog.info(err)
-            plog.info('--------------------------')
-            pipeline.delete()
-            shutil.rmtree(root_path)
-            raise PirusException("XXXX", "Failed to install pipeline lxd image (" + err + ")")
-        else:
-            plog.info('I:    [OK     ] Installation of the lxd image.')
-
-        # 7- Clean directory
-        try:
-            keep = [pipeline_file, form_file, icon_file]
-            for f in os.listdir(root_path):
-                fullpath = os.path.join(root_path, f)
-                if fullpath not in keep:
-                    if os.path.isfile(fullpath):
-                        os.remove(fullpath)
-                    else:
-                        shutil.rmtree(fullpath)
-        except Exception as err:
-            # TODO : manage error, notify only admins
-            print(err)
-            plog.info('E:    [FAILLED] Cleaning repository.')
-        plog.info('I:    [OK     ] Cleaning repository.')
-        plog.info('I:    All fine. Pipeline is ready !')
-
-        pipeline.status = "READY"
-        pipeline.save()
-        return pipeline
-        
 
 
 
@@ -626,6 +439,8 @@ class Run(Document):
         run = Run.objects(pk=run_id)
         return run[0] if len(run) > 0 else None
 
+
+
     @staticmethod
     def from_ids(ids):
         result = []
@@ -635,51 +450,6 @@ class Run(Document):
                 result.append(r)
         return result
 
-    @staticmethod
-    def launch_run(pipeline_id, config_data, inputs_data):
-        pass
 
-    @staticmethod
-    def create(pipeline_id, config_data, inputs_data):
-        # Load pipeline from database
-        pipeline = Pipeline.from_id(pipeline_id)
-        if pipeline is None:
-            # TODO : LOG rest_error("Unknow pipeline id " + str(pipeline_id))
-            return None
-        
-        # Create run in database.
-        lxd_container = LXD_CONTAINER_PREFIX + str(uuid.uuid4())
 
-        run = Run()
-        run.import_data({
-            "pipeline_id" : pipeline_id,
-            "name" : config_data["run"]["name"],
-            "lxd_container" : lxd_container,
-            "lxd_image" : pipeline.lxd_alias,
-            "start" : str(datetime.datetime.now().timestamp()),
-            "status" : "WAITING",
-            "config" : json.dumps(config_data),
-            "inputs" : inputs_data,
-            "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
-        })
-        run.save()
 
-        run.url = 'http://' + HOSTNAME + '/dl/r/' + str(run.id)
-        run.notify_url = 'http://' + HOSTNAME + '/run/notify/' + str(run.id)
-        config_data = json.loads(run.config)
-        config_data["pirus"]["notify_url"] = run.notify_url
-        run.config = json.dumps(config_data)
-
-        # Update input files to indicate that they will be used by this run
-        for file_id in run.inputs:
-            f = PirusFile.from_id(file_id)
-            if f is None :
-                # This file doesn't exists, so we will ignore it
-                run.inputs.remove(file_id)
-            elif run.id not in f.runs :
-                f.runs.append(str(run.id))
-                f.save()
-        
-        # OK, run created and waiting to be start
-        run.save()
-        return run

@@ -2,14 +2,16 @@
 # coding: utf-8
 
 
-from framework import *
 from config import *
-from api_v1.handlers import *
+from core import *
+
+from api_rest.handlers import *
 
 
 
 
-
+app = web.Application()
+aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(TEMPLATE_DIR))	
 
 
 # Handlers instances

@@ -18,25 +18,65 @@ import subprocess
 
 from aiohttp import web, MultiDict
 from urllib.parse import parse_qsl
-from mongoengine import *
+
 
 
 from config import *
-from framework import *
-from pirus_worker import run_start, terminate_run
-from api_v1.model import *
-from api_v1.tus import tus_manager
+from core import *
 
 
 
 
 
 
-# Common methods
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# COMMON TOOLS
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+def rest_success(response_data=None, pagination_data=None):
+    """ 
+        Build the REST success response that will encapsulate the given data (in python dictionary format)
+        :param response_data:   The data to wrap in the JSON success response
+        :param pagination_data: The data regarding the pagination
+    """
+    if response_data is None:
+        results = {"success":True}
+    else:
+        results = {"success":True, "data":response_data}
+    if pagination_data is not None:
+        results.update(pagination_data)
+    return web.json_response(results)
+
+
+
+def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
+    """ 
+        Build the REST error response
+        :param message:         The short "friendly user" error message
+        :param code:            The code of the error type
+        :param error_id:        The id of the error, to return to the end-user. 
+                                This code will allow admins to find in logs where exactly this error occure
+    """
+    results = {
+        "success":              False, 
+        "msg":                  message, 
+        "error_code":   code, 
+        "error_url":    ERROR_ROOT_URL + code,
+        "error_id":             error_id
+    }
+    return web.json_response(results)
+
+
+
 def notify_all(src, msg):
     for ws in app['websockets']:
         if src != ws[1]:
             ws[0].send_str(msg)
+
+
+
+
 
 
 def process_generic_get(query_string, allowed_fields):
@@ -103,19 +143,20 @@ def process_generic_get(query_string, allowed_fields):
 
 
 
-# API HANDLERS
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# MISC HANDLER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class WebsiteHandler:
     def __init__(self):
         pass
 
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
-        sub_level_loading = request.match_info.get('sublvl', 0)
         data = {
-            "runs"     : [r.export_client_data(sub_level_loading) for r in Run.objects.all().order_by('-start')], 
-            "pipes"    : [f.export_client_data(sub_level_loading) for f in Pipeline.objects.all().order_by('-name')],
-            "files"    : [p.export_client_data(sub_level_loading) for p in PirusFile.objects.all().order_by('-create_date')],
+            "files"    : pirus.files.get(None, None, ['-create_date']),
+            "pipes"    : pirus.pipelines.get(None, None, ['-name']),
+            "runs"     : pirus.runs.get(None, None, ['-start']), 
             "hostname" : HOSTNAME
         }
 
@@ -147,6 +188,15 @@ class WebsiteHandler:
  
 
 
+
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# REST FILE API HANDLER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class FileHandler:
 
     def get(self, request):
@@ -157,19 +207,26 @@ class FileHandler:
         range_data = {
             "range_offset" : offset,
             "range_limit"  : limit,
-            "range_total"  : PirusFile.objects.count(),
+            "range_total"  : pirus.files.total(),
             "range_max"    : RANGE_MAX,
         }
         # Return result of the query for PirusFile 
-        return rest_success([p.export_client_data(sub_level_loading, fields) for p in PirusFile.objects(__raw__=query).order_by(*order)[offset:limit]], range_data)
+        return rest_success(pirus.files.get(fields, query, order, offset, limit, sub_level_loading), range_data)
+
+
 
 
     def edit_infos(self, request):
         # TODO : implement PUT to edit file metadata (and remove the obsolete  "simple post" replaced by TUS upload )
         return rest_error("Not yet implemented")
         
-    # "Simple" upload (synchrone and not resumable)
+
+
+
     async def upload_simple(self, request):
+        """
+            "Simple" upload (synchrone and not resumable)
+        """
         name = str(uuid.uuid4())
         path = os.path.join(FILES_DIR, name)
         plog.info('I: Start file uploading : ' + path)
@@ -193,38 +250,33 @@ class FileHandler:
                 f.write(uploadFile.file.read())
         except:
             # TODO : manage error
-            raise PirusException("XXXX", "Bad pirus pipeline format : Manifest file corrupted.")
+            raise PirusException("Bad pirus pipeline format : Manifest file corrupted.")
         plog.info('I: File uploading done : ' + path)
         # 3- save file on the database
-        pirusfile = PirusFile()
-        pirusfile.import_data({
-                "name"          : uploadFile.filename,
-                "type"          : os.path.splitext(uploadFile.filename)[1][1:].strip().lower(),
-                "path"          : path,
-                "size"          : int(os.path.getsize(path)),
-                "status"        : "UPLOADED",
-                "create_date"   : str(datetime.datetime.now().timestamp()),
-                "md5sum"        : md5(path),
-                "tags"          : tags,
-                "comments"      : comments
-            })
-        pirusfile.save()
-        plog.info('I: File ' + name + ' (' + pirusfile.size + ') available at ' + path)
-        return rest_success(pirusfile.export_client_data())
+        pirusfile = pirus.files.register(uploadFile.filename, path, {
+            "tags"          : tags,
+            "comments"      : comments
+        })
+        return rest_success(pirusfile)
+
 
 
     def delete(self, request):
-        # TODO : implement DELETE to remove file metadata...
-        return rest_error("Not yet implemented")
+        file_id = request.match_info.get('file_id', "")
+        try:
+            return rest_success(pirus.files.delete(file_id))
+        except Exception as err:
+            return rest_error("Error occured : " + err)
+
 
 
     def get_details(self, request):
-        id = request.match_info.get('file_id', -1)
+        file_id = request.match_info.get('file_id', -1)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        file = PirusFile.from_id(pipe_id)
-        if file == None:
-            return rest_error("No file with id " + str(pipe_id))
-        return rest_success(file.export_client_data(sub_level_loading))
+        try:
+            return rest_success(pirus.files.get_from_id(file_id))
+        except PirusException as err:
+            return rest_error("Error occured : " + err)
 
 
 
@@ -294,6 +346,14 @@ class FileHandler:
 
 
 
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# REST PIPELINE API HANDLER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class PipelineHandler:
     def __init__(self):
         pass
@@ -353,6 +413,14 @@ class PipelineHandler:
 
 
 
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# REST RUN API HANDLER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class RunHandler:
     def __init__(self):
         pass
@@ -581,6 +649,12 @@ class RunHandler:
 
 
 
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# WEBSOCKET HANDLER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class WebsocketHandler:
     async def get(self, request):
         peername = request.transport.get_extra_info('peername')
@@ -617,6 +691,15 @@ class WebsocketHandler:
             app['websockets'].remove((ws, ws_id))
 
         return ws
+
+
+
+
+
+
+
+
+
 
 
 async def on_shutdown(app):
