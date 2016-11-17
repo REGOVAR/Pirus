@@ -2,11 +2,12 @@ language: python
 python:
   - 3.5
 
+services:
+  - mongodb
+  - rabbitmq
 
 
 before_install:
-  - sudo apt-get install rabbitmq-server -y
-  - sudo apt-get install mongodb -y
   - sudo apt-get install lxd -y
 
 
