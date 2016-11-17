@@ -2,7 +2,6 @@
 # coding: utf-8
 
 
-from config import *
 from core import pirus
 from api_rest.handlers import WebsiteHandler, FileHandler, PipelineHandler, RunHandler, WebsocketHandler
 

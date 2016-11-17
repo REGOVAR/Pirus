@@ -1,7 +1,5 @@
 #!env/python3
 # coding: utf-8
-import ipdb; 
-
 
 import os
 import json
@@ -11,7 +9,7 @@ import time
 import uuid
 import subprocess
 
-from config import *
+# from config import *
 from core.framework import *
 from core.model import *
 from core.pirus_worker import start_run, terminate_run

@@ -21,7 +21,6 @@ from urllib.parse import parse_qsl
 
 
 
-from config import *
 from core import pirus
 
 

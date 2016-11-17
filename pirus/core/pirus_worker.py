@@ -14,7 +14,7 @@ import uuid
 
 
 from celery import Celery, Task
-from config import *
+#from config import *
 from core.framework import *
 from core.model import *
 
