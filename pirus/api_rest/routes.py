@@ -3,9 +3,8 @@
 
 
 from config import *
-from core import *
-
-from api_rest.handlers import *
+from core import pirus
+from api_rest.handlers import WebsiteHandler, FileHandler, PipelineHandler, RunHandler, WebsocketHandler
 
 
 
