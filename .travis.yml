@@ -1,15 +1,20 @@
 language: python
-python:
-  - 3.5
+python: 3.5
+dist: trusty
+
+
+
+before_install:
+  - sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable -y
+  - sudo apt-get update
+  - sudo apt-get install lxd -y
+
+
 
 services:
   - mongodb
   - rabbitmq
 
-
-# LXC/LXD not supported by Travis 
-#before_install:
-#  - sudo apt-get install lxd -y
 
 
 
@@ -18,7 +23,7 @@ install:
 
 
 
-# command to run tests
+
 script: 
   - cd pirus
   - make test
