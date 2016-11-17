@@ -4,7 +4,10 @@
 
 import os
 import sys
+import shutil
 import unittest
+
+from mongoengine import *
 
 from tests.config import *
 from core import pirus
@@ -28,11 +31,29 @@ class TestCoreFile(unittest.TestCase):
     # PREPARATION
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-    def setUp(self):
+    @classmethod
+    def setUpClass(self):
         # Before test we check that we are using the good config file
-        self.assertEqual(VERSION, "tu")
+        if VERSION != "tu": raise Exception("Wrong config file used")
+        # Clean test's database 
+        self.db = connect(DATABASE_NAME)
+        self.db.drop_database(DATABASE_NAME)
+        # Clean test's directory
+        if os.path.exists(FILES_DIR):
+            shutil.rmtree(FILES_DIR)
+            os.makedirs(FILES_DIR)
+        if os.path.exists(TEMP_DIR):
+            shutil.rmtree(TEMP_DIR)
+            os.makedirs(TEMP_DIR)
 
-        # As we are using the same DB that pirus app, we keep some 
+
+
+    @classmethod
+    def tearDownClass(self):
+        # self.db.drop_database(DATABASE_NAME)
+        # shutil.rmtree(TEMP_DIR)
+        # shutil.rmtree(FILES_DIR)
+        pass
 
 
 

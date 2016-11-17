@@ -12,6 +12,8 @@ HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 RANGE_DEFAULT = 20
 RANGE_MAX     = 1000
 
+# DB
+DATABASE_NAME = "pirus_tu"
 
 
 # FILESYSTEM

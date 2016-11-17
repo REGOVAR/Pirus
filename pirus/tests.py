@@ -3,13 +3,14 @@
 
 import unittest
 
+
 from tests.test_core_file import TestCoreFile
 
 
 
 
-# /!\ For a weird raison, unittest.main() doesn't work (no UT loaded) when we import the pirus.core object. So we run the tests manually
 
+# /!\ For a weird raison, unittest.main() doesn't work (no UT loaded) when we import the pirus.core object. So we run the tests manually
 
 # Run tests
 if __name__ == '__main__':

@@ -23,7 +23,8 @@ from core.framework import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # DATABASE CONNECTION
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-connect('pirus')
+
+connect(DATABASE_NAME)
 
 
 
