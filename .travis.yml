@@ -5,9 +5,9 @@ python:
 
 
 before_install:
-  - sudo apt-get install rabbitmq-server
-  - sudo apt-get install mongodb
-  - sudo apt-get install lxd
+  - sudo apt-get install rabbitmq-server -y
+  - sudo apt-get install mongodb -y
+  - sudo apt-get install lxd -y
 
 
 install: 
