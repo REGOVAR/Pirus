@@ -1,17 +1,17 @@
 language: python
 python:
-  - "3.5"
+  - 3.5
 
 
 
 before_install:
-  - sudo apt install rabbitmq-server
-  - sudo apt install mongodb
-  - sudo apt install lxd
+  - sudo apt-get install rabbitmq-server
+  - sudo apt-get install mongodb
+  - sudo apt-get install lxd
 
 
 install: 
-  - "pip install -r requirements.txt"
+  - pip install -r requirements.txt
 
 
 
