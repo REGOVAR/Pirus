@@ -81,12 +81,15 @@ Your need first to run celery ::
 	cd pirus/
 	celery worker -A pirus_worker --loglevel=info -Q PirusQueue
 
-So you can run pirus ::
+So you can run pirus web api ::
 
-	python app.y 
+	python application.py 
 
 Check if pirus is working there : http://localhost:8080/v1/www
- 
+
+You can also test pirus direclty from command line by using the `pirus` executable file ::
+
+	$: pirus file list 
 
 
 Using Pirus
