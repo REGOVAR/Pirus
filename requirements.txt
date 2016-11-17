@@ -6,3 +6,4 @@ mongoengine==0.10.6
 pylxd==2.1.1
 ipdb==0.10.1
 pyYAML==3.12
+requests==2.11.1
