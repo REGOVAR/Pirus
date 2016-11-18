@@ -6,7 +6,6 @@ from aiohttp import web
 
 
 # Pirus package
-from config import *
 from api_rest import *
 
 

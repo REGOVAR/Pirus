@@ -19,13 +19,27 @@ from core import pirus
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 TU_PIRUS_FILE_PUBLIC_FIELDS = ["id", "name", "type", "size", "status", "upload_offset", "comments", "runs", "create_date", "tags", "md5sum", "url", "upload_url", "source"]
 
+TU_FAKE_FILE_1 = {
+    "name" : "TestFile 1.bin",
+    "type" : "bin",
+    "path" : os.path.join(FILES_DIR, "781b90ef-85d6-48bf-a09f-f4b5d8788bb7"),
+    "size" : 6858788138,
+    "upload_offset" : 6858788138,
+    "status" : "CHECKED",
+    "comments" : "Test file n°1",
+    "runs" : [],
+    "tags" : ["Test unit"],
+    "url" : "http://url",
+    "upload_url" : "http://url",
+    "source" : {
+        "type" : "upload"
+    }
+}
 
 
 
 class TestCoreFile(unittest.TestCase):
     """ Test case for pirus core file's features. """
-
-
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
     # PREPARATION
@@ -62,15 +76,17 @@ class TestCoreFile(unittest.TestCase):
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
     def test_public_fields(self):
-        """ Test new file registration """
+        """ Check that public fileds describes in the model are same that in TU. Otherwise TU (and maybe doc/wiki shall be updated) """
         self.assertEqual(pirus.files.public_fields(), TU_PIRUS_FILE_PUBLIC_FIELDS)
 
-    def test_total(self):
-        """ Test new file registration """
-        self.assertEqual(1, 1)
 
     def test_get_generic(self):
-        """ Test new file registration """
+        """ Check that generic filter request is working """
+        # 1- Insert fake files entries
+        for i in range(0.100):
+            os.mknod(os.path.join())
+            pirus.files.register()
+
         # fields=None, query=None, order=None, offset=None, limit=None, sublvl=0):
         # """
         #     Generic method to get files metadata according to provided filtering options

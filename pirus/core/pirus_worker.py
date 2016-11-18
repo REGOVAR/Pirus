@@ -98,25 +98,6 @@ def start_run(self, run_id):
 
     self.notify_url = run.notify_url
     print(self.notify_url)
-    # # Init logs
-    # print(os.path.join(lpath, "pirus.log"))
-    # setup_logger('pirus_worker', os.path.join(lpath, "pirus_worker.log"))
-    # setup_logger('run_out', os.path.join(lpath, "out.log"))
-    # setup_logger('run_err', os.path.join(lpath, "err.log"))
-    # wlog = logging.getLogger('pirus_worker')
-    # # olog = logging.getLogger('run_out')
-    # # elog = logging.getLogger('run_err')
-    
-    # wlog.info('INIT    | Pirus worker initialisation : ')
-    # wlog.info('INIT    |  - LXD alias : ' + pipeline.lxd_alias)
-    # wlog.info('INIT    |  - Run ID  : ' + self.run_private_id)
-    # wlog.info('INIT    | Directory created : ')
-    # wlog.info('INIT    |  - inputs  : ' + ipath)
-    # wlog.info('INIT    |  - outputs : ' + opath)
-    # wlog.info('INIT    |  - logs    : ' + lpath)
-    # wlog.info('INIT    |  - db      : ' + DATABASES_DIR)
-    # wlog.info('INIT    | Run config : ' + json.dumps(config))
-    # wlog.info('INIT    | Run inputs : ' + json.dumps(inputs))
 
 
     self.notify_status("WAITING")

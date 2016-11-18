@@ -1,9 +1,12 @@
 #!env/python3
 # coding: utf-8
 
+import aiohttp_jinja2
+import jinja2
+from aiohttp import web
 
 from core import pirus
-from api_rest.handlers import WebsiteHandler, FileHandler, PipelineHandler, RunHandler, WebsocketHandler
+from api_rest.handlers import *
 
 
 

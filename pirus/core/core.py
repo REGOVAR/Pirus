@@ -2,17 +2,23 @@
 # coding: utf-8
 
 import os
+import shutil
 import json
 import tarfile
 import datetime
 import time
 import uuid
 import subprocess
+import requests
 
 # from config import *
 from core.framework import *
 from core.model import *
 from core.pirus_worker import start_run, terminate_run
+
+
+
+
 
 
 
@@ -63,7 +69,7 @@ class Core:
              - check that config parameters are consistency
              - check that 
         """
-
+        pass
 
 
  
@@ -118,7 +124,7 @@ class FileManager:
 
 
 
-    def register(self, filename, path, metadata={}):
+    def upload_init(self, filename, path, metadata={}):
         """ 
             Create an entry for the file in the database and return the id of the file in pirus
             This method shall be used to init a resumable upload of a file 
@@ -138,6 +144,49 @@ class FileManager:
         pirusfile.save()
         plog.info('core.FileManager.register : New file registered with the id ' + str(pirusfile.id) + ' (available at ' + path + ')')
         return pirusfile.export_client_data()
+
+
+
+    def upload_chunk(self, file_id, chunk_data, chunk_size, offset):
+        pass
+
+
+    def upload_finish(self, file_id, checksum, checksum_type="md5"):
+        pass
+
+
+    async def from_download(self, url, metadata={}):
+        """ Download a file from url and create a new Pirus file. """
+        name = str(uuid.uuid4())
+        filepath = os.path.join(FILES_DIR, name)
+        # get request and write file
+        with open(filepath, "bw+") as file:
+            try :
+                response = await requests.get(url)
+            except Exception as err:
+                raise PirusException("Error occured when trying to download a file from the provided url : " + str(url) + ". " + str(err))
+            file.write(response.content)
+        # save file on the database
+        pirusfile = pirus.files.register(name, filepath, metadata)
+        return rest_success(pirusfile)
+
+
+
+    def from_local(self, path, move=False, metadata={}):
+        """ Copy or move a local file on server and create a new Pirus file. Of course the source file shall have good access rights. """
+        name = str(uuid.uuid4())
+        filepath = os.path.join(FILES_DIR, name)
+        # get request and write file
+        try:
+            if move:
+                os.rename(path, filepath)
+            else:
+                shutil.copyfile(path, filepath)
+        except Exception as err:
+            raise PirusException("Error occured when trying to copy/move the file from the provided path : " + str(path) + ". " + str(err))
+        # save file on the database
+        pirusfile = pirus.files.register(name, filepath, metadata)
+        return rest_success(pirusfile)
 
 
 

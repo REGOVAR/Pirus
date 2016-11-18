@@ -8,7 +8,6 @@ import json
 import aiohttp
 
 import aiohttp_jinja2
-import jinja2
 import tarfile
 import datetime
 import time
@@ -20,8 +19,8 @@ from aiohttp import web, MultiDict
 from urllib.parse import parse_qsl
 
 
-
-from core import pirus
+from config import *
+from core import *
 
 
 
