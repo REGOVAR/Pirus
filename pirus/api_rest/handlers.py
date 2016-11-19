@@ -19,7 +19,7 @@ from aiohttp import web, MultiDict
 from urllib.parse import parse_qsl
 
 
-from config import *
+
 from core import *
 
 
@@ -68,7 +68,7 @@ def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
 
 
 def notify_all(src, msg):
-    for ws in app['websockets']:
+    for ws in WebsocketHandler.socket_list:
         if src != ws[1]:
             ws[0].send_str(msg)
 
@@ -654,6 +654,9 @@ class RunHandler:
 # WEBSOCKET HANDLER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 class WebsocketHandler:
+    socket_list = []
+
+
     async def get(self, request):
         peername = request.transport.get_extra_info('peername')
         if peername is not None:
@@ -664,9 +667,9 @@ class WebsocketHandler:
         await ws.prepare(request)
 
         print('WS connection open by', ws_id)
-        app['websockets'].append((ws, ws_id))
-        print (len(app['websockets']))
-        msg = '{"action":"online_user", "data" : [' + ','.join(['"' + _ws[1] + '"' for _ws in app['websockets']]) + ']}'
+        WebsocketHandler.socket_list.append((ws, ws_id))
+        print (len(WebsocketHandler.socket_list))
+        msg = '{"action":"online_user", "data" : [' + ','.join(['"' + _ws[1] + '"' for _ws in WebsocketHandler.socket_list]) + ']}'
         notify_all(None, msg)
         print(msg)
 
@@ -686,7 +689,7 @@ class WebsocketHandler:
                             print('ws connection closed with exception %s' % ws.exception())
         finally:
             print('WS connection closed for', ws_id)
-            app['websockets'].remove((ws, ws_id))
+            WebsocketHandler.socket_list.remove((ws, ws_id))
 
         return ws
 
@@ -702,5 +705,5 @@ class WebsocketHandler:
 
 async def on_shutdown(app):
     print("SHUTDOWN SERVER... CLOSE ALL")
-    for ws in app['websockets']:
+    for ws in WebsocketHandler.socket_list:
         await ws[0].close(code=999, message='Server shutdown')

@@ -1,52 +1,10 @@
-.progress {
-    margin-bottom: 0px!important;
-}
 
-.content-subhead {
-    text-transform: uppercase;
-    color: #999;
-    border-bottom: 1px solid #eee;
-    padding: 0.4em 0;
-    font-size: 80%;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-}
-
-.fileUpload {
-    position: relative;
-    overflow: hidden;
-    margin: 10px;
-}
-.fileUpload input.upload {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin: 0;
-    padding: 0;
-    font-size: 20px;
-    cursor: pointer;
-    opacity: 0;
-    filter: alpha(opacity=0);
-}
-
-.panel-group
+.panel-footer
 {
-    margin-top: 20px;
-}
-.panel-collapse
-{
-    padding: 10px;
-}
-fieldset 
-{
-    margin-bottom: 10px;
-}
-
-.details
-{
-    color: #aaa;
-    font-style: italic;
-    font-size: 10px;
+    text-align: right!important;
+    color: #999!important;
+    font-style: italic!important;
+    font-size: 10px!important;
 }
 
 
@@ -64,13 +22,10 @@ pre
 }
 
 
-.tree
+
+table tr:hover
 {
-    font-size: 18px;
-}
-.tree tr:hover
-{
-    background: #dde;
+    background: #ddd!important;
 }
 
 

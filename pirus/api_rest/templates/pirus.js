@@ -1,6 +1,27 @@
 
 
 
+
+function display_status_bar(id)
+{
+    var details =  $('#' + id + ' td:nth-child(5)').html()
+    $('#demo_footer').html((details == "None") ? "&nbsp;" : details);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function buildProgressBar(percentage, pbTheme, containerId) {
     var style="progress-bar "
 
@@ -137,11 +158,6 @@ function init_pirus_browser()
 
         }
         $("#pirusBrowser").html(html)
-
-
-        $('.tree').treegrid({
-            'initialState': 'collapsed'
-        });
     })
 }
 
