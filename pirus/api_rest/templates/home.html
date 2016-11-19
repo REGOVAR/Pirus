@@ -134,13 +134,11 @@
                         <div class="col-md-3" style="height:500px; border-right: 1px solid #ddd; overflow-y: scroll;">
 
                             <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavSelectionPanel" aria-expanded="false" aria-controls="browserNavSelectionPanel">
-                                <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection
+                                <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection <span id="selection_count" class="badge"></span>
                             </a>
                             <div id="browserNavSelectionPanel">
-                                <div>
-                                    <ul>
-                                    </ul>
-                                </div>
+                                <ul>
+                                </ul>
                             </div>
 
                             <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavLastPanel" aria-expanded="false" aria-controls="browserNavLastPanel">
@@ -190,7 +188,6 @@
                                     <th>Creation</th>
                                     <th class="collapse">Comments</th>
                                     <th class="collapse">Tags</th>
-
                                 </tr>
                             </thead>
 
@@ -199,10 +196,11 @@
 
 
                             {% for f in files %}
-                            <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('fileEntry-{{ f["id"] }}')">
+                            <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')">
                                 <td><input type="checkbox" 
                                         value="{{ f["id"] }}" 
-                                        name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
+                                        name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"
+                                        onchange="javascript:select_file('{{ f["id"] }}')"/> 
                                 </td>
                                 <td>{% if f["source"]["type"] == "output" %}
                                     {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
@@ -219,75 +217,72 @@
                             </tr>
                             {% endfor %}
                         </table>
-
-
-
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div id="demo_footer" class="panel-footer">File : DPNI_control.bam - Fichier fournit par Brutagen&amp;Co. Command n°1452-214456 le 15/02/2016
+                <div id="demo_footer" class="panel-footer">File : DPNI_control.bam - Fichier fournit par Brutagen&amp;Co. Command n°1452-214456 le 15/02/2016
+                </div>
             </div>
         </div>
-    </div>
 
 
-<ul id="contextMenu" class="dropdown-menu" role="menu" style="display:none" >
-    <li><a tabindex="-1" href="#"><i class="fa fa-cloud-download" aria-hidden="true"></i> Download</a></li>
-    <li><a tabindex="-1" href="#"><i class="fa fa-info-circle" aria-hidden="true"></i> Informations</a></li>
-    <li><a tabindex="-1" href="#"><i class="fa fa-times" aria-hidden="true"></i> Delete</a></li>
-    <li class="divider"></li>
-    <li><a tabindex="-1" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> Start new run</a></li>
-</ul>
-
-
-
-
-
-
-<!--     -->
-<!-- API -->
-<!--     -->
-<div id="api" class="tab-pane fade">
-    <h1> Comming soon</h1>
-    <ul>
-        <li><a href="https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/readme.md">Pipeline creation</a></li>
-        <li><a href="https://github.com/REGOVAR/Pirus/tree/master/docs">Doc</a></li>
-        <li><a href="https://annuel.framapad.org/p/pirusAPI">Spec in progress</a></li>
-    </ul>
-</div>
+        <ul id="contextMenu" class="dropdown-menu" role="menu" style="display:none" >
+            <li><a tabindex="-1" href="#"><i class="fa fa-cloud-download" aria-hidden="true"></i> Download</a></li>
+            <li><a tabindex="-1" href="#"><i class="fa fa-info-circle" aria-hidden="true"></i> Informations</a></li>
+            <li><a tabindex="-1" href="#"><i class="fa fa-times" aria-hidden="true"></i> Delete</a></li>
+            <li class="divider"></li>
+            <li><a tabindex="-1" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> Start new run</a></li>
+        </ul>
 
 
 
 
 
-<!--                           -->
-<!-- MODAL POPUP - File Upload -->
-<!--                           -->
-<div id="modalNewFile" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Upload a file on Pirus</h4>
-            </div>
-            <div class="modal-body">
-                <div class="alert alert-warining hidden" id="support-alert">
-                    <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
-                </div>
 
-                <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
-                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="256000">
-                <input type="file" id="tusFileInput">
-                <br/>
-                <div id="tusFileProgress">
-                    <div class="alert alert-success" id="support-alert">
-                        <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
+        <!--     -->
+        <!-- API -->
+        <!--     -->
+        <div id="api" class="tab-pane fade">
+            <h1> Comming soon</h1>
+            <ul>
+                <li><a href="https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/readme.md">Pipeline creation</a></li>
+                <li><a href="https://github.com/REGOVAR/Pirus/tree/master/docs">Doc</a></li>
+                <li><a href="https://annuel.framapad.org/p/pirusAPI">Spec in progress</a></li>
+            </ul>
+        </div>
+
+
+
+
+
+        <!--                           -->
+        <!-- MODAL POPUP - File Upload -->
+        <!--                           -->
+        <div id="modalNewFile" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Upload a file on Pirus</h4>
                     </div>
-                </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warining hidden" id="support-alert">
+                            <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
+                        </div>
+
+                        <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
+                        <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="256000">
+                        <input type="file" id="tusFileInput">
+                        <br/>
+                        <div id="tusFileProgress">
+                            <div class="alert alert-success" id="support-alert">
+                                <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
+                            </div>
+                        </div>
 
 
-                <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
-                                <!--
+                        <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
+                            <!--
                                 <fieldset>
                                     <div class="fileUpload btn btn-default">
                                         <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
@@ -344,7 +339,7 @@
 
 
                         <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
-                                <!--
+                            <!--
                                 <fieldset>
                                     <div class="fileUpload btn btn-default">
                                         <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
@@ -401,81 +396,67 @@
                                 <strong>Warning!</strong> No file available on the server. You can start by upload some file, or launch this run without inputs.
                             </div>
                             {% else %}
-                            <div class="runConfigTabDescription">Select the input files for the run</div>
+                            <div class="runConfigTabDescription">Below the list of input files selected for the run</div>
                             <table id="inputFilesList" class="table table-striped table-bordered" cellspacing="0" width="100%">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
-                                        <th>Infos</th>
+                                        <th>Size</th>
+                                        <th>Creation</th>
                                     </tr>
                                 </thead>
 
-                                {% for f in files %}
+                                <tbody>
+ 
+                                </tbody>
+                            </table>
+                            <p style="margin-top: 20px; text-align:right;"> 
+                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab" onclick="javascript:run_config_step_2();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div id="runConfigFormTab" class="tab-pane fade">
+                            <div class="runConfigHeader">
+                                <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
+                                <p class="sp ok"> ——————— </p>
+                                <p class="current"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
+                                <p class="sp"> • • • • </p>
+                                <p class="next"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
+                            </div>
+                            <div class="runConfigTabDescription">Configure the run</div>
+                            <div id="runConfigContainer"></div>
+                            <p style="margin-top: 20px; text-align:right;"> 
+                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigInputsTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button> &nbsp; 
+                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigConfirmTab" onclick="javascript:run_config_step_3();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
+                            </p>
+                        </div>
+                        <div id="runConfigConfirmTab" class="tab-pane fade">
+                            <div class="runConfigHeader">
+                                <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
+                                <p class="sp ok"> ——————— </p>
+                                <p class="ok"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
+                                <p class="sp ok"> ——————— </p>
+                                <p class="current"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
+                            </div>
+                            <div class="runConfigTabDescription"> The run is ready to start !</i></div>
+                            <div id="runConfirmContainer">
+                                <dl>
+                                    <dt>Inputs </dt>
+                                    <ll>file1</ll>
+                                    <ll>file2</ll>
+                                    <ll>file3</ll>
 
-                                <tr id="inputEntry-{{ f["id"] }}">
-                                    <td><input type="checkbox" value="{{ f["id"] }}" name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
-                                        {% if f["source"]["type"] == "output" %}
-                                        {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
-                                        {% endif %}
-                                        {{ f["name"] }} 
-                                        {% if f["comments"] %}
-                                        <a href="#" data-toggle="tooltip" data-placement="right" title="{{f["comments"]}}"><i class="fa fa-info-circle" aria-hidden="true"></i></a>
-                                        {% endif %}
-                                        <br><span class="details">{% for t in f["tags"] %}{{t}} {% endfor %}</span></td>
-                                        <td class="details">
-                                            <progress value="{{ f["upload_offset"] }}" max="{{ f["size"] }}" ></progress> {{ f["size"] }}<br/>
-                                            {{ f["create_date"]}}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </table>
-                                <p style="margin-top: 20px; text-align:right;"> 
-                                    <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab" onclick="javascript:run_config_step_2();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
-                                </p>
-                                {% endif %}
+                                    <dt>Parameters</dt>
+                                    <ll>Param1 : val 1</ll>
+                                    <ll>Param2 : val 2</ll>
+                                    <ll>Param3 : val 3</ll>
+                                </dl>
                             </div>
-                            <div id="runConfigFormTab" class="tab-pane fade">
-                                <div class="runConfigHeader">
-                                    <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
-                                    <p class="sp ok"> ——————— </p>
-                                    <p class="current"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
-                                    <p class="sp"> • • • • </p>
-                                    <p class="next"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
-                                </div>
-                                <div class="runConfigTabDescription">Configure the run</div>
-                                <div id="runConfigContainer"></div>
-                                <p style="margin-top: 20px; text-align:right;"> 
-                                    <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigInputsTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button> &nbsp; 
-                                    <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigConfirmTab">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
-                                </p>
-                            </div>
-                            <div id="runConfigConfirmTab" class="tab-pane fade">
-                                <div class="runConfigHeader">
-                                    <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
-                                    <p class="sp ok"> ——————— </p>
-                                    <p class="ok"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
-                                    <p class="sp ok"> ——————— </p>
-                                    <p class="current"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
-                                </div>
-                                <div class="runConfigTabDescription"> The run is ready to start !</i></div>
-                                <div id="runConfirmContainer">
-                                    <dl>
-                                        <dt>Inputs </dt>
-                                        <ll>file1</ll>
-                                        <ll>file2</ll>
-                                        <ll>file3</ll>
-
-                                        <dt>Parameters</dt>
-                                        <ll>Param1 : val 1</ll>
-                                        <ll>Param2 : val 2</ll>
-                                        <ll>Param3 : val 3</ll>
-                                    </dl>
-                                </div>
-                                <p style="margin-top: 20px; text-align:center;"> 
-                                    <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button>  &nbsp; 
-                                    <button id="runConfirmButton" type="button" class="btn btn-success" onclick="javascript:run_config_step_3();"><i class="fa fa-check" aria-hidden="true"></i>&nbsp; Run !</button>
-                                </p>
-                            </div>
+                            <p style="margin-top: 20px; text-align:center;"> 
+                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button>  &nbsp; 
+                                <button id="runConfirmButton" type="button" class="btn btn-success" onclick="javascript:run_config_step_4();"><i class="fa fa-check" aria-hidden="true"></i>&nbsp; Run !</button>
+                            </p>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -534,123 +515,7 @@ var rootURL = "http://{{ hostname }}";
 
 var ws = new WebSocket('ws://{{ hostname }}/ws');
 var $message = $('#message');
-var BrutusinForms = brutusin["json-forms"];
-var bf, schema;
 
-var runConfigPipeId;
-var runConfigForm;
-var runConfigInputs;
-
-
-function run_config_step_2()
-{
-            // Retrieve list of selected inputs
-            runConfigInputs = {};
-            $("#inputFilesList input:checked").each(function() 
-            {
-                runConfigInputs[$(this).attr("name")] = $(this).attr("value");
-            });
-
-
-
-
-            var json_files = []
-            var json = runConfigForm
-            if (json.indexOf("__PIRUS_INPUT_FILES__") != -1)
-            {
-                var i = 0;
-                for (var key in runConfigInputs)
-                {
-                    json_files[i] = key;
-                    i++;
-                }
-                
-                json = json.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
-            }
-
-
-            
-            schema = JSON.parse(json);
-            schema["properties"]["name"] = {
-                "title": "Nom du run",
-                "description": "Le nom qui sera affiché pour ce run.",
-                "type": "string",
-                "required": true
-            };
-            
-            bf = BrutusinForms.create(schema);
-            var container = document.getElementById('runConfigContainer');
-            container.innerText = ""
-            bf.render(container, null);
-        }
-
-
-        function init_run(pipe_id)
-        {
-            // 1- retrieve pipe-config
-            $.ajax(
-            {
-                url: rootURL + "/pipeline/" + pipe_id + "/form.json",
-                type: "GET"
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                var json_db = []
-
-                if (json.indexOf("__PIRUS_DB_ALL__") != -1)
-                {
-
-                    // get list of database
-                    $.ajax({ url: rootURL + "/db", type: "GET", async: false}).done(function(jsonDB)
-                    {
-                        json_db = jsonDB["data"];
-                    })
-
-                    json = json.replace(/"__PIRUS_DB_ALL__"/g, JSON.stringify(json_db))
-                }
-                runConfigForm = json;
-                runConfigPipeId = pipe_id;
-                
-                run_config_step_2();
-            })
-        }
-
-        function run_config_step_3()
-        {
-            if (bf.validate())
-            {
-                config = bf.getData()
-                config = JSON.stringify(config, null, 4)
-                inputs = []
-
-                debugger;
-                var i = 0;
-                for (var key in runConfigInputs)
-                {
-                    inputs[i] = runConfigInputs[key];
-                    config = config.replace(new RegExp(key, 'g'), runConfigInputs[key]);
-
-                    i++;
-                }
-
-                inputs = JSON.stringify(inputs, null, 4)
-
-                $.ajax(
-                {
-                    url: rootURL + "/run",
-                    type: "POST",
-                    data: "{\"pipeline_id\" : \""+ runConfigPipeId +"\", \"config\" : " + config + ", \"inputs\" : " + inputs + "}"
-                }).fail(function()
-                {
-                    alert( "ERROR" );
-                }).done(function(txt) 
-                {
-                    alert( "SUCCESS\n" + txt);
-                })
-            }
-        }
 
 
 

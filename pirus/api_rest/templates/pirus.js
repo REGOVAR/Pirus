@@ -2,11 +2,211 @@
 
 
 
-function display_status_bar(id)
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Demo browser methods
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+function display_status_bar(file_id)
 {
-    var details =  $('#' + id + ' td:nth-child(5)').html()
+    var details =  $('#fileEntry-' + file_id + ' td:nth-child(5)').html();
     $('#demo_footer').html((details == "None") ? "&nbsp;" : details);
 }
+
+
+
+var demo_pirus_selection = [];
+function select_file(file_id)
+{
+    var check = $('#fileEntry-' + file_id + ' input')[0].checked;
+    var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').html().trim();
+    if (check)
+    {
+        demo_pirus_selection[file_id] = file_name;
+        $('#browserNavSelectionPanel ul').append('<li id="browserNavSelectionPanel-' + file_id + '">' + file_name + '</li>');
+    }
+    else
+    {
+        delete demo_pirus_selection[file_id];
+        $('#browserNavSelectionPanel-' + file_id).remove();
+    }
+    var count = Object.keys(demo_pirus_selection).length;
+    $('#selection_count').html(count == 0 ? "" : count);
+}
+
+
+
+
+
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* New Run Popup methods
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+var BrutusinForms = brutusin["json-forms"];
+var bf, schema;
+
+var runConfigPipeId;
+var runConfigPipeName = "{TODO - Pipe Name}";
+var runConfigForm;
+var runConfigInputs;
+
+function init_run(pipe_id)
+{
+    // 1- retrieve pipe-config
+    $.ajax(
+    {
+        url: rootURL + "/pipeline/" + pipe_id + "/form.json",
+        type: "GET"
+    }).fail(function()
+    {
+        alert( "ERROR" );
+    }).done(function(json) 
+    {
+        var json_db = [];
+
+        if (json.indexOf("__PIRUS_DB_ALL__") != -1)
+        {
+
+            // get list of database
+            $.ajax({ url: rootURL + "/db", type: "GET", async: false}).done(function(jsonDB)
+            {
+                json_db = jsonDB["data"];
+            })
+
+            json = json.replace(/"__PIRUS_DB_ALL__"/g, JSON.stringify(json_db));
+        }
+        runConfigForm = json;
+        runConfigPipeId = pipe_id;
+
+        $("#inputFilesList tbody").empty();
+        for (var key in demo_pirus_selection)
+        {
+            var size = $('#fileEntry-' + key + " td:nth-child(3)").html();
+            var date = $('#fileEntry-' + key + " td:nth-child(4)").html();
+            var comments = $('#fileEntry-' + key + " td:nth-child(5)").html();
+            $("#inputFilesList > tbody").append("<tr><td>{0}<br/><span class=\"details\">{3}</span></td><td>{1}</td><td>{2}</td></td>".format(demo_pirus_selection[key], size, date, key));
+        }
+
+
+        
+        run_config_step_2();
+    })
+}
+
+
+function run_config_step_2()
+{
+    // Retrieve list of selected inputs
+    var json_files = []
+    var json = runConfigForm
+    if (json.indexOf("__PIRUS_INPUT_FILES__") != -1)
+    {
+        var i = 0;
+        for (var key in demo_pirus_selection)
+        {
+            json_files[i] = demo_pirus_selection[key];
+            i++;
+        }
+        
+        json = json.replace(/"__PIRUS_INPUT_FILES__"/g, JSON.stringify(json_files))
+    }
+
+    schema = JSON.parse(json);
+    schema["properties"]["name"] = {
+        "title": "Nom du run",
+        "description": "Le nom qui sera affiché pour ce run.",
+        "type": "string",
+        "required": true
+    };
+    
+    bf = BrutusinForms.create(schema);
+    var container = document.getElementById('runConfigContainer');
+    container.innerText = ""
+    bf.render(container, null);
+}
+
+function run_config_step_3()
+{
+    if (bf.validate())
+    {
+        config = bf.getData();
+        config = JSON.stringify(config, null, 4);
+
+
+        var html = "<h3>Pipeline : " + runConfigPipeName + "</h3><h4>Inputs</h4>";
+        var count = Object.keys(demo_pirus_selection).length;
+        if (count > 0)
+        {
+            html += "<ul>";
+            for (var key in demo_pirus_selection)
+            {
+                html += "<li>{0}</li>".format(demo_pirus_selection[key]);
+            }
+            html += "</ul>";
+        }
+        html += "<h4>Config</h4>";
+        for (var key in config)
+        {
+            html += "<li><b>{0}</b> : {1}</li>".format(key, config[key]);
+        }
+        html += "</ul>";
+
+
+        $('#runConfirmContainer').html(html);
+    }
+    else
+    {
+        // Todo : return on step 2
+    }
+}
+function run_config_step_4()
+{
+    if (bf.validate())
+    {
+        config = bf.getData()
+        config = JSON.stringify(config, null, 4)
+        inputs = []
+
+        debugger;
+        var i = 0;
+        for (var key in demo_pirus_selection)
+        {
+            inputs[i] = demo_pirus_selection[key];
+            config = config.replace(new RegExp(key, 'g'), demo_pirus_selection[key]);
+
+            i++;
+        }
+
+        inputs = JSON.stringify(inputs, null, 4)
+
+        $.ajax(
+        {
+            url: rootURL + "/run",
+            type: "POST",
+            data: "{\"pipeline_id\" : \""+ runConfigPipeId +"\", \"config\" : " + config + ", \"inputs\" : " + inputs + "}"
+        }).fail(function()
+        {
+            alert( "ERROR" );
+        }).done(function(txt) 
+        {
+            alert( "SUCCESS\n" + txt);
+        })
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
