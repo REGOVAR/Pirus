@@ -14,6 +14,92 @@ function display_status_bar(file_id)
 }
 
 
+function show_tab(tab_id, run_id)
+{
+    $('#browser_content > div').each( function( index, element )
+    {
+        $(element).addClass("collapse");
+    });
+    $('#' + tab_id).removeClass("collapse");
+    
+    // Manage display of run data
+    if (tab_id == 'browser_run')
+    {
+        // Logs 
+
+        
+        $.ajax({ url: rootURL + "/run/" + run_id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
+        {
+            data = jsonFile["data"];
+            $("#browser_run_name").html("<img src=\"{0}\" width=\"30px\"/> Run : {1}".format(data["pipeline_icon"], data["name"]));
+            $("#browser_run_details").html("Pipeline {0} - {1}".format(data["pipeline_name"], data["status"]));
+            $("#browser_run_playpause").attr("href", "{0}/run/{1}/{2}".format(rootURL, data["id"], (data["status"] in ["PAUSE"]) ? "play" : "pause"));
+            $("#browser_run_playpause").html((data["status"] in ["PAUSE"]) ? "<i class=\"fa fa-play\" aria-hidden=\"true\"></i>" : "<i class=\"fa fa-pause\" aria-hidden=\"true\"></i>");
+
+            $("#browser_run_stop").attr("href", "{0}/run/{1}/stop".format(rootURL, data["id"]));
+
+            if (data["vm_info"])
+            {
+                var html = "<ul>";
+                for (k in data["vm"])
+                {
+                    html += "<li><b>{0} :</b> {1}</li>".format(k, data["vm"][k]);
+                }
+                $("#browser_run_monitoring_vm").html(html);
+            }
+            else
+            {
+                $("#browser_run_monitoring_vm").html("<i>{0}</i>".format(data["vm"]));
+            }
+
+
+            $("#browser_run_monitoring_stdout").text((data["out_tail"] == "") ? "... No log on stdOut ..." : data["out_tail"]);
+            $("#browser_run_monitoring_stdout").animate({scrollTop : $("#browser_run_monitoring_stdout")[0].scrollHeight }, 1000 );
+
+            $("#browser_run_monitoring_stderr").text((data["err_tail"] == "") ? "... No log on stdErr ..." : data["err_tail"]);
+            $("#browser_run_monitoring_stderr").animate({scrollTop : $("#browser_run_monitoring_stderr")[0].scrollHeight}, 1000 );
+
+            $("#browser_run_monitoring_refresh").attr("onclick", "javascript:monitor_run('"+run_id+"')");
+        });
+
+
+        // Inputs / outputs
+        $.ajax({ url: rootURL + "/run/" + run_id + "/io", type: "GET", async: false}).done(function(jsonFile)
+        {
+            data = jsonFile["data"];
+            if (data["inputs"].length > 0)
+            {
+                html = "<ul>";
+                for (var i=0; i<data["inputs"].length; i++)
+                {
+                    html += "<li><a href=\"" + rootURL + "/dl/f/" + data["inputs"][i]["id"] + "\" title=\"Download\">" + data["inputs"][i]["name"] + "</a> (" + humansize(data["inputs"][i]["size"]) + ")</li>";
+                }
+                html += "</ul>";
+                $("#monitoring_tab_inputs").html(html);
+            }
+            else
+            {
+                $("#monitoring_tab_inputs").html("<i>No input file for this run.</i>");
+            }
+
+            if (data["outputs"].length > 0)
+            {
+                html = "<ul>"
+                for (var i=0; i<data["outputs"].length; i++)
+                {
+                    html += "<li><a href=\"" + rootURL + "/dl/f/" + data["outputs"][i]["id"] + "\" title=\"Download\">" + data["outputs"][i]["name"] + "</a> (" + humansize(data["outputs"][i]["size"]) + ")</li>"
+                }
+                html += "</ul>"
+                $("#monitoring_tab_outputs").html(html)
+            }
+            else
+            {
+                $("#monitoring_tab_outputs").html("<i>No ouputs file for this run.</i>");
+            }
+        });
+    }
+}
+
 
 var demo_pirus_selection = [];
 function select_file(file_id)

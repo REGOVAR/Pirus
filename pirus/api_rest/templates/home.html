@@ -58,451 +58,453 @@
                 <!--
                 <h1 class="content-subhead"><i class="fa fa-user" aria-hidden="true"></i> Online</h1>
                 <ul id="userList"></ul>
-            -->
-            <div class="row">
-                <div class="col-md-4"><img src="/assets/img/resume.png" width="300px" /></div>
-                <div class="col-md-8">
-                    <p style="margin-top: 130px;">Pirus is a tool that allow you to manage and run informatic's pipeline.</p>
-                    <p>So there is 3 mains objects that you can manipulates :<ul>
-                        <li>File</li>
-                        <li>Pipeline</li>
-                        <li>Run</li>
-                    </ul>
-                    <p>You can browse and manage each of theses objets via the 3 dedicated sections (see the top navigation bar).</p>
+                -->
+                <div class="row">
+                    <div class="col-md-4"><img src="/assets/img/resume.png" width="300px" /></div>
+                    <div class="col-md-8">
+                        <p style="margin-top: 130px;">Pirus is a tool that allow you to manage and run informatic's pipeline.</p>
+                        <p>So there is 3 mains objects that you can manipulates :
+                            <ul>
+                                <li>File</li>
+                                <li>Pipeline</li>
+                                <li>Run</li>
+                            </ul>
+                        </p>
+                        <p>You can browse and manage each of theses objets via the 3 dedicated sections (see the top navigation bar).</p>
+                    </div>
                 </div>
             </div>
-        </div>
 
 
-        <!--      -->
-        <!-- DEMO -->
-        <!--      -->
-        <div id="demo" class="tab-pane fade in active" >
-            <div class="panel panel-default">
-                <div class="panel-heading" style="position:relative;">
-                    <img src="/assets/img/logo.png" width="100px" style="position:absolute; top:-10px; left:-100px;" /> 
-                    <div class="row">
-                        <div class="col-md-8">
-                            <div class="btn-group" role="group">
-                                <a class="btn btn-default" href="#modalNewFile" title="New file" data-toggle="modal"  href="#modalNewFilel"><i class="fa fa-file-o" aria-hidden="true"></i></a>
-                                <a class="btn btn-default" href="#modalNewPipeline" title="New Pipeline" data-toggle="modal"  href="#modalNewFilel"><i class="fa fa-puzzle-piece" aria-hidden="true"></i></a>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="New run">
-                                        <i class="fa fa-tasks" aria-hidden="true"></i> <span class="caret"></span>
-                                    </button>
-                                    {% if pipes|length ==0 %}
-                                    <strong>Warning!</strong> You need to install pipeline first.
-                                    {% else %}
-                                    <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
-                                        {% for p in pipes %}
-                                        {% if p["status"] not in ["UPLOADING", "PAUSE"] %}
-                                        <li><a href="#modalNewRun" onclick="javascript:init_run('{{p["id"]}}');" title="New run with Hugodims" data-toggle="modal"  href="#modalNewFilel">
-                                            <img src="{{ p["icon_url"] }}" style="height:20px; width:20px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i>
-                                        </a></li>
+            <!--      -->
+            <!-- DEMO -->
+            <!--      -->
+            <div id="demo" class="tab-pane fade in active" >
+                <div class="panel panel-default">
+                    <div class="panel-heading" style="position:relative;">
+                        <img src="/assets/img/logo.png" width="100px" style="position:absolute; top:-10px; left:-100px;" /> 
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="btn-group" role="group">
+                                    <a class="btn btn-default" href="#modalNewFile" title="New file" data-toggle="modal"  href="#modalNewFilel"><i class="fa fa-file-o" aria-hidden="true"></i></a>
+                                    <a class="btn btn-default" href="#modalNewPipeline" title="New Pipeline" data-toggle="modal"  href="#modalNewFilel"><i class="fa fa-puzzle-piece" aria-hidden="true"></i></a>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="New run">
+                                            <i class="fa fa-tasks" aria-hidden="true"></i> <span class="caret"></span>
+                                        </button>
+                                        {% if pipes|length ==0 %}
+                                        <strong>Warning!</strong> You need to install pipeline first.
+                                        {% else %}
+                                        <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
+                                            {% for p in pipes %}
+                                            {% if p["status"] not in ["UPLOADING", "PAUSE"] %}
+                                            <li><a href="#modalNewRun" onclick="javascript:init_run('{{p["id"]}}');" title="New run with Hugodims" data-toggle="modal"  href="#modalNewFilel">
+                                                <img src="{{ p["icon_url"] }}" style="height:20px; width:20px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i>
+                                            </a></li>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </ul>
                                         {% endif %}
+                                    </div>
+
+                                </div>
+                                <form class="form-inline" style="display:inline-block;">
+                                    <div class="input-group">
+                                        <span class="input-group-addon"><i class="fa fa-search" aria-hidden="true"></i></span>
+                                        <input type="text" class="form-control" placeholder="Filter" aria-describedby="sizing-addon1">
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="col-md-4" style="text-align:right;">
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <i class="fa fa-cog" aria-hidden="true"></i> <span class="caret"></span>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a href="#">Delete pipeline</a></li>
+                                        <li><a href="#">Pirus settings</a></li>
+                                        <li><a href="#">See pirus coockie</a></li>
+                                        <li role="separator" class="divider"></li>
+                                        <li><a href="#">About</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-body" style="padding-top: 0; padding-bottom:0;">
+                        <div class="row">
+                            <div class="col-md-3" style="height:500px; border-right: 1px solid #ddd; overflow-y: scroll;">
+
+                                <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavSelectionPanel" aria-expanded="false" aria-controls="browserNavSelectionPanel">
+                                    <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection <span id="selection_count" class="badge"></span>
+                                </a>
+                                <div id="browserNavSelectionPanel" class="collapse">
+                                    <ul>
+                                    </ul>
+                                </div>
+
+                                <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavLastPanel" aria-expanded="false" aria-controls="browserNavLastPanel" onclick="javascript:show_tab('browser_activities')">
+                                    <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-clock-o" aria-hidden="true"></i> Last activity
+                                </a>
+                                <div id="browserNavLastPanel" class="collapse">
+                                    <div>
+                                        
+                                    </div>
+                                </div>
+                                <a class="btn" style="display:block; text-align:left;" role="button" onclick="javascript:show_tab('browser_files')"><i class="fa fa-files-o" aria-hidden="true"></i> All Files</a>
+                                <a class="btn" style="display:block; text-align:left;" role="button" onclick="javascript:show_tab('browser_inprogress')"><i class="fa fa-tasks" aria-hidden="true"></i> In progress <span class="badge">3</span></a>
+
+                                <hr/>
+
+
+                                {% for p in pipes %}
+                                <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browser_navpanel_pipe_{{p["id"]}}" aria-expanded="false" aria-controls="browser_navpanel_pipe_{{p["id"]}}">
+                                    <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipeline {{p["name"]}}</a>
+                                    <div id="browser_navpanel_pipe_{{p["id"]}}" class="collapse">
+                                      <div>
+                                        <ul>
+                                            {% for r in p["runs"] %}
+                                            <li><a onclick="javascript:show_tab('browser_run','{{r["id"]}}')"><i class="fa fa-tasks" aria-hidden="true"></i> {{r["name"]}}</a></li>
+                                            {% endfor %}
+                                        </ul>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+
+                            <div id="browser_content" class="col-md-9" style="height:500px; padding-left:0; padding-right:0; overflow-y: scroll;">
+
+
+                                <div id="browser_files">
+
+                                    <table id="browserContentTab" class="table table-striped table-bordered" cellspacing="0" width="100%" style="margin:0">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th>Name</th>
+                                                <th>Size</th>
+                                                <th>Creation</th>
+                                                <th class="collapse">Comments</th>
+                                                <th class="collapse">Tags</th>
+                                            </tr>
+                                        </thead>
+                                        {% for f in files %}
+                                        <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')">
+                                            <td><input type="checkbox" 
+                                                    value="{{ f["id"] }}" 
+                                                    name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"
+                                                    onchange="javascript:select_file('{{ f["id"] }}')"/> 
+                                            </td>
+                                            <td>{% if f["source"]["type"] == "output" %}
+                                                {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
+                                                {% endif %}
+                                                {{ f["name"] }} 
+                                                {% if f["comments"] %}
+                                                <a href="#" data-toggle="tooltip" data-placement="right" title="{{f["comments"]}}"><i class="fa fa-info-circle" aria-hidden="true"></i></a>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ f["size"] }}</td>
+                                            <td>{{ f["create_date"] }}</td>
+                                            <td class="collapse">{{ f["comments"] }}</td>
+                                            <td class="collapse">{% for t in f["tags"] %}{{t}}{% endfor %}</td>
+                                        </tr>
                                         {% endfor %}
-                                    </ul>
-                                    {% endif %}
+                                    </table>
                                 </div>
 
-                            </div>
-                            <form class="form-inline" style="display:inline-block;">
-                                <div class="input-group">
-                                    <span class="input-group-addon"><i class="fa fa-search" aria-hidden="true"></i></span>
-                                    <input type="text" class="form-control" placeholder="Filter" aria-describedby="sizing-addon1">
+                                <div id="browser_activities" class="collapse" >
+                                    TODO :Last activity panel. <br/>
+                                    Display list of last activaty : file upload/generation, pipeline upload/installation, run status change.
                                 </div>
-                            </form>
-                        </div>
-                        <div class="col-md-4" style="text-align:right;">
-                            <div class="btn-group">
-                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                    <i class="fa fa-cog" aria-hidden="true"></i> <span class="caret"></span>
-                                </button>
-                                <ul class="dropdown-menu">
-                                    <li><a href="#">Delete pipeline</a></li>
-                                    <li><a href="#">Pirus settings</a></li>
-                                    <li><a href="#">See pirus coockie</a></li>
-                                    <li role="separator" class="divider"></li>
-                                    <li><a href="#">About</a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel-body" style="padding-top: 0; padding-bottom:0;">
-                    <div class="row">
-                        <div class="col-md-3" style="height:500px; border-right: 1px solid #ddd; overflow-y: scroll;">
-
-                            <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavSelectionPanel" aria-expanded="false" aria-controls="browserNavSelectionPanel">
-                                <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection <span id="selection_count" class="badge"></span>
-                            </a>
-                            <div id="browserNavSelectionPanel">
-                                <ul>
-                                </ul>
-                            </div>
-
-                            <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavLastPanel" aria-expanded="false" aria-controls="browserNavLastPanel">
-                                <i class="fa fa-clock-o" aria-hidden="true"></i> Last activity
-                            </a>
-                            <div id="browserNavLastPanel">
-                                <div>
-                                    <ul>
-                                    </ul>
+                                <div id="browser_inprogress" class="collapse" >
+                                    ... TO DO ...
                                 </div>
-                            </div>
 
-                            <a class="btn" style="display:block; text-align:left;" role="button"><i class="fa fa-files-o" aria-hidden="true"></i> All Files</a>
-                            <a class="btn" style="display:block; text-align:left;" role="button"><i class="fa fa-tasks" aria-hidden="true"></i> In progress <span class="badge">3</span></a>
-
-                            <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavPipeHugoPanel" aria-expanded="false" aria-controls="browserNavPipeHugoPanel">
-                                <i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipeline Hugodims</a>
-                                <div id="browserNavPipeHugoPanel" class="collapse">
-                                  <div>
-                                    <ul>
-                                        <li><i class="fa fa-file-o" aria-hidden="true"></i> Run A</li>
-                                        <li><i class="fa fa-file-o" aria-hidden="true"></i> Run B</li>
-                                        <li><i class="fa fa-file-o" aria-hidden="true"></i> Run C</li>
-                                    </ul>
-                                </div>
-                            </div>
-                            <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavPipeWizPanel" aria-expanded="false" aria-controls="collapseExample">
-                                <i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipeline Wisecondor</a>
-                                <div id="browserNavPipeWizPanel" class="collapse">
-                                  <div>
-                                    <ul>
-                                        <li><i class="fa fa-file-o" aria-hidden="true"></i> Run A</li>
-                                        <li><i class="fa fa-file-o" aria-hidden="true"></i> Run B</li>
-                                        <li><i class="fa fa-file-o" aria-hidden="true"></i> Run C</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                        </div>
-                    <div class="col-md-9" style="height:500px; padding-left:0; padding-right:0; overflow-y: scroll;">
-                        <table id="browserContentTab" class="table table-striped table-bordered" cellspacing="0" width="100%" style="margin:0">
-                            <thead>
-                                <tr>
-                                    <th></th>
-                                    <th>Name</th>
-                                    <th>Size</th>
-                                    <th>Creation</th>
-                                    <th class="collapse">Comments</th>
-                                    <th class="collapse">Tags</th>
-                                </tr>
-                            </thead>
-
-
-
-
-
-                            {% for f in files %}
-                            <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')">
-                                <td><input type="checkbox" 
-                                        value="{{ f["id"] }}" 
-                                        name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"
-                                        onchange="javascript:select_file('{{ f["id"] }}')"/> 
-                                </td>
-                                <td>{% if f["source"]["type"] == "output" %}
-                                    {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
-                                    {% endif %}
-                                    {{ f["name"] }} 
-                                    {% if f["comments"] %}
-                                    <a href="#" data-toggle="tooltip" data-placement="right" title="{{f["comments"]}}"><i class="fa fa-info-circle" aria-hidden="true"></i></a>
-                                    {% endif %}
-                                </td>
-                                <td>{{ f["size"] }}</td>
-                                <td>{{ f["create_date"] }}</td>
-                                <td class="collapse">{{ f["comments"] }}</td>
-                                <td class="collapse">{% for t in f["tags"] %}{{t}}{% endfor %}</td>
-                            </tr>
-                            {% endfor %}
-                        </table>
-                        </div>
-                    </div>
-                </div>
-                <div id="demo_footer" class="panel-footer">File : DPNI_control.bam - Fichier fournit par Brutagen&amp;Co. Command n°1452-214456 le 15/02/2016
-                </div>
-            </div>
-        </div>
-
-
-        <ul id="contextMenu" class="dropdown-menu" role="menu" style="display:none" >
-            <li><a tabindex="-1" href="#"><i class="fa fa-cloud-download" aria-hidden="true"></i> Download</a></li>
-            <li><a tabindex="-1" href="#"><i class="fa fa-info-circle" aria-hidden="true"></i> Informations</a></li>
-            <li><a tabindex="-1" href="#"><i class="fa fa-times" aria-hidden="true"></i> Delete</a></li>
-            <li class="divider"></li>
-            <li><a tabindex="-1" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> Start new run</a></li>
-        </ul>
-
-
-
-
-
-
-        <!--     -->
-        <!-- API -->
-        <!--     -->
-        <div id="api" class="tab-pane fade">
-            <h1> Comming soon</h1>
-            <ul>
-                <li><a href="https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/readme.md">Pipeline creation</a></li>
-                <li><a href="https://github.com/REGOVAR/Pirus/tree/master/docs">Doc</a></li>
-                <li><a href="https://annuel.framapad.org/p/pirusAPI">Spec in progress</a></li>
-            </ul>
-        </div>
-
-
-
-
-
-        <!--                           -->
-        <!-- MODAL POPUP - File Upload -->
-        <!--                           -->
-        <div id="modalNewFile" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Upload a file on Pirus</h4>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-warining hidden" id="support-alert">
-                            <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
-                        </div>
-
-                        <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
-                        <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="256000">
-                        <input type="file" id="tusFileInput">
-                        <br/>
-                        <div id="tusFileProgress">
-                            <div class="alert alert-success" id="support-alert">
-                                <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
-                            </div>
-                        </div>
-
-
-                        <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
-                            <!--
-                                <fieldset>
-                                    <div class="fileUpload btn btn-default">
-                                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
-                                        <input type="file" name="uploadFile" id="uploadFile" class="upload" />
+                                <div id="browser_run" class="collapse" >
+                                    <button id="browser_run_monitoring_refresh" type="button" class="btn btn-primary" style="display; block; float:right; margin-top:-10px; margin-right:10px" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button>
+                                    <h3 id="browser_run_name" style="margin-left: 20px;"></h3>
+                                    <p id="browser_run_details"></p>
+                                    <nav class="navbar navbar-default" style="margin-bottom: 0;">
+                                        <div id="navbar" class="navbar-collapse" style="height: 1px;">
+                                            <ul class="nav navbar-nav">
+                                                <li>
+                                                    <a class="btn btn-default" title="Stop" id="browser_run_playpause" style="width: 40px;padding:5px!important;margin: 9px;margin-right: 0;">
+                                                        <i class="fa fa-play" aria-hidden="true"></i>
+                                                    </a>
+                                                </li>
+                                                <li >
+                                                    <a class="btn btn-default" title="Cancel the run" id="browser_run_stop" style="width: 40px;padding:5px!important;margin: 9px;margin-right: 50px;">
+                                                        <i class="fa fa-stop" aria-hidden="true"></i>
+                                                    </a>
+                                                </li>
+                                                <li class="active"><a data-toggle="tab" href="#monitoring_tab_inputs"><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</a></li>
+                                                <li><a data-toggle="tab" href="#monitoring_tab_outputs"><i class="fa fa-files-o" aria-hidden="true"></i> Ouputs</a></li>
+                                                <li><a data-toggle="tab" href="#monitoring_tab_vm"><i class="fa fa-tachometer" aria-hidden="true"></i> Status</a></li>
+                                                <li><a data-toggle="tab" href="#monitoring_tab_stdout"><i class="fa fa-desktop" aria-hidden="true"></i> Logs</a></li>
+                                                <li><a data-toggle="tab" href="#monitoring_tab_stderr"><i class="fa fa-desktop" aria-hidden="true"></i> Errors</a></li>
+                                            </ul>
+                                        </div>
+                                    </nav>
+                                    <div class="tab-content">
+                                        <div id="monitoring_tab_inputs" class="tab-pane fade in active" style="padding: 20px;">
+                                        </div>
+                                        <div id="monitoring_tab_outputs" class="tab-pane fade" style="padding: 20px;">
+                                        </div>
+                                        <div id="monitoring_tab_vm" class="tab-pane fade" style="padding: 20px;">
+                                            <p id="browser_run_monitoring_vm"></p>
+                                        </div>
+                                        <div id="monitoring_tab_stdout" class="tab-pane fade">
+                                            <pre id="browser_run_monitoring_stdout"></pre>
+                                        </div>
+                                        <div id="monitoring_tab_stderr" class="tab-pane fade">
+                                            <pre id="browser_run_monitoring_stderr"></pre>
+                                        </div>
                                     </div>
-                                </fieldset>
-                            -->
-                            <fieldset>
-                                <span><i aria-hidden="true"></i> Tags</span>
-                                <input id="uploadFileFormTags" type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
-                            </fieldset>
-                            <fieldset>
-                                <span><i aria-hidden="true"></i> Comments</span>
-                                <input id="uploadFileFormComments" type="text" name="comments" placeholder="Optional comments" class="form-control"/>
-                            </fieldset>
-                            <input type="submit" value="Update file data" class="btn btn-primary btn btn-primary-primary"/>
-                        </form>
-
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-
-        <!--                               -->
-        <!-- MODAL POPUP - Pipeline upload -->
-        <!--                               -->
-        <div id="modalNewPipeline" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Install a new pipeline on Pirus</h4>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-warining hidden" id="support-alert">
-                            <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
-                        </div>
-
-                        <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
-                        <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="256000">
-                        <input type="file" id="tusFileInput">
-                        <br/>
-                        <div id="tusFileProgress">
-                            <div class="alert alert-success" id="support-alert">
-                                <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
-                            </div>
-                        </div>
-
-
-                        <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
-                            <!--
-                                <fieldset>
-                                    <div class="fileUpload btn btn-default">
-                                        <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
-                                        <input type="file" name="uploadFile" id="uploadFile" class="upload" />
-                                    </div>
-                                </fieldset>
-                            -->
-                            <fieldset>
-                                <span><i aria-hidden="true"></i> Tags</span>
-                                <input id="uploadFileFormTags" type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
-                            </fieldset>
-                            <fieldset>
-                                <span><i aria-hidden="true"></i> Comments</span>
-                                <input id="uploadFileFormComments" type="text" name="comments" placeholder="Optional comments" class="form-control"/>
-                            </fieldset>
-                            <input type="submit" value="Update file data" class="btn btn-primary btn btn-primary-primary"/>
-                        </form>
-
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-
-        <!--                        -->
-        <!-- MODAL POPUP - New Run  -->
-        <!--                        -->
-        <div class="modal fade" id="modalNewRun" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title"><i class="fa fa-play" aria-hidden="true"></i> New <span id="newRunPipeName" class="text-primary"></span> run</h4>
-                    </div>
-
-                    <div class="tab-content" style="margin:0 10px;">
-                        <div id="runConfigInputsTab" class="tab-pane fade in active">
-                            <div class="runConfigHeader">
-                                <p class="current"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
-                                <p class="sp"> • • • • </p>
-                                <p class=""><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
-                                <p class="sp"> • • • • </p>
-                                <p class=""><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
-                            </div>
-
-
-                            {% if files|length ==0 %}
-                            <div class="alert alert-warning" role="alert">
-                                <strong>Warning!</strong> No file available on the server. You can start by upload some file, or launch this run without inputs.
-                            </div>
-                            {% else %}
-                            <div class="runConfigTabDescription">Below the list of input files selected for the run</div>
-                            <table id="inputFilesList" class="table table-striped table-bordered" cellspacing="0" width="100%">
-                                <thead>
-                                    <tr>
-                                        <th>Name</th>
-                                        <th>Size</th>
-                                        <th>Creation</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
- 
-                                </tbody>
-                            </table>
-                            <p style="margin-top: 20px; text-align:right;"> 
-                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab" onclick="javascript:run_config_step_2();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
-                            </p>
-                            {% endif %}
-                        </div>
-                        <div id="runConfigFormTab" class="tab-pane fade">
-                            <div class="runConfigHeader">
-                                <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
-                                <p class="sp ok"> ——————— </p>
-                                <p class="current"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
-                                <p class="sp"> • • • • </p>
-                                <p class="next"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
-                            </div>
-                            <div class="runConfigTabDescription">Configure the run</div>
-                            <div id="runConfigContainer"></div>
-                            <p style="margin-top: 20px; text-align:right;"> 
-                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigInputsTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button> &nbsp; 
-                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigConfirmTab" onclick="javascript:run_config_step_3();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
-                            </p>
-                        </div>
-                        <div id="runConfigConfirmTab" class="tab-pane fade">
-                            <div class="runConfigHeader">
-                                <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
-                                <p class="sp ok"> ——————— </p>
-                                <p class="ok"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
-                                <p class="sp ok"> ——————— </p>
-                                <p class="current"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
-                            </div>
-                            <div class="runConfigTabDescription"> The run is ready to start !</i></div>
-                            <div id="runConfirmContainer">
-                                <dl>
-                                    <dt>Inputs </dt>
-                                    <ll>file1</ll>
-                                    <ll>file2</ll>
-                                    <ll>file3</ll>
-
-                                    <dt>Parameters</dt>
-                                    <ll>Param1 : val 1</ll>
-                                    <ll>Param2 : val 2</ll>
-                                    <ll>Param3 : val 3</ll>
-                                </dl>
-                            </div>
-                            <p style="margin-top: 20px; text-align:center;"> 
-                                <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button>  &nbsp; 
-                                <button id="runConfirmButton" type="button" class="btn btn-success" onclick="javascript:run_config_step_4();"><i class="fa fa-check" aria-hidden="true"></i>&nbsp; Run !</button>
-                            </p>
-                        </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-        <div class="modal fade" id="runMonitoring" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content" style="width: 1000px; margin-left: -200px;">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title"><i class="fa fa-tachometer" aria-hidden="true"></i> Monitoring <span id="runMonitoringName"> toto</span> </h4>
-                    </div>
-                    <div class="modal-body" id="runMonitoringContainer">
-                        <nav class="navbar navbar-default" style="margin-top: -16px; margin-left: -15px; margin-right: -15px;">
-                            <div class="container">
-                                <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
-                                    <ul class="nav navbar-nav">
-                                        <li class="active"><a data-toggle="tab" href="#monitoringDetails"><i class="fa fa-tasks" aria-hidden="true"></i> Status</a></li>
-                                        <li><a data-toggle="tab" href="#monitoringOutLog"><i class="fa fa-desktop" aria-hidden="true"></i> StdOut</a></li>
-                                        <li><a data-toggle="tab" href="#monitoringErrLog"><i class="fa fa-desktop" aria-hidden="true"></i> StdErr</a></li>
-                                    </ul>
                                 </div>
                             </div>
-                        </nav>
-                        <div class="tab-content">
-                            <div id="monitoringDetails" class="tab-pane fade in active">
-                                <p id="runMonitoringDetails"></p>
+                        </div>
+                        <div id="demo_footer" class="panel-footer">File : DPNI_control.bam - Fichier fournit par Brutagen&amp;Co. Command n°1452-214456 le 15/02/2016
+                        </div>
+                    </div>
+                </div>
+
+
+                <ul id="contextMenu" class="dropdown-menu" role="menu" style="display:none" >
+                    <li><a tabindex="-1" href="#"><i class="fa fa-cloud-download" aria-hidden="true"></i> Download</a></li>
+                    <li><a tabindex="-1" href="#"><i class="fa fa-info-circle" aria-hidden="true"></i> Informations</a></li>
+                    <li><a tabindex="-1" href="#"><i class="fa fa-times" aria-hidden="true"></i> Delete</a></li>
+                    <li class="divider"></li>
+                    <li><a tabindex="-1" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> Start new run</a></li>
+                </ul>
+
+
+
+
+
+
+                <!--     -->
+                <!-- API -->
+                <!--     -->
+                <div id="api" class="tab-pane fade">
+                    <h1> Comming soon</h1>
+                    <ul>
+                        <li><a href="https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/readme.md">Pipeline creation</a></li>
+                        <li><a href="https://github.com/REGOVAR/Pirus/tree/master/docs">Doc</a></li>
+                        <li><a href="https://annuel.framapad.org/p/pirusAPI">Spec in progress</a></li>
+                    </ul>
+                </div>
+
+
+
+
+
+                <!--                           -->
+                <!-- MODAL POPUP - File Upload -->
+                <!--                           -->
+                <div id="modalNewFile" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Upload a file on Pirus</h4>
                             </div>
-                            <div id="monitoringOutLog" class="tab-pane fade">
-                                <pre id="runMonitoringStdout"></pre>
-                            </div>
-                            <div id="monitoringErrLog" class="tab-pane fade">
-                                <pre id="runMonitoringStderr"></pre>
+                            <div class="modal-body">
+                                <div class="alert alert-warining hidden" id="support-alert">
+                                    <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
+                                </div>
+
+                                <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
+                                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="256000">
+                                <input type="file" id="tusFileInput">
+                                <br/>
+                                <div id="tusFileProgress">
+                                    <div class="alert alert-success" id="support-alert">
+                                        <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
+                                    </div>
+                                </div>
+
+
+                                <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
+                                    <!--
+                                        <fieldset>
+                                            <div class="fileUpload btn btn-default">
+                                                <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
+                                                <input type="file" name="uploadFile" id="uploadFile" class="upload" />
+                                            </div>
+                                        </fieldset>
+                                    -->
+                                    <fieldset>
+                                        <span><i aria-hidden="true"></i> Tags</span>
+                                        <input id="uploadFileFormTags" type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
+                                    </fieldset>
+                                    <fieldset>
+                                        <span><i aria-hidden="true"></i> Comments</span>
+                                        <input id="uploadFileFormComments" type="text" name="comments" placeholder="Optional comments" class="form-control"/>
+                                    </fieldset>
+                                    <input type="submit" value="Update file data" class="btn btn-primary btn btn-primary-primary"/>
+                                </form>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button id="runMonitoringRefreshBtn" type="button" class="btn btn-primary" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button> &nbsp;
-                            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                    </div>
+                </div>
+
+
+
+
+                <!--                               -->
+                <!-- MODAL POPUP - Pipeline upload -->
+                <!--                               -->
+                <div id="modalNewPipeline" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title"><i class="fa fa-folder-open-o" aria-hidden="true"></i> Install a new pipeline on Pirus</h4>
+                            </div>
+                            <div class="modal-body">
+                                <div class="alert alert-warining hidden" id="support-alert">
+                                    <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
+                                </div>
+
+                                <input type="hidden" id="tusFileEndpoint" name="tusFileEndpoint" value="http://{{ hostname }}/file/upload">
+                                <input type="hidden" id="tusFileChunksize" name="tusFileChunksize" value="256000">
+                                <input type="file" id="tusFileInput">
+                                <br/>
+                                <div id="tusFileProgress">
+                                    <div class="alert alert-success" id="support-alert">
+                                        <b>Ready !</b> Start by selecting the file you want to upload. Upload will start automaticaly but you will be able to edit informations when you want.
+                                    </div>
+                                </div>
+
+
+                                <form id="uploadFileForm" method="PUT" enctype="multipart/form-data" action="http://{{ hostname }}/file" class="pure-form hidden">
+                                    <!--
+                                        <fieldset>
+                                            <div class="fileUpload btn btn-default">
+                                                <span><i class="fa fa-file-archive-o" aria-hidden="true"></i> Select a file</span>
+                                                <input type="file" name="uploadFile" id="uploadFile" class="upload" />
+                                            </div>
+                                        </fieldset>
+                                    -->
+                                    <fieldset>
+                                        <span><i aria-hidden="true"></i> Tags</span>
+                                        <input id="uploadFileFormTags" type="text" name="tags" placeholder="Optional tags (comma separated)" class="form-control"/>
+                                    </fieldset>
+                                    <fieldset>
+                                        <span><i aria-hidden="true"></i> Comments</span>
+                                        <input id="uploadFileFormComments" type="text" name="comments" placeholder="Optional comments" class="form-control"/>
+                                    </fieldset>
+                                    <input type="submit" value="Update file data" class="btn btn-primary btn btn-primary-primary"/>
+                                </form>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
+                <!--                        -->
+                <!-- MODAL POPUP - New Run  -->
+                <!--                        -->
+                <div class="modal fade" id="modalNewRun" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <h4 class="modal-title"><i class="fa fa-play" aria-hidden="true"></i> New <span id="newRunPipeName" class="text-primary"></span> run</h4>
+                            </div>
+
+                            <div class="tab-content" style="margin:0 10px;">
+                                <div id="runConfigInputsTab" class="tab-pane fade in active">
+                                    <div class="runConfigHeader">
+                                        <p class="current"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
+                                        <p class="sp"> • • • • </p>
+                                        <p class=""><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
+                                        <p class="sp"> • • • • </p>
+                                        <p class=""><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
+                                    </div>
+
+
+                                    {% if files|length ==0 %}
+                                    <div class="alert alert-warning" role="alert">
+                                        <strong>Warning!</strong> No file available on the server. You can start by upload some file, or launch this run without inputs.
+                                    </div>
+                                    {% else %}
+                                    <div class="runConfigTabDescription">Below the list of input files selected for the run</div>
+                                    <table id="inputFilesList" class="table table-striped table-bordered" cellspacing="0" width="100%">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Size</th>
+                                                <th>Creation</th>
+                                            </tr>
+                                        </thead>
+
+                                        <tbody>
+         
+                                        </tbody>
+                                    </table>
+                                    <p style="margin-top: 20px; text-align:right;"> 
+                                        <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab" onclick="javascript:run_config_step_2();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
+                                    </p>
+                                    {% endif %}
+                                </div>
+                                <div id="runConfigFormTab" class="tab-pane fade">
+                                    <div class="runConfigHeader">
+                                        <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
+                                        <p class="sp ok"> ——————— </p>
+                                        <p class="current"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
+                                        <p class="sp"> • • • • </p>
+                                        <p class="next"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
+                                    </div>
+                                    <div class="runConfigTabDescription">Configure the run</div>
+                                    <div id="runConfigContainer"></div>
+                                    <p style="margin-top: 20px; text-align:right;"> 
+                                        <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigInputsTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button> &nbsp; 
+                                        <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigConfirmTab" onclick="javascript:run_config_step_3();">Next &nbsp;<i class="fa fa-chevron-right" aria-hidden="true"></i></button>
+                                    </p>
+                                </div>
+                                <div id="runConfigConfirmTab" class="tab-pane fade">
+                                    <div class="runConfigHeader">
+                                        <p class="ok"><span>1</span><br/><i class="fa fa-files-o" aria-hidden="true"></i> Inputs</p>
+                                        <p class="sp ok"> ——————— </p>
+                                        <p class="ok"><span>2</span><br/><i class="fa fa-cog" aria-hidden="true"></i> Configure</p>
+                                        <p class="sp ok"> ——————— </p>
+                                        <p class="current"><span>3</span><br/><i class="fa fa-check" aria-hidden="true"></i> Confirm</p>
+                                    </div>
+                                    <div class="runConfigTabDescription"> The run is ready to start !</i></div>
+                                    <div id="runConfirmContainer">
+                                        <dl>
+                                            <dt>Inputs </dt>
+                                            <ll>file1</ll>
+                                            <ll>file2</ll>
+                                            <ll>file3</ll>
+
+                                            <dt>Parameters</dt>
+                                            <ll>Param1 : val 1</ll>
+                                            <ll>Param2 : val 2</ll>
+                                            <ll>Param3 : val 3</ll>
+                                        </dl>
+                                    </div>
+                                    <p style="margin-top: 20px; text-align:center;"> 
+                                        <button type="button" class="btn btn-primary" data-toggle="tab" href="#runConfigFormTab"><i class="fa fa-chevron-left" aria-hidden="true"></i>&nbsp; Previous</button>  &nbsp; 
+                                        <button id="runConfirmButton" type="button" class="btn btn-success" onclick="javascript:run_config_step_4();"><i class="fa fa-check" aria-hidden="true"></i>&nbsp; Run !</button>
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-
     </div>
 </div>
 
@@ -515,46 +517,6 @@ var rootURL = "http://{{ hostname }}";
 
 var ws = new WebSocket('ws://{{ hostname }}/ws');
 var $message = $('#message');
-
-
-
-
-
-        function monitor_run(run_id)
-        {
-            $("#runMonitoringName").text(run_id)
-            $.ajax({ url: rootURL + "/run/" + run_id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
-            {
-                data = jsonFile["data"];
-                $("#runMonitoringDetails").html("<ul><li>Processes : " + data["Processes"] + "</li><li>Memory (current) : " + data["Memory (current)"] + "</li></ul>")
-
-                $("#runMonitoringStdout").text(data["out_tail"])
-                $("#runMonitoringStdout").animate({scrollTop : $("#runMonitoringStdout")[0].scrollHeight }, 1000 );
-
-                $("#runMonitoringStderr").text(data["err_tail"])
-                $("#runMonitoringStderr").animate({scrollTop : $("#runMonitoringStderr")[0].scrollHeight}, 1000 );
-
-                $("#runMonitoringRefreshBtn").attr("onclick", "javascript:monitor_run('"+run_id+"')")
-            })
-        }
-
-
-        function browse_io(run_id, type)
-        {
-            $.ajax({ url: rootURL + "/run/" + run_id + "/io", type: "GET", async: false}).done(function(jsonFile)
-            {
-                data = jsonFile["data"];
-                html = "<ul>"
-                for (var i=0; i<data[type].length; i++)
-                {
-                 html += "<li><a href=\"" + rootURL + "/dl/f/" + data[type][i]["id"] + "\" title=\"Download\">" + data[type][i]["name"] + "</a> (" + humansize(data[type][i]["size"]) + ")</li>"
-             }
-             html += "</ul>"
-             $("#runBrowserContainer").html(html)
-         })
-        }
-
-
 
 
         function delete_pipeline(pipe_id)
@@ -626,60 +588,66 @@ var $message = $('#message');
 
 
 
-
-        (function ($, window) {
+        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        /* Context menu
+        /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+        (function ($, window) 
+        {
             $.fn.contextMenu = function (settings) 
             {
-                return this.each(function () {
+                return this.each(function () 
+                {
 
-            // Open context menu
-            $(this).on("contextmenu", function (e) {
-                // return native menu if pressing control
-                if (e.ctrlKey) return;
-                
-                //open menu
-                var $menu = $(settings.menuSelector)
-                .data("invokedOn", $(e.target))
-                .show()
-                .css({
-                    position: "absolute",
-                    left: getMenuPosition(e.clientX, 'width', 'scrollLeft'),
-                    top: getMenuPosition(e.clientY, 'height', 'scrollTop')
-                })
-                .off('click')
-                .on('click', 'a', function (e) {
-                    $menu.hide();
+                    // Open context menu
+                    $(this).on("contextmenu", function (e) 
+                    {
+                        // return native menu if pressing control
+                        if (e.ctrlKey) return;
+                        
+                        //open menu
+                        var $menu = $(settings.menuSelector)
+                        .data("invokedOn", $(e.target))
+                        .show()
+                        .css({
+                            position: "absolute",
+                            left: getMenuPosition(e.clientX, 'width', 'scrollLeft'),
+                            top: getMenuPosition(e.clientY, 'height', 'scrollTop')
+                        })
+                        .off('click')
+                        .on('click', 'a', function (e) {
+                            $menu.hide();
 
-                    var $invokedOn = $menu.data("invokedOn");
-                    var $selectedMenu = $(e.target);
+                            var $invokedOn = $menu.data("invokedOn");
+                            var $selectedMenu = $(e.target);
 
-                    settings.menuSelected.call(this, $invokedOn, $selectedMenu);
+                            settings.menuSelected.call(this, $invokedOn, $selectedMenu);
+                        });
+                        
+                        return false;
+                    });
+
+                    //make sure menu closes on any click
+                    $('body').click(function () 
+                    {
+                        $(settings.menuSelector).hide();
+                    });
                 });
-                
-                return false;
-            });
 
-            //make sure menu closes on any click
-            $('body').click(function () {
-                $(settings.menuSelector).hide();
-            });
-        });
+                function getMenuPosition(mouse, direction, scrollDir) 
+                {
+                    var win = $(window)[direction](),
+                    scroll = $(window)[scrollDir](),
+                    menu = $(settings.menuSelector)[direction](),
+                    position = mouse + scroll;
 
-function getMenuPosition(mouse, direction, scrollDir) {
-    var win = $(window)[direction](),
-    scroll = $(window)[scrollDir](),
-    menu = $(settings.menuSelector)[direction](),
-    position = mouse + scroll;
-
-            // opening menu would pass the side of the page
-            if (mouse + menu > win && menu < mouse) 
-                position -= menu;
-            
-            return position;
-        }    
-
-    };
-})(jQuery, window);
+                    // opening menu would pass the side of the page
+                    if (mouse + menu > win && menu < mouse) 
+                        position -= menu;
+                    
+                    return position;
+                }
+            };
+        })(jQuery, window);
 
 
 

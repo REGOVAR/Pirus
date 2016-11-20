@@ -153,7 +153,7 @@ class WebsiteHandler:
     def home(self, request):
         data = {
             "files"    : pirus.files.get(None, None, ['-create_date']),
-            "pipes"    : pirus.pipelines.get(None, None, ['-name']),
+            "pipes"    : pirus.pipelines.get(None, None, ['-name'], None, None, 2),
             "runs"     : pirus.runs.get(None, None, ['-start']), 
             "hostname" : HOSTNAME
         }
@@ -624,19 +624,44 @@ class RunHandler:
         run = Run.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
-        if run.status in ["INITIALIZING", "FINISHING", "ERROR", "DONE", "CANCELED"]:
-            return rest_error("No monitoring data for the run " + str(run_id))
+        pipeline = pirus.pipelines.get_from_id(run.pipeline_id)
+        # Result
+        result = {
+            "name" : run.name,
+            "pipeline_icon" : pipeline["icon_url"],
+            "pipeline_name" : pipeline["name"],
+            "id" : str(run.id),
+            "status" : run.status,
+            "vm" : {}
+        }
 
-        out = subprocess.check_output(["lxc", "info", run.lxd_container])
-        result = {}
-        for l in out.decode().split('\n'):
-            data = l.split(': ')
-            if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
-                result.update({data[0].strip(): data[1]})
-                
+        # Lxd monitoring data
+        try:
+            # TODO : to be reimplemented with pylxd api when this feature will be available :)
+            out = subprocess.check_output(["lxc", "info", run.lxd_container])
+            for l in out.decode().split('\n'):
+                data = l.split(': ')
+                if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
+                    result["vm"].update({data[0].strip(): data[1]})
+            result.update({"vm_info" : True})
+        except Exception as error:
+            out = "No virtual machine available for this run."
+            result.update({"vm" : out, "vm_info" : False})
+
+        # Logs tails
+        try: 
+            out_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode()
+        except Exception as error:
+            out_tail = "No stdout log of the run."
+
+        try: 
+            err_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
+        except Exception as error:
+            err_tail = "No stderr log of the run."
+
         result.update({
-            "out_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode(), 
-            "err_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
+            "out_tail" : out_tail, 
+            "err_tail" :err_tail
         })
         return rest_success(result)
 

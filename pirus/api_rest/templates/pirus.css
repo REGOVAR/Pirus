@@ -17,9 +17,13 @@ pre
     font-family: "Prestige", monospace;
     font-size: 1em;
     font-weight: 600;
-    overflow: auto;
-    max-height: 400px;
+    min-height: 300px;
 }
+
+
+
+
+
 
 
 
@@ -27,6 +31,23 @@ table tr:hover
 {
     background: #ddd!important;
 }
+
+.header .headerSortUp {
+
+}
+
+.header .headerSortDown {
+
+}
+
+
+
+
+
+
+
+
+
 
 
 
