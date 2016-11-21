@@ -104,7 +104,8 @@ function show_tab(tab_id, run_id)
 var demo_pirus_selection = [];
 function select_file(file_id)
 {
-    var check = $('#fileEntry-' + file_id + ' input')[0].checked;
+    var check = !$('#fileEntry-' + file_id + ' input')[0].checked;
+    $('#fileEntry-' + file_id + ' input').prop('checked', check);
     var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').html().trim();
     if (check)
     {
