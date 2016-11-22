@@ -102,24 +102,19 @@ class PirusFile(Document):
 
     def import_data(self, data):
         try:
-            self.name          = data['name']
-            self.type          = data["type"]
-            self.path          = data['path']
-            self.size          = int(data["size"])
-            self.status        = data["status"]
-            self.create_date   = data["create_date"]
-            if "md5sum" in data.keys():
-                self.md5sum = data["md5sum"]
-            if "runs" in data.keys():
-                self.runs = data["runs"]
-            if "upload_offset" in data.keys():
-                self.upload_offset = int(data["upload_offset"])
-            else:
-                self.upload_offset = 0
-            if "tags" in data.keys():
-                self.tags = data['tags']
-            if "comments" in data.keys():
-                self.comments  = data["comments"]
+            if "name"          in data.keys(): self.name           = data['name']
+            if "type"          in data.keys(): self.type           = data['type']
+            if "path"          in data.keys(): self.path           = data['path']
+            if "size"          in data.keys(): self.size           = int(data["size"])
+            if "upload_offset" in data.keys(): self.upload_offset  = int(data["upload_offset"])
+            if "status"        in data.keys(): self.status         = data['status']
+            if "create_date"   in data.keys(): self.create_date    = data['create_date']
+            if "md5sum"        in data.keys(): self.md5sum         = data["md5sum"]
+            if "runs"          in data.keys(): self.runs           = data["runs"]
+            if "tags"          in data.keys(): self.tags           = data['tags']
+            if "comments"      in data.keys(): self.comments       = data["comments"]
+            if "source"        in data.keys(): self.source         = data["source"]
+            self.save()
         except KeyError as e:
             raise ValidationError('Invalid input file: missing ' + e.args[0])
         return self
@@ -128,19 +123,17 @@ class PirusFile(Document):
     @staticmethod
     def new_from_tus(filename, file_size):
         pfile   = PirusFile()
-        pfile.import_data({
-                "name"          : filename,
-                "type"          : os.path.splitext(filename)[1][1:].strip().lower(),
-                "path"          : os.path.join(TEMP_DIR, str(uuid.uuid4())),
-                "size"          : file_size,
-                "upload_offset" : 0,
-                "status"        : "UPLOADING",
-                "create_date"   : str(datetime.datetime.now().timestamp()),
-                "source"        : {"type" : "upload"}
-            })
+        pfile.name = filename
+        pfile.type = os.path.splitext(filename)[1][1:].strip().lower()
+        pfile.path = os.path.join(TEMP_DIR, str(uuid.uuid4()))
+        pfile.size = int(file_size)
+        pfile.upload_offset = 0
+        pfile.status = "WAITING"
+        pfile.create_date = str(datetime.datetime.now().timestamp())
+        pfile.source =  {"type" : "upload"}
         pfile.save()
-        pfile.url = "http://" + HOSTNAME + "/dl/f/" + str(self.id)
-        pfile.upload_url = "http://" + HOSTNAME + "/file/upload/" + str(self.id)
+        pfile.url = "http://" + HOSTNAME + "/dl/f/" + str(pfile.id)
+        pfile.upload_url = "http://" + HOSTNAME + "/file/upload/" + str(pfile.id)
         pfile.save()
         return pfile
 

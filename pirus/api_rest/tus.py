@@ -11,10 +11,7 @@ import uuid
 
 
 from aiohttp import web, MultiDict
-from mongoengine import *
-from config import *
-from framework import *
-from api_v1.model import *
+from core import *
 
 
 
@@ -54,9 +51,9 @@ class TusFileWrapper:
             return TusManager.build_response(code=404)
 
         # We can upload file or pipeline, we check model according to url
-        if "/file/upload" in request.raw_path and PirusFile.from_id(id) is not None:
+        if "/file/upload" in request.raw_path and pirus.files.get_from_id(id) is not None:
             return PirusFileWrapper(id)
-        if "pipeline/upload" in request.raw_path and Pipeline.from_id(id) is not None :
+        if "pipeline/upload" in request.raw_path and pirus.pipelines.get_from_id(id) is not None :
             return PirusPipelineWrapper(id)
         return TusManager.build_response(code=404)
 
@@ -64,12 +61,12 @@ class TusFileWrapper:
     def new_upload(request, filename, file_size):
         # Create and return the wrapper to manipulate the uploading file
         if "/file/upload" in request.raw_path :
-            pfile   = PirusFile.new_from_tus(filename, file_size)
-            return PirusFileWrapper(pfile.id)
+            pfile   = pirus.files.upload_init(filename, file_size)
+            return PirusFileWrapper(pfile["id"])
 
         if "/pipeline/upload" in request.raw_path :
-            pipe=Pipeline.new_from_tus(filename, file_size)
-            return PirusPipelineWrapper(pipe.id)
+            pipe = pirus.pipeline.upload_init(filename, file_size)
+            return PirusPipelineWrapper(pipe["id"])
 
 
 
@@ -151,7 +148,7 @@ class TusManager:
         # Create file entry in database
         fw = TusFileWrapper.new_upload(request, filename, file_size)
 
-        # create empty file that allocated the needed disk space
+        # create empty file at the provided location
         try:
             os.mknod(fw.path)
         except IOError as e:
@@ -165,7 +162,7 @@ class TusManager:
     def delete_file(self, request):
         fw = TusFileWrapper.from_request(request)
         os.unlink(fw.path)
-        PirusFile.remove(fw.id)
+        pirus.files.delete(fw.id)
         return TusManager.build_response(code=204)
 
 
@@ -201,36 +198,33 @@ class TusManager:
 # Custom wrapper for Pirus file
 class PirusFileWrapper (TusFileWrapper) :
     def __init__(self, id):
-        self.pfile = PirusFile.from_id(id)
-
-        self.id = self.pfile.id
-        self.name = self.pfile.name
-        self.upload_offset = self.pfile.upload_offset
-        self.path = self.pfile.path
-        self.size = self.pfile.size
-        self.upload_url = self.pfile.upload_url()
+        self.pfile = pirus.files.get_from_id(id, 0, ["name", "upload_offset", "path", "size", "upload_url"])
+        self.id = id
+        self.name = self.pfile["name"]
+        self.upload_offset = self.pfile["upload_offset"]
+        self.path = self.pfile["path"]
+        self.size = self.pfile["size"]
+        self.upload_url = self.pfile["upload_url"]
 
     def save(self):
-        # Update pirus file status
-        self.pfile.upload_offset = self.upload_offset
-        self.pfile.status = "UPLOADING"
-        self.pfile.save()
+        try:
+            pirus.files.edit(self.id, {"upload_offset" : self.upload_offset, "status" : "UPLOADING"})
+        except Exception as error:
+            return TusManager.build_response(code=500, body="Unexpected error occured : {}".format(error))
 
-    def complete(self):
-        # Update pirus file status
-        self.pfile.status = "UPLOADED"
-        oldpath = self.path
-        self.pfile.path = os.path.join(FILES_DIR, str(uuid.uuid4()))
-        os.rename(oldpath, self.pfile.path)
-        self.pfile.save()
-        # TODO : check if run was waiting the end of the upload to start
+    def complete(self, checksum=None, checksum_type="md5"):
+        try:
+            pirus.files.upload_finish(self.id, checksum, checksum_type)
+        except Exception as error:
+            return TusManager.build_response(code=500, body="Unexpected error occured : {}".format(error))
+        
+
 
 
 # Custom wrapper for Pirus pipeline
 class PirusPipelineWrapper (TusFileWrapper) :
     def __init__(self, id):
-        self.ppipe = Pipeline.from_id(id)
-
+        self.ppipe = pirus.pipelines.get_from_id(id)
         self.id = self.ppipe.id
         self.name = self.ppipe.name
         self.upload_offset = self.ppipe.upload_offset
@@ -247,10 +241,9 @@ class PirusPipelineWrapper (TusFileWrapper) :
     def complete(self):
         # Save pirus package on the server plugins directory
         try:
-            pipeline = Pipeline.install(self.ppipe.id)
+            pipeline = pirus.pipelines.install(self.ppipe.id)
         except Exception as error:
-            # TODO : manage error
-            pass
+            return TusManager.build_response(code=500, body="Unexpected error occured : {}".format(error))
 
 
 

@@ -1,5 +1,6 @@
 #!env/python3
 # coding: utf-8
+import ipdb
 
 import os
 import shutil
@@ -31,7 +32,7 @@ from core.pirus_worker import start_run, terminate_run
 class Core:
     def __init__(self):
         self.files = FileManager()
-        self.pipelines= PipelineManager()
+        self.pipelines = PipelineManager()
         self.runs = RunManager()
 
         # method handler for some spe
@@ -111,48 +112,60 @@ class FileManager:
 
 
 
-    def get_from_id(self, file_id, sublvl=0):
+    def get_from_id(self, file_id, sublvl=0, fields=None):
         file = PirusFile.from_id(file_id)
         if file == None:
             raise PirusException("No file with id " + str(file_id))
-        return file.export_client_data(sublvl)
+        return file.export_client_data(sublvl, fields)
         
     
 
-    def get_from_ids(self, file_ids, sublvl=0):
-        return [f.export_client_data(sublvl) for f in PirusFile.from_id(file_ids)]
+    def get_from_ids(self, file_ids, sublvl=0, fields=None):
+        return [f.export_client_data(sublvl, fields) for f in PirusFile.from_ids(file_ids)]
 
 
 
-    def upload_init(self, filename, path, metadata={}):
+    def upload_init(self, filename, file_size, metadata={}):
         """ 
             Create an entry for the file in the database and return the id of the file in pirus
             This method shall be used to init a resumable upload of a file 
-            (the file is not yet available, but we need to manipulate its pirus metadata)
+            (the file is not yet available, but we can manipulate its pirus metadata)
         """
-        pirusfile = PirusFile()
-        pirusfile.import_data({
-                "name"          : filename,
-                "type"          : os.path.splitext(filename)[1][1:].strip().lower(),
-                "path"          : path,
-                "size"          : int(os.path.getsize(path)),
-                "status"        : "WAITING",
-                "create_date"   : str(datetime.datetime.now().timestamp()),
-                "md5sum"        : md5(fullpath)
-            })
-        pirusfile.import_data(metadata);
-        pirusfile.save()
-        plog.info('core.FileManager.register : New file registered with the id ' + str(pirusfile.id) + ' (available at ' + path + ')')
-        return pirusfile.export_client_data()
+        pirusfile = PirusFile.new_from_tus(filename, file_size)
+        if len(metadata) > 0:
+            pirusfile.import_data(metadata)
+            pirusfile.save()
+        plog.info('core.FileManager.register : New file registered with the id ' + str(pirusfile.id) + ' (available at ' + pirusfile.path + ')')
+        return pirusfile.export_client_data(0, PirusFile.public_fields +  ["path"])
 
 
 
-    def upload_chunk(self, file_id, chunk_data, chunk_size, offset):
-        pass
-
-
-    def upload_finish(self, file_id, checksum, checksum_type="md5"):
-        pass
+    def upload_finish(self, file_id, checksum=None, checksum_type="md5"):
+        """ 
+            When upload of a file is finish, we move it from the download temporary folder to the
+            files folder. A checksum validation can also be done if provided. 
+            Update finaly the status of the file to UPLOADED or CHECKED -> file ready to be used
+        """
+        # Retrieve file
+        pfile = PirusFile.from_id(file_id)
+        if pfile == None:
+            raise PirusException("Unable to retrieve the pirus file with the provided id : " + file_id)
+        # Move file
+        old_path = pfile.path
+        new_path = os.path.join(FILES_DIR, str(uuid.uuid4()))
+        os.rename(old_path, new_path)
+        # If checksum provided, check that file is correct
+        file_status = "UPLOADED"
+        if checksum is not None:
+            if checksum_type == "md5" and md5(fullpath) != checksum : 
+                raise error
+            file_status = "CHECKED"            
+        # Update file data in database
+        pfile.upload_offset = pfile.size
+        pfile.status = file_status
+        pfile.path = new_path
+        pfile.save()
+        # TODO : check if run was waiting the end of the upload to start
 
 
     async def from_download(self, url, metadata={}):
@@ -191,8 +204,13 @@ class FileManager:
 
 
     def edit(self, file_id, json_data):
-        # TODO : implement PUT to edit file metadata (and remove the obsolete  "simple post" replaced by TUS upload )
-        pass
+        # Retrieve file
+        pfile = PirusFile.from_id(file_id)
+        if pfile == None:
+            raise PirusException("Unable to retrieve the pirus file with the provided id : " + file_id)
+        # Update data
+        pfile.import_data(json_data)
+        pfile.save()
 
 
 
@@ -540,9 +558,8 @@ class RunManager:
 
 
     def delete(self, request):
-        run_id = request.match_info.get('run_id', -1)
+        # TODO
         print ("DELETE run/<id=" + str(run_id) + ">")
-        return web.Response(body=b"DELETE run/<id>")
 
 
 

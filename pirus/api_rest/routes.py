@@ -34,7 +34,6 @@ app.on_shutdown.append(on_shutdown)
 # Routes
 app.router.add_route('GET',    "/v1/www",    website.home)
 app.router.add_route('GET',    "/v1/config", website.get_config)
-app.router.add_route('GET',    "/v1/api",    website.get_api)
 app.router.add_route('GET',    "/v1/db",     website.get_db)
 app.router.add_route('GET',    "/v1/ws",     websocket.get)
 

@@ -19,8 +19,8 @@ from aiohttp import web, MultiDict
 from urllib.parse import parse_qsl
 
 
-
 from core import *
+from api_rest.tus import tus_manager
 
 
 
@@ -157,12 +157,11 @@ class WebsiteHandler:
             "runs"     : pirus.runs.get(None, None, ['-start']), 
             "hostname" : HOSTNAME
         }
-
         for f in data["files"]:
             f.update({"size" : humansize(f["size"])})
-
-
         return data
+
+
 
     def get_config(self, request):
         return rest_success({
@@ -174,10 +173,8 @@ class WebsiteHandler:
             "run_config " : LXD_HDW_CONF
         })
 
-    def get_api(self, request):
-        return rest_success({
-            "TODO" : "url to the swagger and the doc for this version of the api"
-        })
+
+
 
     def get_db(self, request):
         return rest_success([f for f in os.listdir(DATABASES_DIR) if os.path.isfile(os.path.join(DATABASES_DIR, f))])
@@ -199,7 +196,7 @@ class FileHandler:
 
     def get(self, request):
         # Generic processing of the get query
-        fields, query, order, offset, limit = process_generic_get(request.query_string, PirusFile.public_fields)
+        fields, query, order, offset, limit = process_generic_get(request.query_string, pirus.files.public_fields())
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Get range meta data
         range_data = {
@@ -305,7 +302,7 @@ class FileHandler:
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
         id = request.match_info.get('file_id', -1)
-        pirus_file = PirusFile.from_id(id)
+        pirus_file = pirus.files.from_id(id)
         if pirus_file == None:
             return rest_error("File with id " + str(id) + "doesn't exits.")
         file = None
@@ -357,32 +354,34 @@ class PipelineHandler:
         pass
 
     def get(self, request):
-        fields, query, order, offset, limit = process_generic_get(request.query_string, Pipeline.public_fields)
+        fields, query, order, offset, limit = process_generic_get(request.query_string, pirus.pipelines.public_fields())
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Get range meta data
         range_data = {
             "range_offset" : offset,
             "range_limit"  : limit,
-            "range_total"  : Pipeline.objects.count(),
+            "range_total"  : pirus.pipelines.total(),
             "range_max"    : RANGE_MAX,
         }
-        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]], range_data)   
+        return rest_success(pirus.pipelines.get(fields, query, order, offset, limit, sub_level_loading), range_data)
+
+
+
 
     def delete(self, request):
-        # 1- Retrieve pirus pipeline from post request
         pipe_id = request.match_info.get('pipe_id', -1)
         try:
-            pipeline = Pipeline.remove(pipe_id)
+            pirus.pipelines.delete(pipe_id)
         except Exception as error:
             # TODO : manage error
-            return rest_error("Server Error : The following occure during deletion of the pipeline . " + error.msg)
+            return rest_error("Unable to delete the pipeline with id " + str(pipe_id) + ". " + error.msg)
         return rest_success("Pipeline " + str(pipe_id) + " deleted.")
 
 
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        pipe = Pipeline.from_id(pipe_id)
+        pipe = pirus.pipelines.from_id(pipe_id)
         if pipe == None:
             return rest_error("No pipeline with id " + str(pipe_id))
         print ("PipelineHandler.get_details('" + str(pipe_id) + "', sublvl=" + str(sub_level_loading) + ")")
@@ -424,35 +423,42 @@ class RunHandler:
         pass
 
     def get(self, request):
-        fields, query, order, offset, limit = process_generic_get(request.query_string, Run.public_fields)
+        fields, query, order, offset, limit = process_generic_get(request.query_string, pirus.runs.public_fields())
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Get range meta data
         range_data = {
             "range_offset" : offset,
             "range_limit"  : limit,
-            "range_total"  : Run.objects.count(),
+            "range_total"  : pirus.runs.total(),
             "range_max"    : RANGE_MAX,
         }
-        return rest_success([p.export_client_data(sub_level_loading, fields) for p in Run.objects(__raw__=query).order_by(*order)[offset:limit]], range_data)
+        return rest_success(pirus.runs.get(fields, query, order, offset, limit, sub_level_loading), range_data)
+
+
+
 
 
     def delete(self, request):
         run_id = request.match_info.get('run_id', -1)
-        print ("DELETE run/<id=" + str(run_id) + ">")
-        return web.Response(body=b"DELETE run/<id>")
+        try:
+            pirus.runs.delete(pipe_id)
+        except Exception as error:
+            # TODO : manage error
+            return rest_error("Unable to delete the runs with id " + str(pipe_id) + ". " + error.msg)
+        return rest_success("Run " + str(pipe_id) + " deleted.")
 
 
     def get_details(self, request):
         run_id = request.match_info.get('run_id', -1)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         return rest_success(run.export_client_data(sub_level_loading))
 
 
     def download_file(self, run_id, filename, location=RUNS_DIR):
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("No run with id " + str(run_id))
         path = os.path.join(location, run.lxd_container, filename)
@@ -496,15 +502,15 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         result={"inputs" : [], "outputs":[]}
         # Retrieve inputs files data of the run
-        files = PirusFile.from_ids(run.inputs)
+        files = pirus.files.from_ids(run.inputs)
         result["inputs"] = [a.export_client_data() for a in files]
         # Retrieve outputs files data of the run
-        files = PirusFile.from_ids(run.outputs)
+        files = pirus.files.from_ids(run.outputs)
         result["outputs"] = [a.export_client_data() for a in files]
         return rest_success(result)
 
@@ -518,7 +524,7 @@ class RunHandler:
         # 1- Retrieve data from request
         data = await request.json()
         run_id = request.match_info.get('run_id', -1)
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run is not None:
             if "progress" in data.keys():
                 run.progress = data["progress"]
@@ -545,7 +551,7 @@ class RunHandler:
         #Need to do something according to the new status ?
         # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
         if run.status in ["PAUSE", "ERROR", "DONE", "CANCELED"]:
-            next_run = Run.objects(status="WAITING").order_by('start')
+            next_run = pirus.runs.objects(status="WAITING").order_by('start')
             if len(next_run) > 0:
                 if next_run[0].status == "PAUSE":
                     start_run.delay(str(next_run[0].id))
@@ -567,7 +573,7 @@ class RunHandler:
         inputs = data["inputs"]
         config = { "run" : config, "pirus" : { "notify_url" : ""}}
         # Create the run 
-        run = Run.create(pipe_id, config, inputs)
+        run = pirus.runs.create(pipe_id, config, inputs)
         if run is None:
             return error
         # start run
@@ -579,7 +585,7 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         if run.status in ["WAITING", "RUNNING"]:
@@ -590,10 +596,10 @@ class RunHandler:
 
 
     def get_play(self, request):
-        run_id  = request.match_info.get('run_id',  -1)
+        run_id  = request.match_info.get('run_id', -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         if run.status == "PAUSE":
@@ -607,7 +613,7 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         if run.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
@@ -621,7 +627,7 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = Run.from_id(run_id)
+        run = pirus.runs.from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         pipeline = pirus.pipelines.get_from_id(run.pipeline_id)

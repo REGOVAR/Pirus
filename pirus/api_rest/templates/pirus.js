@@ -121,7 +121,40 @@ function select_file(file_id)
     $('#selection_count').html(count == 0 ? "" : count);
 }
 
+var activity_inprogress_count = 0
+var demo_browser_file_entry =  "<tr id=\"activity_entry_{0}\" onmouseover=\"javascript:display_status_bar('{0}')\" onclick=\"javascript:select_file('{0}')\" style=\"cursor: pointer;\">";
+demo_browser_file_entry +=  "<td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>";
 
+function add_new_activity_to_demo_browser(type, id)
+{
+    $('#inprogress_count').html(activity_inprogress_count);
+    var name = "name";
+    var details = "details";
+    var progress = "progress";
+    var status = "status";
+    // Retrieve data
+    activity_inprogress_count += 1;
+    if (type == "file")
+    {
+        // check if entry already exists (resume previous upload)
+        elmnt = $('#fileEntry-' + id);
+        if (elmnt.length)
+        {
+            // elmnt exist, so update it
+        }
+        else
+        {
+            // add new entry into the table
+        }
+        $('#browser_files_table').append(demo_browser_file_entry.format(id, name, details, progress, status));
+    }
+    else if (type == "pipeline")
+    {
+        $('#browser_inprogress_table').append(demo_browser_file_entry.format(id, name, size, creation, comments));
+    }
+
+    // Update IHM
+}
 
 
 
