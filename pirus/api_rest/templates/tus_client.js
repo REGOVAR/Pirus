@@ -21,6 +21,8 @@ pirusFileInput.addEventListener("change", function(e)
     console.log("selected file", file);
     var endpoint = pirusFileEndpointInput.value;
     var chunkSize = parseInt(pirusFileChunkInput.value, 10);
+
+
     if (isNaN(chunkSize)) 
     {
         chunkSize = Infinity;
@@ -39,13 +41,13 @@ pirusFileInput.addEventListener("change", function(e)
         {
             var percentage = (bytesUploaded / bytesTotal * 100).toFixed(2);
             console.log(bytesUploaded, bytesTotal, percentage + "%");
-            buildProgressBar(percentage, "RUN", "tusFileProgress");
+            buildProgressBar(percentage, "RUN", "modal_new_file_progress");
         },
         onSuccess: function() 
         {
             pirusFileInput.value = "";
-            buildPopup("Download finish !  " + pirusFileUpload.file.name + " is now available for run.", "success", "tusFileProgress");
-            $("#uploadFileForm").addClass("hidden");
+            $("#modal_new_file_progress").html("");
+
         }
     }
 

@@ -62,7 +62,8 @@ class Core:
 
     def notify_all(self, msg):
         if self.notify_all_delegate is not None:
-            self.notify_all_delegate(msg)
+            self.notify_all_delegate(None, msg)
+
 
     def init(self):
         """
@@ -207,6 +208,7 @@ class FileManager:
 
 
     def edit(self, file_id, json_data):
+        global  pirus
         # Retrieve file
         pfile = PirusFile.from_id(file_id)
         if pfile == None:
@@ -214,6 +216,9 @@ class FileManager:
         # Update data
         pfile.import_data(json_data)
         pfile.save()
+        # Push notification
+        msg = {"action":"file_changed", "data" : [pfile.export_client_data()] }
+        pirus.notify_all(json.dumps([msg]))
 
 
 
@@ -640,6 +645,7 @@ class RunManager:
     # Update the status of the run, and according to the new status will do specific action
     # Notify also every one via websocket that run status changed
     def set_status(self, run, new_status):
+        global  pirus
         # Avoid useless notification
         # Impossible to change state of a run in error or canceled
         if (new_status != "RUNNING" and run.status == new_status) or run.status in  ["ERROR", "CANCELED"]:
@@ -662,7 +668,7 @@ class RunManager:
             terminate_run.delay(str(run.id))
         # Push notification
         msg = {"action":"run_changed", "data" : [run.export_client_data()] }
-        pirus_core.notify_all(json.dumps(msg))
+        pirus.notify_all(json.dumps(msg))
 
 
 
@@ -719,7 +725,8 @@ class RunManager:
             "pipeline_name" : pipeline.name,
             "id" : str(run.id),
             "status" : run.status,
-            "vm" : {}
+            "vm" : {},
+            "progress" : run.progress
         }
 
         # Lxd monitoring data

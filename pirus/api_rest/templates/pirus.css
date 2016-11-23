@@ -29,7 +29,6 @@ pre
     color: #ccc;
     font-family: "Prestige", monospace;
     font-size: 1em;
-    font-weight: 600;
     min-height: 300px;
 }
 
@@ -57,6 +56,18 @@ table tr:hover
 
 }
 
+
+
+
+
+
+
+
+
+#browser_navpanel li      {clear:both;}
+#browser_navpanel li a    { display: block; height:1.4em; }
+#browser_navpanel li a:hover    { background-color: #ddd; }
+#browser_navpanel li span { float: right; }
 
 
 
@@ -122,10 +133,11 @@ table tr:hover
 #browser_run_monitoring_header.red    #browser_run_monitoring_progress { background-color:#d9534f; }
 #browser_run_monitoring_header.blue   #browser_run_monitoring_progress { background-color:#337ab7; }
 
-#browser_run_monitoring_refresh 
-{
 
-}
+#browser_run_monitoring_header.green  #browser_run_details, #browser_run_monitoring_header.green   #browser_run_status { color:#173517; }
+#browser_run_monitoring_header.orange #browser_run_details, #browser_run_monitoring_header.orange  #browser_run_status { color:#462c06; }
+#browser_run_monitoring_header.red    #browser_run_details, #browser_run_monitoring_header.red     #browser_run_status { color:#3f0f0e; }
+#browser_run_monitoring_header.blue   #browser_run_details, #browser_run_monitoring_header.blue    #browser_run_status { color:#11283c; }
 
 
 

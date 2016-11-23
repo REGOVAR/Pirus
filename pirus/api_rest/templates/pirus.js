@@ -6,7 +6,7 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* Demo browser methods
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-
+var displayed_run;
 function display_status_bar(file_id)
 {
     var details =  $('#fileEntry-' + file_id + ' td:nth-child(5)').html();
@@ -24,15 +24,24 @@ function show_tab(tab_id, run_id)
     
     // Manage display of run data
     if (tab_id == 'browser_run')
-    {
-        // Logs 
-
-        
+    {        
+        displayed_run = run_id;
         $.ajax({ url: rootURL + "/run/" + run_id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
         {
             data = jsonFile["data"];
-            $("#browser_run_name").html("<img src=\"{0}\" width=\"30px\"/> Run : {1}".format(data["pipeline_icon"], data["name"]));
-            $("#browser_run_details").html("Pipeline {0} - {1}".format(data["pipeline_name"], data["status"]));
+            progress = Math.round(parseInt(data["progress"]["value"]) / Math.max(1, (parseInt(data["progress"]["max"]) - parseInt(data["progress"]["min"]))) * 100);
+
+            // Header style / control according to the status of the run
+            if ($.inArray(data["status"],["PAUSE", "WAITING"]) > -1) $('#browser_run_monitoring_header').attr('class', 'orange');
+            if ($.inArray(data["status"], ["ERROR", "CANCELED"]) > -1) $('#browser_run_monitoring_header').attr('class', 'red');
+            if ($.inArray(data["status"], ["INITIALIZING", "RUNNING", "FINISHING"]) > -1) $('#browser_run_monitoring_header').attr('class', 'blue');
+            if ($.inArray(data["status"],["DONE"]) > -1) $('#browser_run_monitoring_header').attr('class', 'green');
+            $('#browser_run_monitoring_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
+
+            // Logs 
+            $("#browser_run_name").html("<img src=\"{0}\" width=\"30px\" style=\"vertical-align:middle\"/> Run : {1}".format(data["pipeline_icon"], data["name"]));
+            $("#browser_run_details").html("Pipeline {0} : <b>{1} % </b>".format(data["pipeline_name"], progress));
+            $("#browser_run_status").html(data["status"]);
             $("#browser_run_playpause").attr("href", "{0}/run/{1}/{2}".format(rootURL, data["id"], (data["status"] in ["PAUSE"]) ? "play" : "pause"));
             $("#browser_run_playpause").html((data["status"] in ["PAUSE"]) ? "<i class=\"fa fa-play\" aria-hidden=\"true\"></i>" : "<i class=\"fa fa-pause\" aria-hidden=\"true\"></i>");
 
@@ -130,6 +139,8 @@ var activity_inprogress_count = 0
 var demo_browser_file_entry =  "<tr id=\"activity_entry_{0}\" onmouseover=\"javascript:display_status_bar('{0}')\" onclick=\"javascript:select_file('{0}')\" style=\"cursor: pointer;\">";
 demo_browser_file_entry +=  "<td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>";
 
+
+
 function add_new_activity_to_demo_browser(type, id)
 {
     $('#inprogress_count').html(activity_inprogress_count);
@@ -151,11 +162,15 @@ function add_new_activity_to_demo_browser(type, id)
         {
             // add new entry into the table
         }
-        $('#browser_files_table').append(demo_browser_file_entry.format(id, name, details, progress, status));
+        $('#browser_inprogress_files_table').append(demo_browser_file_entry.format(id, name, details, progress, status));
     }
     else if (type == "pipeline")
     {
-        $('#browser_inprogress_table').append(demo_browser_file_entry.format(id, name, size, creation, comments));
+        $('#browser_inprogress_pipes_table').append(demo_browser_file_entry.format(id, name, size, creation, comments));
+    }
+    else if (type == "run")
+    {
+        $('#browser_inprogress_runs_table').append(demo_browser_file_entry.format(id, name, size, creation, comments));
     }
 
     // Update IHM
@@ -370,11 +385,46 @@ function run_config_step_4()
 
 
 
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* WEBSOCKETS handler
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+function ws_file_changed(data)
+{
+    debugger;
+    jQuery.each(data, function(index, item) {
+        var percentage = (item["upload_offset"] / item["set_notify_all"] * 100).toFixed(2)
+
+        buildProgressBar(percentage, item["status"], "browser_inprogress_pipes_table_td_progress_" + item["id"])
+        var tdElement = $("#run-" + item["id"] + "-status")
+        tdElement.html(item["status"])
+    });
+    // Todo : update controls
+}
 
 
 
+function ws_new_pipeline(msg_data)
+{
 
+}
 
+function ws_new_run(msg_data)
+{
+
+}
+
+function ws_run_changed(data)
+{
+    jQuery.each(data, function(index, item) 
+    {
+        var percentage = (item["progress"]["value"] / item["progress"]["max"] * 100).toFixed(2)
+        buildProgressBar(percentage, item["status"], "run-" + item["id"] + "-progress")
+        var tdElement = $("#run-" + item["id"] + "-status")
+        tdElement.html(item["status"])
+    });
+    // Todo : update controls
+}
 
 
 
@@ -414,24 +464,6 @@ function buildProgressBar(percentage, pbTheme, containerId) {
     return html
 }
 
-
-function buildPopup(popupMsg, popupStyle, containerId) {
-    var container = $("#" + containerId)
-    container.html('<div class="alert alert-' + popupStyle + ' hidden" id="support-alert">' + popupMsg + '</div>')
-}
-
-function addFileEntry(fileId) {
-    $.ajax({ url: rootURL + "/file/" + fileId, type: "GET"}).done(function(jsonData)
-    {
-
-        $("#filesList tr:last").after('<tr id="fileEntry-' + fileId + '"></tr>')
-        var percentage = (jsonData["size"] / jsonData["size_total"] * 100).toFixed(2)
-        buildProgressBar(percentage, jsonData["status"], "fileEntry-" + fileId)
-        $('#filesList').DataTable();
-    })
-}
-
-
 function humansize(nbytes)
 {
     var suffixes = ['o', 'Ko', 'Mo', 'Go', 'To', 'Po']
@@ -447,80 +479,3 @@ function humansize(nbytes)
     return f + " " + suffixes[i]
 }
 
-
-// 0=id, 1=name, 2=desc, 3=status
-var browser_pipe_ready_tpl = "<tr class=\"treegrid-{0}\"><td class=\"onHoverBtn\"> <i class=\"fa fa-puzzle-piece\" aria-hidden=\"true\"></i> <a title=\"Run the pipeline\" data-toggle=\"modal\"  href=\"#runConfigModal\" onclick=\"javascript:init_run('{0}')\">{1} <i class=\"fa fa-play\" aria-hidden=\"true\"></i></a></td><td>{2}</td><td>{3}</td></tr>"
-var browser_pipe_tpl = "<tr class=\"treegrid-{0}\"><td class=\"onHoverBtn\"> <i class=\"fa fa-puzzle-piece\" aria-hidden=\"true\"></i> {1}</td><td>{2}</td><td>{3}</td></tr>"
-var browser_run_tpl  = "<tr class=\"treegrid-{0} treegrid-parent-{1} {5}\"><td> <i class=\"fa fa-tasks\" aria-hidden=\"true\"></i> {2}</td><td>{3}</td><td>{4}</td></tr>"
-var browser_folder_tpl = "<tr class=\"treegrid-{0} treegrid-parent-{1}\"><td> <i class=\"fa fa-folder-open-o\" aria-hidden=\"true\"></i> {2}</td><td></td><td></td></tr>"
-var browser_file_tpl = "<tr class=\"treegrid-{0} treegrid-parent-{1}\"><td> {2}</td><td>{3}</td><td>{4}</td></tr>"
-
-function init_pirus_browser()
-{
-    $.ajax({ url: rootURL + "/pipeline?sublvl=2", type: "GET"}).done(function(jsonFile)
-    {
-        var data = jsonFile["data"];
-        var html = ""
-        var file_id = 0
-        for (var p=0; p<data.length; p++)
-        {
-            pipe = data[p]
-            var p_percentage  = (pipe["upload_offset"] / pipe["size"] * 100).toFixed(0)
-            var p_status      = pipe["status"]
-            var p_description = pipe["description"]
-            var p_name        = pipe["name"]
-            if (p_status != 'READY')
-            {
-                p_status      = buildProgressBar(p_percentage, pipe["status"], null)
-                p_description = "Deployment in progress"
-                p_name        = p_name + " (" + humansize(pipe["upload_offset"]) + " / " + humansize(pipe["size"]) + ")"
-            }
-            
-            if (p_status == 'READY')
-                html += browser_pipe_ready_tpl.format(pipe["id"], p_name, p_description, p_status)
-            else
-                html += browser_pipe_tpl.format(pipe["id"], p_name, p_description, p_status)
-
-            for (var r=0; r<pipe["runs"].length; r++)
-            {
-                run = pipe["runs"][r]
-                var r_percentage  = (run["progress"]["value"] / run["progress"]["max"] * 100).toFixed(0)
-                var r_status      = buildProgressBar(r_percentage, run["status"], null)
-                var r_description = run["description"]
-                var r_name        = run["name"]
-                var r_class       = (run["status"] == "DONE") ? "text-success" : (run["status"] == "ERROR" || run["status"] == "CANCELED" ) ? "text-danger" : (run["status"] == "PAUSE" || run["status"] == "WAITING" ) ? "text-warning" :""
-                html += browser_run_tpl.format(run["id"], pipe["id"], r_name, r_description, r_status, r_class)
-
-                html += browser_folder_tpl.format(run["id"]+"i", run["id"], "Inputs")
-                for (var f=0; f<run["inputs"].length; f++)
-                {
-                    file = run["inputs"][f]
-                    var f_percentage  = (file["upload_offset"] / file["size"] * 100).toFixed(0)
-                    var f_status      = buildProgressBar(f_percentage, file["status"], null)
-                    var f_comments    = file["comments"]
-                    var f_name        = file["name"] + "(" + humansize(file["upload_offset"]) + ")"
-                    html += browser_file_tpl.format(run["id"]+"i"+file["id"], run["id"]+"i", f_name, f_comments, f_status)
-                }
-
-                html += browser_folder_tpl.format(run["id"]+"o", run["id"], "Outputs")
-                for (var f=0; f<run["outputs"].length; f++)
-                {
-                    file = run["outputs"][f]
-                    var f_percentage  = (file["upload_offset"] / file["size"] * 100).toFixed(0)
-                    var f_status      = buildProgressBar(f_percentage, file["status"], null)
-                    var f_comments    = file["comments"]
-                    var f_name        = file["name"] + "(" + humansize(file["upload_offset"]) + ")"
-                    html += browser_file_tpl.format(run["id"]+"o"+file["id"], run["id"]+"o", f_name, f_comments, f_status)
-                }
-
-            }
-
-
-            
-
-        }
-        $("#pirusBrowser").html(html)
-    })
-}
-
-console.debug("{0} is dead, but {1} is alive! {0} {2}".format("ASP", "ASP.NET"))
