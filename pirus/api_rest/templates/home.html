@@ -184,15 +184,18 @@
                     </div>
                     <div class="panel-body" style="padding-top: 0; padding-bottom:0; padding-left:0;">
                         <div class="row">
-                            <div class="col-md-3" style="height:500px; border-right: 1px solid #ddd; overflow-y: auto;">
+                            <div class="col-md-3 browser-panel" style="height:500px; border-right: 1px solid #ddd; overflow-y: auto;">
 
                                 <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavSelectionPanel" aria-expanded="false" aria-controls="browserNavSelectionPanel">
-                                    <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection <span id="selection_count" class="badge"></span>
+                                    <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection <span id="selection_count" class="badge">0</span>
                                 </a>
                                 <div id="browserNavSelectionPanel" class="collapse">
                                     <ul>
+                                        <li class="detail">No file selected</li>
                                     </ul>
                                 </div>
+
+                                <hr/>
 
                                 <a class="btn" style="display:block; text-align:left;" role="button" onclick="javascript:show_tab('browser_files')"><i class="fa fa-files-o" aria-hidden="true"></i> All Files</a>
                                 <a class="btn" style="display:block; text-align:left;" role="button" onclick="javascript:show_tab('browser_inprogress')"><i class="fa fa-tasks" aria-hidden="true"></i> In progress <span id="inprogress_count" class="badge"></span></a>
@@ -206,7 +209,7 @@
                                       <div>
                                         <ul>
                                             {% for r in p["runs"] %}
-                                            {% if r["status"] in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING", "ERROR", "DONE", "CANCELED"] %}
+                                            {% if r["status"] in ["ERROR", "DONE", "CANCELED"] %}
                                             <li><a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> {{r["name"]}}</a></li>
                                             {% endif %}
                                             {% endfor %}
@@ -230,7 +233,9 @@
                                             </tr>
                                         </thead>
                                         {% for f in files %}
-                                        <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')" onclick="javascript:select_file('{{ f["id"] }}')" style="cursor: pointer;">
+                                        {% if f["status"] in ["UPLOADED", "CHECKED", "ERROR"] %}
+                                        <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')" onclick="javascript:select_file('{{ f["id"] }}')" 
+                                            style="cursor: pointer;" {% if f["status"] == "ERROR" %}class="color-danger"{% endif %}>
                                             <td><input type="checkbox" 
                                                     value="{{ f["id"] }}" 
                                                     name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
@@ -248,12 +253,58 @@
                                             <td class="collapse">{{ f["comments"] }}</td>
                                             <td class="collapse">{% for t in f["tags"] %}{{t}}{% endfor %}</td>
                                         </tr>
+                                        {% endif %}
                                         {% endfor %}
                                     </table>
                                 </div>
 
                                 
                                 <div id="browser_inprogress" class="collapse" >
+                                    <h1>Files uploads</h1>
+                                    <table id="browser_inprogress_table" class="table table-striped table-bordered" cellspacing="0" width="100%" style="margin:0">
+                                        <thead>
+                                            <tr>
+                                                <th></th>
+                                                <th>Name</th>
+                                                <th>Details</th>
+                                                <th>Progress</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        {% for f in files %}
+                                        {% if f["status"] in ["UPLOADING", "PAUSE"] %}
+                                        <tr id="fileEntry-{{ f["id"] }}" onclick="javascript:select_file('{{ f["id"] }}')" style="cursor: pointer;">
+                                            <td><input type="checkbox" 
+                                                    value="{{ f["id"] }}" 
+                                                    name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
+                                            </td>
+                                            <td>{% if f["source"]["type"] == "output" %}
+                                                {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
+                                                {% endif %}
+                                                {{ f["name"] }} 
+                                            </td>
+                                            <td>
+                                                {{f["comments"]}}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="margin:0">
+                                                    <div class="progress-bar {% if f["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
+                                                    role="progressbar" aria-valuenow="{{ f["upload_offset"] }}" aria-valuemin="0" aria-valuemax="{{ f["size"] }}" 
+                                                    style="min-width: 2em; width: {{ f["progress"] }}%;">
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ f["status"] }}</td>
+                                            <td> 
+                                                <a class="btn btn-default" title="Cancel the upload" href="#" onclick="jav"><i class="fa fa-trash" aria-hidden="true"> Delete</i></a>
+                                            </td>
+                                        </tr>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </table>
+
+                                    <h1>Runs</h1>
                                     <table id="browser_inprogress_table" class="table table-striped table-bordered" cellspacing="0" width="100%" style="margin:0">
                                         <thead>
                                             <tr>
@@ -261,33 +312,41 @@
                                                 <th>Details</th>
                                                 <th>Progress</th>
                                                 <th>Status</th>
+                                                <th>Actions</th>
                                             </tr>
                                         </thead>
-                                        {% for f in files %}
-                                        <tr id="activity_entry_{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')" onclick="javascript:select_file('{{ f["id"] }}')" style="cursor: pointer;">
-                                            <td><input type="checkbox" 
-                                                    value="{{ f["id"] }}" 
-                                                    name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
+                                        {% for r in runs %}
+                                        {% if r["status"] in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"] %}
+                                        <tr id="run_entry_{{ r["id"] }}" onclick="javascript:show_tab('browser_run','{{r["id"]}}')" onmouseover="javascript:display_status_bar('{{ r["id"] }}')" style="cursor: pointer;">
+                                            <td>
+                                                {{ r["pipeline_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> {{ r["name"] }} 
+                                            <td>
+                                                
                                             </td>
-                                            <td>{% if f["source"]["type"] == "output" %}
-                                                {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
-                                                {% endif %}
-                                                {{ f["name"] }} 
-                                                {% if f["comments"] %}
-                                                <a href="#" data-toggle="tooltip" data-placement="right" title="{{f["comments"]}}"><i class="fa fa-info-circle" aria-hidden="true"></i></a>
-                                                {% endif %}
+                                            <td>
+                                                <div class="progress" style="margin:0">
+                                                    <div class="progress-bar {% if r["status"] == "ERROR" %}progress-bar-danger{% endif -%}{% if r["status"] == "UPLOADED" or r["status"] == "CHECKED" %}progress-bar-success{% endif -%}{% if r["status"] in ["PAUSE", "WAITING"] %}progress-bar-warning{% endif -%}" 
+                                                    role="progressbar" aria-valuenow="{{ r["upload_offset"] }}" aria-valuemin="0" aria-valuemax="{{ r["size"] }}" 
+                                                    style="min-width: 2em; width: {{ r["progress"] }}%;">
+                                                    </div>
+                                                </div>
                                             </td>
-                                            <td>{{ f["size"] }}</td>
-                                            <td>{{ f["create_date"] }}</td>
-                                            <td class="collapse">{{ f["comments"] }}</td>
-                                            <td class="collapse">{% for t in f["tags"] %}{{t}}{% endfor %}</td>
+                                            <td>{{ r["status"] }}</td>
+                                            <td> 
+                                                <a class="btn btn-default" title="Cancel the upload" href="#" onclick="jav"><i class="fa fa-trash" aria-hidden="true"> Delete</i></a>
+                                            </td>
+
+                                            <td class="collapse">{{ r["comments"] }}</td>
+                                            <td class="collapse">{% for t in r["tags"] %}{{t}}{% endfor %}</td>
                                         </tr>
+                                        {% endif %}
                                         {% endfor %}
                                     </table>
                                 </div>
 
                                 <div id="browser_run" class="collapse" >
                                     <button id="browser_run_monitoring_refresh" type="button" class="btn btn-primary" style="display; block; float:right; margin-top:-10px; margin-right:10px" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button>
+                                    <button id="browser_run_monitoring_refresh" type="button" class="btn btn-danger" style="display; block; float:right; margin-top:-10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
                                     <h3 id="browser_run_name" style="margin-left: 20px;"></h3>
                                     <p id="browser_run_details" style="margin-left: 58px; color:#999; margin-top:10px;"></p>
                                     <nav class="navbar navbar-default" style="margin-bottom: 0;">

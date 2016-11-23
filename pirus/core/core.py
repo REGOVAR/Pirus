@@ -165,11 +165,14 @@ class FileManager:
         pfile.status = file_status
         pfile.path = new_path
         pfile.save()
+        # Notify all about the new status
+        # TODO : pirus_core.notify_all()
         # TODO : check if run was waiting the end of the upload to start
 
 
     async def from_download(self, url, metadata={}):
         """ Download a file from url and create a new Pirus file. """
+
         name = str(uuid.uuid4())
         filepath = os.path.join(FILES_DIR, name)
         # get request and write file
@@ -267,16 +270,16 @@ class PipelineManager:
 
 
 
-    def get_from_id(self, pipe_id, sublvl=0):
+    def get_from_id(self, pipe_id, sublvl=0, fields=None):
         pipe = Pipeline.from_id(pipe_id)
         if pipe == None:
             raise PirusException("No pipeline with id " + str(pipe_id))
-        return pipe.export_client_data(sublvl)
+        return pipe.export_client_data(sublvl, fields)
 
 
 
-    def get_from_ids(self, pipe_ids, sublvl=0):
-        return [p.export_client_data(sublvl) for p in Pipeline.from_id(pipe_ids)]
+    def get_from_ids(self, pipe_ids, sublvl=0, fields=None):
+        return [p.export_client_data(sublvl, fields) for p in Pipeline.from_id(pipe_ids)]
 
 
 
@@ -544,16 +547,16 @@ class RunManager:
 
 
 
-    def get_from_id(self, run_id, sublvl=0):
+    def get_from_id(self, run_id, sublvl=0, fields=None):
         run = Run.from_id(run_id)
         if run == None:
             raise PirusException("No run with id " + str(run_id))
-        return run.export_client_data(sublvl)
+        return run.export_client_data(sublvl, fields)
 
 
 
-    def get_from_ids(self, file_ids, sublvl=0):
-        return [r.export_client_data(sublvl) for r in Run.from_id(file_ids)]
+    def get_from_ids(self, file_ids, sublvl=0, fields=None):
+        return [r.export_client_data(sublvl, fields) for r in Run.from_id(file_ids)]
 
 
 
@@ -707,19 +710,45 @@ class RunManager:
         run = Run.from_id(run_id)
         if run == None:
             raise PirusException("Unable to find the run with id " + str(run_id))
-        if run.status in ["INITIALIZING", "FINISHING", "ERROR", "DONE", "CANCELED"]:
-            raise PirusException("No monitoring data for the run " + str(run_id))
 
-        out = subprocess.check_output(["lxc", "info", run.lxd_container])
-        result = {}
-        for l in out.decode().split('\n'):
-            data = l.split(': ')
-            if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
-                result.update({data[0].strip(): data[1]})
-                
+        pipeline = Pipeline.from_id(run.pipeline_id)
+        # Result
+        result = {
+            "name" : run.name,
+            "pipeline_icon" : pipeline.icon_url,
+            "pipeline_name" : pipeline.name,
+            "id" : str(run.id),
+            "status" : run.status,
+            "vm" : {}
+        }
+
+        # Lxd monitoring data
+        try:
+            # TODO : to be reimplemented with pylxd api when this feature will be available :)
+            out = subprocess.check_output(["lxc", "info", run.lxd_container])
+            for l in out.decode().split('\n'):
+                data = l.split(': ')
+                if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
+                    result["vm"].update({data[0].strip(): data[1]})
+            result.update({"vm_info" : True})
+        except Exception as error:
+            out = "No virtual machine available for this run."
+            result.update({"vm" : out, "vm_info" : False})
+
+        # Logs tails
+        try: 
+            out_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode()
+        except Exception as error:
+            out_tail = "No stdout log of the run."
+
+        try: 
+            err_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
+        except Exception as error:
+            err_tail = "No stderr log of the run."
+
         result.update({
-            "out_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode(), 
-            "err_tail" : subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
+            "out_tail" : out_tail, 
+            "err_tail" : err_tail
         })
         return result
 

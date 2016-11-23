@@ -128,7 +128,7 @@ class PirusFile(Document):
         pfile.path = os.path.join(TEMP_DIR, str(uuid.uuid4()))
         pfile.size = int(file_size)
         pfile.upload_offset = 0
-        pfile.status = "WAITING"
+        pfile.status = "UPLOADING"
         pfile.create_date = str(datetime.datetime.now().timestamp())
         pfile.source =  {"type" : "upload"}
         pfile.save()
@@ -241,36 +241,25 @@ class Pipeline(Document):
     def import_data(self, data):
         try:
             # Required fields
-            self.name           = data['name']
-            self.pirus_api      = data["pirus_api"]
-            self.size           = int(data["size"])
-            self.upload_offset  = int(data["upload_offset"])
-            self.status         = data["status"]
-            self.pipeline_file  = data["pipeline_file"]
-            # Optional fields
-            if "description" in data.keys():
-                self.description = data["description"]
-            if "version" in data.keys():
-                self.version = data['version']
-            if "license" in data.keys():
-                self.license = data["license"]
-            if "developers" in data.keys():
-                self.developers  = data["developers"]
-            if "root_path" in data.keys():
-                self.root_path = data['root_path']
-            if "lxd_alias" in data.keys():
-                self.lxd_alias = data['lxd_alias']
-            if "lxd_inputs_path" in data.keys():
-                self.lxd_inputs_path = data['lxd_inputs_path']
-            if "lxd_outputs_path" in data.keys():
-                self.lxd_outputs_path = data['lxd_outputs_path']
-            if "lxd_logs_path" in data.keys():
-                self.lxd_logs_path = data['lxd_logs_path']
-            if "lxd_db_path" in data.keys():
-                self.lxd_db_path = data['lxd_db_path']
-            if "lxd_run_cmd" in data.keys():
-                self.lxd_run_cmd = data['lxd_run_cmd']
-            if "form_file" in data.keys():
+            if "name"             in data.keys(): self.name             = data['name']
+            if "pirus_api"        in data.keys(): self.pirus_api        = data["pirus_api"]
+            if "size"             in data.keys(): self.size             = int(data["size"])
+            if "upload_offset"    in data.keys(): self.upload_offset    = int(data["upload_offset"])
+            if "status"           in data.keys(): self.status           = data["status"]
+            if "pipeline_file"    in data.keys(): self.pipeline_file    = data["pipeline_file"]
+            if "description"      in data.keys(): self.description      = data["description"]
+            if "version"          in data.keys(): self.version          = data['version']
+            if "license"          in data.keys(): self.license          = data["license"]
+            if "developers"       in data.keys(): self.developers       = data["developers"]
+            if "root_path"        in data.keys(): self.root_path        = data['root_path']
+            if "lxd_alias"        in data.keys(): self.lxd_alias        = data['lxd_alias']
+            if "lxd_inputs_path"  in data.keys(): self.lxd_inputs_path  = data['lxd_inputs_path']
+            if "lxd_outputs_path" in data.keys(): self.lxd_outputs_path = data['lxd_outputs_path']
+            if "lxd_logs_path"    in data.keys(): self.lxd_logs_path    = data['lxd_logs_path']
+            if "lxd_db_path"      in data.keys(): self.lxd_db_path      = data['lxd_db_path']
+            if "lxd_run_cmd"      in data.keys(): self.lxd_run_cmd      = data['lxd_run_cmd']
+            
+            if "form_file"  in data.keys():
                 self.form_file = data['form_file']
                 self.form_url = "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"
             if "icon_file" in data.keys():

@@ -27,7 +27,6 @@ from api_rest.tus import tus_manager
 
 
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # COMMON TOOLS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -72,6 +71,8 @@ def notify_all(src, msg):
         if src != ws[1]:
             ws[0].send_str(msg)
 
+# Give to the core the delegate to call to notify all via websockets
+pirus.set_notify_all(notify_all)
 
 
 
@@ -157,8 +158,8 @@ class WebsiteHandler:
             "runs"     : pirus.runs.get(None, None, ['-start']), 
             "hostname" : HOSTNAME
         }
-        for f in data["files"]:
-            f.update({"size" : humansize(f["size"])})
+        for f in data["files"]: 
+            f.update({"size" : humansize(f["size"]), "progress" : int(f["upload_offset"]) / int(f["size"]) * 100})
         return data
 
 
@@ -217,42 +218,42 @@ class FileHandler:
         
 
 
-
-    async def upload_simple(self, request):
-        """
-            "Simple" upload (synchrone and not resumable)
-        """
-        name = str(uuid.uuid4())
-        path = os.path.join(FILES_DIR, name)
-        plog.info('I: Start file uploading : ' + path)
-        # 1- Retrieve file from post request
-        data = await request.post()
-        uploadFile = data['uploadFile']
-        comments = None
-        tags = None
-        if "comments" in data.keys():
-            comments = data['comments'].strip()
-        if "tags" in data.keys():
-            tmps = data['tags'].split(',')
-            tags = []
-            for i in tmps:
-                i2 = i.strip()
-                if i2 != "":
-                    tags.append(i2)
-        # 2- save file on the server 
-        try:
-            with open(path, 'bw+') as f:
-                f.write(uploadFile.file.read())
-        except:
-            # TODO : manage error
-            raise PirusException("Bad pirus pipeline format : Manifest file corrupted.")
-        plog.info('I: File uploading done : ' + path)
-        # 3- save file on the database
-        pirusfile = pirus.files.register(uploadFile.filename, path, {
-            "tags"          : tags,
-            "comments"      : comments
-        })
-        return rest_success(pirusfile)
+    # UPLOAD is now manage using TUS.IO protocol
+    # async def upload_simple(self, request):
+    #     """
+    #         "Simple" upload (synchrone and not resumable)
+    #     """
+    #     name = str(uuid.uuid4())
+    #     path = os.path.join(FILES_DIR, name)
+    #     plog.info('I: Start file uploading : ' + path)
+    #     # 1- Retrieve file from post request
+    #     data = await request.post()
+    #     uploadFile = data['uploadFile']
+    #     comments = None
+    #     tags = None
+    #     if "comments" in data.keys():
+    #         comments = data['comments'].strip()
+    #     if "tags" in data.keys():
+    #         tmps = data['tags'].split(',')
+    #         tags = []
+    #         for i in tmps:
+    #             i2 = i.strip()
+    #             if i2 != "":
+    #                 tags.append(i2)
+    #     # 2- save file on the server 
+    #     try:
+    #         with open(path, 'bw+') as f:
+    #             f.write(uploadFile.file.read())
+    #     except:
+    #         # TODO : manage error
+    #         raise PirusException("Bad pirus pipeline format : Manifest file corrupted.")
+    #     plog.info('I: File uploading done : ' + path)
+    #     # 3- save file on the database
+    #     pirusfile = pirus.files.register(uploadFile.filename, path, {
+    #         "tags"          : tags,
+    #         "comments"      : comments
+    #     })
+    #     return rest_success(pirusfile)
 
 
 
@@ -302,7 +303,7 @@ class FileHandler:
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
         id = request.match_info.get('file_id', -1)
-        pirus_file = pirus.files.from_id(id)
+        pirus_file = pirus.files.get_from_id(id)
         if pirus_file == None:
             return rest_error("File with id " + str(id) + "doesn't exits.")
         file = None
@@ -318,12 +319,12 @@ class FileHandler:
         # 1- Retrieve request parameters
         pipe_id = request.match_info.get('pipe_id', -1)
         filename = request.match_info.get('filename', None)
-        pipeline = Pipeline.from_id(pipe_id)
+        pipeline = pirus.pipelines.get_from_id(pipe_id, 0, ["root_path"])
         if pipeline == None:
             return rest_error("No pipeline with id " + str(pipe_id))
         if filename == None:
             return rest_error("No filename provided")
-        path = os.path.join(pipeline.root_path, filename)
+        path = os.path.join(pipeline["root_path"], filename)
         file = None
         if os.path.isfile(path):
             with open(path, 'br') as content_file:
@@ -381,7 +382,7 @@ class PipelineHandler:
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        pipe = pirus.pipelines.from_id(pipe_id)
+        pipe = pirus.pipelines.get_from_id(pipe_id)
         if pipe == None:
             return rest_error("No pipeline with id " + str(pipe_id))
         print ("PipelineHandler.get_details('" + str(pipe_id) + "', sublvl=" + str(sub_level_loading) + ")")
@@ -451,14 +452,14 @@ class RunHandler:
     def get_details(self, request):
         run_id = request.match_info.get('run_id', -1)
         sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        run = pirus.runs.from_id(run_id)
+        run = pirus.runs.get_from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         return rest_success(run.export_client_data(sub_level_loading))
 
 
     def download_file(self, run_id, filename, location=RUNS_DIR):
-        run = pirus.runs.from_id(run_id)
+        run = pirus.runs.get_from_id(run_id)
         if run == None:
             return rest_error("No run with id " + str(run_id))
         path = os.path.join(location, run.lxd_container, filename)
@@ -502,15 +503,15 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = pirus.runs.from_id(run_id)
+        run = pirus.runs.get_from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
         result={"inputs" : [], "outputs":[]}
         # Retrieve inputs files data of the run
-        files = pirus.files.from_ids(run.inputs)
+        files = pirus.files.get_from_ids(run["inputs"])
         result["inputs"] = [a.export_client_data() for a in files]
         # Retrieve outputs files data of the run
-        files = pirus.files.from_ids(run.outputs)
+        files = pirus.files.get_from_ids(run["outputs"])
         result["outputs"] = [a.export_client_data() for a in files]
         return rest_success(result)
 
@@ -524,7 +525,7 @@ class RunHandler:
         # 1- Retrieve data from request
         data = await request.json()
         run_id = request.match_info.get('run_id', -1)
-        run = pirus.runs.from_id(run_id)
+        run = pirus.runs.get_from_id(run_id)
         if run is not None:
             if "progress" in data.keys():
                 run.progress = data["progress"]
@@ -585,12 +586,8 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = pirus.runs.from_id(run_id)
-        if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
-        if run.status in ["WAITING", "RUNNING"]:
-            subprocess.Popen(["lxc", "pause", run.lxd_container])
-            self.set_status(run, "PAUSE")
+        result, run = pirus.runs.pause(run_id)
+        if result:
             return rest_success(run.export_client_data())
         return rest_error("Unable to pause the run " + str(run_id))
 
@@ -599,12 +596,8 @@ class RunHandler:
         run_id  = request.match_info.get('run_id', -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = pirus.runs.from_id(run_id)
-        if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
-        if run.status == "PAUSE":
-            subprocess.Popen(["lxc", "start", run.lxd_container])
-            self.set_status(run, "RUNNING")
+        result, run = pirus.runs.play(run_id)
+        if result:
             return rest_success(run.export_client_data())
         return rest_error("Unable to restart the run " + str(run_id))
 
@@ -613,62 +606,18 @@ class RunHandler:
         run_id  = request.match_info.get('run_id',  -1)
         if run_id == -1:
             return rest_error("Id not found")
-        run = pirus.runs.from_id(run_id)
-        if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
-        if run.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
-            subprocess.Popen(["lxc", "delete", run.lxd_container, "--force"])
-            self.set_status(run, "CANCELED")
+        result, run = pirus.runs.stop(run_id)
+        if result:
             return rest_success(run.export_client_data())
         return rest_error("Unable to stop the run " + str(run_id))
 
 
     def get_monitoring(self, request):
         run_id  = request.match_info.get('run_id',  -1)
-        if run_id == -1:
-            return rest_error("Id not found")
-        run = pirus.runs.from_id(run_id)
-        if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
-        pipeline = pirus.pipelines.get_from_id(run.pipeline_id)
-        # Result
-        result = {
-            "name" : run.name,
-            "pipeline_icon" : pipeline["icon_url"],
-            "pipeline_name" : pipeline["name"],
-            "id" : str(run.id),
-            "status" : run.status,
-            "vm" : {}
-        }
-
-        # Lxd monitoring data
         try:
-            # TODO : to be reimplemented with pylxd api when this feature will be available :)
-            out = subprocess.check_output(["lxc", "info", run.lxd_container])
-            for l in out.decode().split('\n'):
-                data = l.split(': ')
-                if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
-                    result["vm"].update({data[0].strip(): data[1]})
-            result.update({"vm_info" : True})
+            result = pirus.runs.monitoring(run_id)
         except Exception as error:
-            out = "No virtual machine available for this run."
-            result.update({"vm" : out, "vm_info" : False})
-
-        # Logs tails
-        try: 
-            out_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/out.log"), "-n", "100"]).decode()
-        except Exception as error:
-            out_tail = "No stdout log of the run."
-
-        try: 
-            err_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, run.lxd_container, "logs/err.log"), "-n", "100"]).decode()
-        except Exception as error:
-            err_tail = "No stderr log of the run."
-
-        result.update({
-            "out_tail" : out_tail, 
-            "err_tail" :err_tail
-        })
+            return rest_error("Unable to retrieve monitoring info for the runs with id " + str(run_id) + ". " + error.msg)
         return rest_success(result)
 
 

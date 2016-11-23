@@ -104,21 +104,26 @@ function show_tab(tab_id, run_id)
 var demo_pirus_selection = [];
 function select_file(file_id)
 {
+    var count = Object.keys(demo_pirus_selection).length;
     var check = !$('#fileEntry-' + file_id + ' input')[0].checked;
     $('#fileEntry-' + file_id + ' input').prop('checked', check);
     var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').html().trim();
     if (check)
     {
+        if (count == 0) $('#browserNavSelectionPanel > ul').html('');
         demo_pirus_selection[file_id] = file_name;
         $('#browserNavSelectionPanel ul').append('<li id="browserNavSelectionPanel-' + file_id + '">' + file_name + '</li>');
+        count += 1
     }
     else
     {
         delete demo_pirus_selection[file_id];
         $('#browserNavSelectionPanel-' + file_id).remove();
+        if (count == 1) $('#browserNavSelectionPanel > ul').html('<li class="detail">No file selected</li>');
+        count -= 1
     }
-    var count = Object.keys(demo_pirus_selection).length;
-    $('#selection_count').html(count == 0 ? "" : count);
+    
+    $('#selection_count').html(count == 0 ? 0 : count);
 }
 
 var activity_inprogress_count = 0
