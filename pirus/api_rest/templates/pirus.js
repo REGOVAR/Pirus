@@ -164,6 +164,43 @@ function add_new_activity_to_demo_browser(type, id)
 
 
 
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* Filter method
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
+$("#browser_filter_input").keyup(function () 
+{ 
+    // Split the current value of searchInput
+    var data = this.value.toUpperCase().split(" ");
+    // Create a jquery object of the rows
+    var jo = $("#browser_files_table > tbody").find("tr");
+    if (this.value == "") 
+    {
+        jo.show();
+        return;
+    }
+    // hide all the rows
+    jo.hide();
+
+    //Recusively filter the jquery object to get results.
+    jo.filter(function (i, v) 
+    {
+        var $t = $(this);
+        for (var d = 0; d < data.length; ++d) 
+        {
+            if ($t.text().toUpperCase().indexOf(data[d]) > -1) 
+            {
+                return true;
+            }
+        }
+        return false;
+    })
+    //show the rows that match.
+    .show();
+});
+
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* New Run Popup methods
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
