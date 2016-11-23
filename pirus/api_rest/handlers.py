@@ -521,13 +521,10 @@ class RunHandler:
         run = pirus.runs.get_from_id(run_id)
         if run == None:
             return rest_error("Unable to find the run with id " + str(run_id))
-        result={"inputs" : [], "outputs":[]}
-        # Retrieve inputs files data of the run
-        files = pirus.files.get_from_ids(run["inputs"])
-        result["inputs"] = [a.export_client_data() for a in files]
-        # Retrieve outputs files data of the run
-        files = pirus.files.get_from_ids(run["outputs"])
-        result["outputs"] = [a.export_client_data() for a in files]
+        result={
+            "inputs" : pirus.files.get_from_ids([f["id"] for f in run["inputs"]]),
+            "outputs": pirus.files.get_from_ids([f["id"] for f in run["outputs"]])
+        }
         return rest_success(result)
 
     def get_file(self, request):
