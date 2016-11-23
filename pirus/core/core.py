@@ -166,7 +166,7 @@ class FileManager:
         pfile.path = new_path
         pfile.save()
         # Notify all about the new status
-        # TODO : pirus_core.notify_all()
+        pirus_core.notify_all({"action" : "progress"})
         # TODO : check if run was waiting the end of the upload to start
 
 

@@ -140,6 +140,8 @@ def process_generic_get(query_string, allowed_fields):
 
 
 
+1790746729373C
+1631405108731
 
 
 
@@ -153,13 +155,18 @@ class WebsiteHandler:
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
         data = {
-            "files"    : pirus.files.get(None, None, ['-create_date']),
-            "pipes"    : pirus.pipelines.get(None, None, ['-name'], None, None, 2),
-            "runs"     : pirus.runs.get(None, None, ['-start']), 
+            "files_done"       : [f in pirus.files.get(None, None, ['-create_date']) if f["status"] in ["UPLOADED", "CHECKED", "ERROR"]],
+            "files_inprogress" : [f in pirus.files.get(None, None, ['-create_date']) if f["status"] in ["UPLOADING", "PAUSE"]],
+            "pipes"            : pirus.pipelines.get(None, None, ['-name'], None, None, 2),
+            "runs_done"        : [r in pirus.runs.get(None, None, ['-start']) if r["status"] in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]], 
+            "runs_inprogress"  : [r in pirus.runs.get(None, None, ['-start']) if r["status"] in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]], 
             "hostname" : HOSTNAME
         }
-        for f in data["files"]: 
-            f.update({"size" : humansize(f["size"]), "progress" : int(f["upload_offset"]) / int(f["size"]) * 100})
+        for f in data["files_done"]: 
+            f.update({"size" : humansize(f["size"])})
+
+        for f in data["files_inprogress"]: 
+            f.update({"size" : humansize(f["size"]), "upload_offset": humansize(f["upload_offset"]) , "progress" : int(f["upload_offset"]) / int(f["size"]) * 100})
         return data
 
 

@@ -274,36 +274,38 @@
                                                 <th>Actions</th>
                                             </tr>
                                         </thead>
-                                        {% for f in files %}
-                                        {% if f["status"] in ["UPLOADING", "PAUSE"] %}
-                                        <tr id="fileEntry-{{ f["id"] }}" onclick="javascript:select_file('{{ f["id"] }}')" style="cursor: pointer;">
-                                            <td><input type="checkbox" 
-                                                    value="{{ f["id"] }}" 
-                                                    name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
-                                            </td>
-                                            <td>{% if f["source"]["type"] == "output" %}
-                                                {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
-                                                {% endif %}
-                                                {{ f["name"] }} 
-                                            </td>
-                                            <td>
-                                                {{f["comments"]}}
-                                            </td>
-                                            <td>
-                                                <div class="progress" style="margin:0">
-                                                    <div class="progress-bar {% if f["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
-                                                    role="progressbar" aria-valuenow="{{ f["upload_offset"] }}" aria-valuemin="0" aria-valuemax="{{ f["size"] }}" 
-                                                    style="min-width: 2em; width: {{ f["progress"] }}%;">
+                                        <tbody>
+                                            {% for f in files %}
+                                            {% if f["status"] in ["UPLOADING", "PAUSE"] %}
+                                            <tr id="fileEntry-{{ f["id"] }}" onclick="javascript:select_file('{{ f["id"] }}')" style="cursor: pointer;">
+                                                <td><input type="checkbox" 
+                                                        value="{{ f["id"] }}" 
+                                                        name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
+                                                </td>
+                                                <td>{% if f["source"]["type"] == "output" %}
+                                                    {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
+                                                    {% endif %}
+                                                    {{ f["name"] }} 
+                                                </td>
+                                                <td>
+                                                    {{f["comments"]}}
+                                                </td>
+                                                <td>
+                                                    <div class="progress" style="margin:0">
+                                                        <div class="progress-bar {% if f["status"] == "PAUSE" %}progress-bar-warning{% endif -%}" 
+                                                        role="progressbar" aria-valuenow="{{ f["upload_offset"] }}" aria-valuemin="0" aria-valuemax="{{ f["size"] }}" 
+                                                        style="min-width: 2em; width: {{ f["progress"] }}%;">
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                            <td>{{ f["status"] }}</td>
-                                            <td> 
-                                                <a class="btn btn-default" title="Cancel the upload" href="#" onclick="jav"><i class="fa fa-trash" aria-hidden="true"> Delete</i></a>
-                                            </td>
-                                        </tr>
-                                        {% endif %}
-                                        {% endfor %}
+                                                </td>
+                                                <td>{{ f["status"] }}</td>
+                                                <td> 
+                                                    <a class="btn btn-default" title="Cancel the upload" href="#" onclick="jav"><i class="fa fa-trash" aria-hidden="true"> Delete</i></a>
+                                                </td>
+                                            </tr>
+                                            {% endif %}
+                                            {% endfor %}
+                                        </tbody>
                                     </table>
 
                                     <h1>Runs</h1>
@@ -347,10 +349,19 @@
                                 </div>
 
                                 <div id="browser_run" class="collapse" >
-                                    <button id="browser_run_monitoring_refresh" type="button" class="btn btn-primary" style="display; block; float:right; margin-top:-10px; margin-right:10px" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button>
-                                    <button id="browser_run_monitoring_refresh" type="button" class="btn btn-danger" style="display; block; float:right; margin-top:-10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
-                                    <h3 id="browser_run_name" style="margin-left: 20px;"></h3>
-                                    <p id="browser_run_details" style="margin-left: 58px; color:#999; margin-top:10px;"></p>
+                                    <div id="browser_run_monitoring_header" class="">
+                                        <div id="browser_run_monitoring_progress" style="right:50%">&nbsp;
+                                        </div>
+
+                                        <div style="position:absolute; top:0; bottom:0; left:0; right:0">
+                                            <button id="browser_run_monitoring_refresh" type="button" class="btn btn-primary" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button>
+                                            <button id="browser_run_monitoring_delete" type="button" class="btn btn-danger" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
+                                        
+                                            <h3 id="browser_run_name" style="margin-left: 20px;"></h3>
+                                            <p id="browser_run_details" style="margin-left: 58px; color:#999; margin-top:10px;"></p>
+                                        </div> 
+                                        
+                                    </div>
                                     <nav class="navbar navbar-default" style="margin-bottom: 0;">
                                         <div id="navbar" class="navbar-collapse" style="height: 1px;">
                                             <ul class="nav navbar-nav">
