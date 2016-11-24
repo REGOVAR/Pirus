@@ -100,7 +100,7 @@ table tr:hover
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* Demo - Browser - Run Panel
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-#browser_run_monitoring_header
+#browser_run_monitoring_header, #browser_file_header, #browser_pipeline_header
 {
     padding-top:20px; 
     padding-bottom:10px;  
@@ -108,13 +108,13 @@ table tr:hover
     height:110px;
     background-color: #eee;
 }
-#browser_run_monitoring_header.green  { background-color:#dcefdc; }
-#browser_run_monitoring_header.orange { background-color:#fbe9d0; }
-#browser_run_monitoring_header.red    { background-color:#f6d6d5; }
-#browser_run_monitoring_header.blue   { background-color:#d7e6f4; }
+#browser_run_monitoring_header.green,  #browser_file_header.green,  #browser_pipeline_header.green  { background-color:#dcefdc; }
+#browser_run_monitoring_header.orange, #browser_file_header.orange, #browser_pipeline_header.orange { background-color:#fbe9d0; }
+#browser_run_monitoring_header.red,    #browser_file_header.red,    #browser_pipeline_header.red    { background-color:#f6d6d5; }
+#browser_run_monitoring_header.blue,   #browser_file_header.blue,   #browser_pipeline_header.blue   { background-color:#d7e6f4; }
 
 
-#browser_run_monitoring_progress
+#browser_run_monitoring_progress, #browser_file_progress, #browser_pipeline_progress
 {
     background-image: linear-gradient(45deg,
         rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%,
@@ -128,16 +128,17 @@ table tr:hover
     bottom:0; 
     left:0; 
 }
-#browser_run_monitoring_header.green  #browser_run_monitoring_progress { background-color:#5cb85c; }
-#browser_run_monitoring_header.orange #browser_run_monitoring_progress { background-color:#f0ad4e; }
-#browser_run_monitoring_header.red    #browser_run_monitoring_progress { background-color:#d9534f; }
-#browser_run_monitoring_header.blue   #browser_run_monitoring_progress { background-color:#337ab7; }
+
+#browser_run_monitoring_header.green  div:first-of-type, #browser_file_header.green  div:first-of-type, #browser_pipeline_progress.green  div:first-of-type { background-color:#5cb85c; }
+#browser_run_monitoring_header.orange div:first-of-type, #browser_file_header.orange div:first-of-type, #browser_pipeline_progress.orange div:first-of-type { background-color:#f0ad4e; }
+#browser_run_monitoring_header.red    div:first-of-type, #browser_file_header.red    div:first-of-type, #browser_pipeline_progress.red    div:first-of-type { background-color:#d9534f; }
+#browser_run_monitoring_header.blue   div:first-of-type, #browser_file_header.blue   div:first-of-type, #browser_pipeline_progress.blue   div:first-of-type { background-color:#337ab7; }
+#browser_run_monitoring_header.green  p, #browser_file_header.green  p, #browser_pipeline_progress.green  p { color:#173517; }
+#browser_run_monitoring_header.orange p, #browser_file_header.orange p, #browser_pipeline_progress.orange p { color:#462c06; }
+#browser_run_monitoring_header.red    p, #browser_file_header.red    p, #browser_pipeline_progress.red    p { color:#3f0f0e; }
+#browser_run_monitoring_header.blue   p, #browser_file_header.blue   p, #browser_pipeline_progress.blue   p { color:#11283c; }
 
 
-#browser_run_monitoring_header.green  #browser_run_details, #browser_run_monitoring_header.green   #browser_run_status { color:#173517; }
-#browser_run_monitoring_header.orange #browser_run_details, #browser_run_monitoring_header.orange  #browser_run_status { color:#462c06; }
-#browser_run_monitoring_header.red    #browser_run_details, #browser_run_monitoring_header.red     #browser_run_status { color:#3f0f0e; }
-#browser_run_monitoring_header.blue   #browser_run_details, #browser_run_monitoring_header.blue    #browser_run_status { color:#11283c; }
 
 
 

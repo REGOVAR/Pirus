@@ -1,4 +1,10 @@
 
+var demo_pirus_displayed_run;
+var demo_pirus_displayed_file;
+var demo_pirus_displayed_pipe;
+
+var demo_pirus_selection = [];
+
 
 
 
@@ -6,7 +12,8 @@
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* Demo browser methods
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
-var displayed_run;
+
+
 function display_status_bar(file_id)
 {
     var details =  $('#fileEntry-' + file_id + ' td:nth-child(5)').html();
@@ -14,7 +21,7 @@ function display_status_bar(file_id)
 }
 
 
-function show_tab(tab_id, run_id)
+function show_tab(tab_id, id)
 {
     $('#browser_content > div').each( function( index, element )
     {
@@ -25,8 +32,8 @@ function show_tab(tab_id, run_id)
     // Manage display of run data
     if (tab_id == 'browser_run')
     {        
-        displayed_run = run_id;
-        $.ajax({ url: rootURL + "/run/" + run_id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
+        demo_pirus_displayed_run = id;
+        $.ajax({ url: rootURL + "/run/" + id + "/monitoring", type: "GET"}).done(function(jsonFile)
         {
             data = jsonFile["data"];
             progress = Math.round(parseInt(data["progress"]["value"]) / Math.max(1, (parseInt(data["progress"]["max"]) - parseInt(data["progress"]["min"]))) * 100);
@@ -68,12 +75,12 @@ function show_tab(tab_id, run_id)
             $("#browser_run_monitoring_stderr").text((data["err_tail"] == "") ? "... No log on stdErr ..." : data["err_tail"]);
             $("#browser_run_monitoring_stderr").animate({scrollTop : $("#browser_run_monitoring_stderr")[0].scrollHeight}, 1000 );
 
-            $("#browser_run_monitoring_refresh").attr("onclick", "javascript:monitor_run('"+run_id+"')");
+            $("#browser_run_monitoring_refresh").attr("onclick", "javascript:monitor_run('"+id+"')");
         });
 
 
         // Inputs / outputs
-        $.ajax({ url: rootURL + "/run/" + run_id + "/io", type: "GET", async: false}).done(function(jsonFile)
+        $.ajax({ url: rootURL + "/run/" + id + "/io", type: "GET"}).done(function(jsonFile)
         {
             data = jsonFile["data"];
             if (data["inputs"].length > 0)
@@ -107,10 +114,61 @@ function show_tab(tab_id, run_id)
             }
         });
     }
+
+
+    // Display of a file
+    if (tab_id == "browser_file")
+    {
+        demo_pirus_displayed_file = id;
+        $.ajax({ url: rootURL + "/file/" + id, type: "GET"}).done(function(jsonFile)
+        {
+            data = jsonFile["data"];
+            progress = Math.round(data["upload_offset"] / Math.max(1, data["size"]) * 100);
+
+            // Header style / control according to the status of the file
+            if ($.inArray(data["status"],["PAUSE"]) > -1) $('#browser_file_header').attr('class', 'orange');
+            if ($.inArray(data["status"], ["ERROR"]) > -1) $('#browser_file_header').attr('class', 'red');
+            if ($.inArray(data["status"], ["UPLOADING"]) > -1) $('#browser_file_header').attr('class', 'blue');
+            if ($.inArray(data["status"],["UPLOADED", "CHECKED"]) > -1) $('#browser_file_header').attr('class', 'green');
+            $('#browser_file_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
+
+            
+            $("#browser_file_icon").html(get_file_icon(data["type"]));
+            $("#browser_file_name").html(data["name"]);
+            if ($.inArray(data["status"], ["UPLOADING", "PAUSE", "ERROR"]) > -1)
+                $("#browser_file_details").html("Size : {0} / <b>{1}</b>".format(humansize(data["upload_offset"]), humansize(data["size"])));
+            else
+                $("#browser_file_details").html("Size : <b>{0}</b>".format(humansize(data["size"])));
+            if ($.inArray(data["status"],["PAUSE"]) > -1)
+                $("#browser_file_status").html(data["status"] + "<br/><span style=\"font-size:12px; font-style:italic; font-weight:100;\">since " + data["status"] + "</span>");
+            else
+                $("#browser_file_status").html(data["status"]);
+
+            // Infos panel
+            html = "<ul>";
+            for (var k in data)
+            {
+                if (typeof data[k] !== 'function') 
+                {
+                    html += "<li><b>{0} : </b>{1}</li>".format(k, data[k]);
+                }
+            }
+            html += "</ul>";
+            $("#file_tab_infos").html(html);
+
+            // Edit panel
+            $("#file_tab_edit_name").val(data["name"]);
+            $("#file_tab_edit_type").val(data["type"]);
+            $("#file_tab_edit_comments").val(data["comments"]);
+            $("#file_tab_edit_tags").val(data["tags"]);
+
+            // Preview panel
+            $("#file_tab_preview").html("<i>No preview available.</i>");
+        });
+    }
 }
 
 
-var demo_pirus_selection = [];
 function select_file(file_id)
 {
     var count = Object.keys(demo_pirus_selection).length;
@@ -479,3 +537,24 @@ function humansize(nbytes)
     return f + " " + suffixes[i]
 }
 
+var demo_pirus_extensions = 
+{
+    "image" :   ["jpg", "jpeg", "gif", "png", "bmp", "tiff"],
+    "archive" : ["zip", "tar.gz", "tar", "tar.xz", "gz", "xz", "rar"],
+    "code" :    ["html", "htm", "py"],
+    "text" :    ["log", "txt", "vcf", "sam"],
+    "pdf" :     ["pdf"],
+    "excel" :   ["xls", "xlsx"]
+};
+function get_file_icon(extension)
+{
+    for (var k in demo_pirus_extensions)
+    {
+        if (typeof demo_pirus_extensions[k] !== 'function') 
+        {
+            if ($.inArray(extension,demo_pirus_extensions[k]) > -1)
+                return '<i class="fa fa-file-' + k +'-o" aria-hidden="true"></i>';
+        }
+    }
+    return '<i class="fa fa-file-o" aria-hidden="true"></i>'
+}
