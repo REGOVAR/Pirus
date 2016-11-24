@@ -12,10 +12,10 @@ import uuid
 import subprocess
 import requests
 
-# from config import *
+
 from core.framework import *
 from core.model import *
-from core.pirus_worker import start_run, terminate_run
+from pirus_celery import start_run, terminate_run
 
 
 
@@ -167,7 +167,8 @@ class FileManager:
         pfile.path = new_path
         pfile.save()
         # Notify all about the new status
-        pirus_core.notify_all({"action" : "progress"})
+        msg = {"action":"file_changed", "data" : [pfile.export_client_data()] }
+        pirus.notify_all(json.dumps([msg]))
         # TODO : check if run was waiting the end of the upload to start
 
 
@@ -577,10 +578,8 @@ class RunManager:
         if pipeline is None:
             # TODO : LOG rest_error("Unknow pipeline id " + str(pipeline_id))
             return None
-        
         # Create run in database.
         lxd_container = LXD_CONTAINER_PREFIX + str(uuid.uuid4())
-
         run = Run()
         run.import_data({
             "pipeline_id" : pipeline_id,
@@ -650,7 +649,6 @@ class RunManager:
         # Impossible to change state of a run in error or canceled
         if (new_status != "RUNNING" and run.status == new_status) or run.status in  ["ERROR", "CANCELED"]:
             return
-
         # Update status
         run.status = new_status
         run.save()
@@ -758,6 +756,14 @@ class RunManager:
             "err_tail" : err_tail
         })
         return result
+
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# INIT OBJECTS
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 
 

@@ -9,6 +9,9 @@ var demo_pirus_selection = [];
 
 
 
+
+
+
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 /* Demo browser methods
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
@@ -18,6 +21,76 @@ function display_status_bar(file_id)
 {
     var details =  $('#fileEntry-' + file_id + ' td:nth-child(5)').html();
     $('#demo_footer').html((details == "None") ? "&nbsp;" : details);
+}
+
+
+function run_cmd(order)
+{
+    $.ajax({ url: rootURL + "/run/" + demo_pirus_displayed_run + "/" + order, type: "GET", async: false}).done(function(jsonFile)
+    {
+        data = jsonFile["data"];
+        update_run_header(data);
+        
+    });
+}
+
+
+
+function update_run_header(data)
+{
+    progress = Math.round(parseInt(data["progress"]["value"]) / Math.max(1, (parseInt(data["progress"]["max"]) - parseInt(data["progress"]["min"]))) * 100);
+
+    // Header according the status of the run
+    $("#browser_run_name").html("Run : {0}".format(data["name"]));
+    $("#browser_run_details").html("Pipeline {0} : <b>{1} % </b>".format(data["pipeline_name"], progress));
+    $("#browser_run_status").html(data["status"]);
+    $('#browser_run_monitoring_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
+    if ($.inArray(data["status"],["PAUSE", "WAITING"]) > -1)$('#browser_run_monitoring_header').attr('class', 'orange');
+    if ($.inArray(data["status"], ["ERROR", "CANCELED"]) > -1) $('#browser_run_monitoring_header').attr('class', 'red');
+    if ($.inArray(data["status"], ["INITIALIZING", "RUNNING", "FINISHING"]) > -1) $('#browser_run_monitoring_header').attr('class', 'blue');
+    if ($.inArray(data["status"],["DONE"]) > -1) $('#browser_run_monitoring_header').attr('class', 'green');
+
+    //  controls according the status of the run
+    if ($.inArray(data["status"], ["INITIALIZING", "RUNNING", "WAITING"]) > -1) 
+    {
+        $('#browser_run_playpause').html('<i class="fa fa-pause" aria-hidden="true"></i>');
+        $('#browser_run_playpause').attr('onclick', 'javascript:run_cmd("pause");');
+        $('#browser_run_playpause').removeClass('disabled');
+        $('#browser_run_stop').removeClass('disabled');
+        $('#browser_run_monitoring_refresh').removeClass('collapse');
+    }
+    else if ($.inArray(data["status"], ["PAUSE"]) > -1) 
+    {
+        $('#browser_run_playpause').html('<i class="fa fa-play" aria-hidden="true"></i>');
+        $('#browser_run_playpause').attr('onclick', 'javascript:run_cmd("play");');
+        $('#browser_run_playpause').removeClass('disabled');
+        $('#browser_run_stop').removeClass('disabled');
+        $('#browser_run_monitoring_refresh').addClass('collapse');
+    }
+    else // DONE, CANCELED, ERROR
+    {
+        $('#browser_run_playpause').html('<i class="fa fa-play" aria-hidden="true"></i>');
+        $('#browser_run_playpause').attr('onclick', '');
+        $('#browser_run_playpause').addClass('disabled');
+        $("#browser_run_stop").attr('onclick', '');
+        $('#browser_run_stop').addClass('disabled');
+        $('#browser_run_monitoring_refresh').addClass('collapse');
+    }
+
+    // Logs 
+    if (data["vm_info"])
+    {
+        var html = "<ul>";
+        for (k in data["vm"])
+        {
+            html += "<li><b>{0} :</b> {1}</li>".format(k, data["vm"][k]);
+        }
+        $("#browser_run_monitoring_vm").html(html);
+    }
+    else
+    {
+        $("#browser_run_monitoring_vm").html("<i>{0}</i>".format(data["vm"]));
+    }
 }
 
 
@@ -33,40 +106,12 @@ function show_tab(tab_id, id)
     if (tab_id == 'browser_run')
     {        
         demo_pirus_displayed_run = id;
-        $.ajax({ url: rootURL + "/run/" + id + "/monitoring", type: "GET"}).done(function(jsonFile)
+        $.ajax({ url: rootURL + "/run/" + id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
         {
             data = jsonFile["data"];
-            progress = Math.round(parseInt(data["progress"]["value"]) / Math.max(1, (parseInt(data["progress"]["max"]) - parseInt(data["progress"]["min"]))) * 100);
 
-            // Header style / control according to the status of the run
-            if ($.inArray(data["status"],["PAUSE", "WAITING"]) > -1) $('#browser_run_monitoring_header').attr('class', 'orange');
-            if ($.inArray(data["status"], ["ERROR", "CANCELED"]) > -1) $('#browser_run_monitoring_header').attr('class', 'red');
-            if ($.inArray(data["status"], ["INITIALIZING", "RUNNING", "FINISHING"]) > -1) $('#browser_run_monitoring_header').attr('class', 'blue');
-            if ($.inArray(data["status"],["DONE"]) > -1) $('#browser_run_monitoring_header').attr('class', 'green');
-            $('#browser_run_monitoring_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
-
-            // Logs 
-            $("#browser_run_name").html("<img src=\"{0}\" width=\"30px\" style=\"vertical-align:middle\"/> Run : {1}".format(data["pipeline_icon"], data["name"]));
-            $("#browser_run_details").html("Pipeline {0} : <b>{1} % </b>".format(data["pipeline_name"], progress));
-            $("#browser_run_status").html(data["status"]);
-            $("#browser_run_playpause").attr("href", "{0}/run/{1}/{2}".format(rootURL, data["id"], (data["status"] in ["PAUSE"]) ? "play" : "pause"));
-            $("#browser_run_playpause").html((data["status"] in ["PAUSE"]) ? "<i class=\"fa fa-play\" aria-hidden=\"true\"></i>" : "<i class=\"fa fa-pause\" aria-hidden=\"true\"></i>");
-
-            $("#browser_run_stop").attr("href", "{0}/run/{1}/stop".format(rootURL, data["id"]));
-
-            if (data["vm_info"])
-            {
-                var html = "<ul>";
-                for (k in data["vm"])
-                {
-                    html += "<li><b>{0} :</b> {1}</li>".format(k, data["vm"][k]);
-                }
-                $("#browser_run_monitoring_vm").html(html);
-            }
-            else
-            {
-                $("#browser_run_monitoring_vm").html("<i>{0}</i>".format(data["vm"]));
-            }
+            update_run_header(data)
+            $("#browser_run_icon").html("<img src=\"{0}\" width=\"50px\" style=\"vertical-align:middle\"/>".format(data["pipeline_icon"]));
 
 
             $("#browser_run_monitoring_stdout").text((data["out_tail"] == "") ? "... No log on stdOut ..." : data["out_tail"]);
@@ -80,7 +125,7 @@ function show_tab(tab_id, id)
 
 
         // Inputs / outputs
-        $.ajax({ url: rootURL + "/run/" + id + "/io", type: "GET"}).done(function(jsonFile)
+        $.ajax({ url: rootURL + "/run/" + id + "/io", type: "GET", async: false}).done(function(jsonFile)
         {
             data = jsonFile["data"];
             if (data["inputs"].length > 0)
@@ -120,7 +165,7 @@ function show_tab(tab_id, id)
     if (tab_id == "browser_file")
     {
         demo_pirus_displayed_file = id;
-        $.ajax({ url: rootURL + "/file/" + id, type: "GET"}).done(function(jsonFile)
+        $.ajax({ url: rootURL + "/file/" + id, type: "GET", async: false}).done(function(jsonFile)
         {
             data = jsonFile["data"];
             progress = Math.round(data["upload_offset"] / Math.max(1, data["size"]) * 100);
@@ -403,12 +448,11 @@ function run_config_step_4()
         config = JSON.stringify(config, null, 4)
         inputs = []
 
-        debugger;
         var i = 0;
         for (var key in demo_pirus_selection)
         {
-            inputs[i] = demo_pirus_selection[key];
-            config = config.replace(new RegExp(key, 'g'), demo_pirus_selection[key]);
+            inputs[i] = key;
+            config = config.replace(new RegExp(demo_pirus_selection[key], 'g'), key);
 
             i++;
         }
@@ -449,13 +493,12 @@ function run_config_step_4()
 
 function ws_file_changed(data)
 {
-    debugger;
     jQuery.each(data, function(index, item) {
-        var percentage = (item["upload_offset"] / item["set_notify_all"] * 100).toFixed(2)
+        var percentage = (item["upload_offset"] / item["set_notify_all"] * 100).toFixed(2);
 
-        buildProgressBar(percentage, item["status"], "browser_inprogress_pipes_table_td_progress_" + item["id"])
-        var tdElement = $("#run-" + item["id"] + "-status")
-        tdElement.html(item["status"])
+        buildProgressBar(percentage, item["status"], "browser_inprogress_pipes_table_td_progress_" + item["id"]);
+        var tdElement = $("#run-" + item["id"] + "-status");
+        tdElement.html(item["status"]);
     });
     // Todo : update controls
 }
@@ -469,19 +512,37 @@ function ws_new_pipeline(msg_data)
 
 function ws_new_run(msg_data)
 {
-
 }
 
 function ws_run_changed(data)
 {
     jQuery.each(data, function(index, item) 
     {
-        var percentage = (item["progress"]["value"] / item["progress"]["max"] * 100).toFixed(2)
-        buildProgressBar(percentage, item["status"], "run-" + item["id"] + "-progress")
-        var tdElement = $("#run-" + item["id"] + "-status")
-        tdElement.html(item["status"])
+
+        var percentage = (item["progress"]["value"] / item["progress"]["max"] * 100).toFixed(2);
+
+        if (demo_pirus_displayed_run == item["id"])
+        {
+            update_run_header(item);
+        }
+
+        elmt = $('#browser_navpanel_inprogress_run_' + item["id"]);
+        if (elmt.length > 0)
+        {
+            if ($.inArray(item["status"],["ERROR", "CANCELED", "DONE"]) > -1)
+            {
+                elmt.delete();
+            }
+            else
+            {
+                elmt.html("<a onclick=\"javascript:show_tab('browser_run','{0}')\" href=\"#\"><i class=\"fa fa-tasks\" aria-hidden=\"true\"></i> {1} <span>{2}%</span></a>".format(item["id"], item["name"], Math.round(percentage)));
+            }
+        }
+        else
+        {
+            $('#browser_navpanel_inprogress ul').append("<li id=\"browser_navpanel_inprogress_run_{0}\"><a onclick=\"javascript:show_tab('browser_run','{0}')\" href=\"#\"><i class=\"fa fa-tasks\" aria-hidden=\"true\"></i> {1} <span>{2}%</span></a></li>".format(item["id"], item["name"], percentage));
+        }
     });
-    // Todo : update controls
 }
 
 

@@ -14,9 +14,8 @@ import uuid
 
 
 from celery import Celery, Task
-#from config import *
-from core.framework import *
-from core.model import *
+from config import *
+
 
 
 
@@ -28,7 +27,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 # CELERY 
-app = Celery('pirus_worker')
+app = Celery('pirus_celery')
 app.conf.update(
     BROKER_URL = 'amqp://guest@localhost',
     CELERY_RESULT_BACKEND = 'rpc',
@@ -37,9 +36,7 @@ app.conf.update(
     CELERY_TASK_SERIALIZER = 'json',
     CELERY_ACCEPT_CONTENT = ['json'],
     CELERY_RESULT_SERIALIZER = 'json',
-    CELERY_INCLUDE = [
-    'pirus_worker'
-    ],
+    CELERY_INCLUDE = ['pirus_celery'],
     CELERY_TIMEZONE = 'Europe/Paris',
     CELERY_ENABLE_UTC = True,
 )

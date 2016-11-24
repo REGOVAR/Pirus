@@ -537,44 +537,12 @@ class RunHandler:
         # 1- Retrieve data from request
         data = await request.json()
         run_id = request.match_info.get('run_id', -1)
-        run = pirus.runs.get_from_id(run_id)
-        if run is not None:
-            if "progress" in data.keys():
-                run.progress = data["progress"]
-            status = run.status
-            if "status" in data.keys():
-                status = data["status"]
-            self.set_status(run, status)
+        try:
+            run = pirus.runs.edit(run_id, data)
+        except Exception as error:
+            return rest_error("Unable to update information for the runs with id " + str(run_id) + ". " + error.msg)
+        return rest_success(run)
 
-        return web.Response()
-
-
-    # Update the status of the run, and according to the new status will do specific action
-    # Notify also every one via websocket that run status changed
-    def set_status(self, run, new_status):
-        # Avoid useless notification
-        # Impossible to change state of a run in error or canceled
-        if (new_status != "RUNNING" and run.status == new_status) or run.status in  ["ERROR", "CANCELED"]:
-            return
-
-        # Update status
-        run.status = new_status
-        run.save()
-
-        #Need to do something according to the new status ?
-        # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
-        if run.status in ["PAUSE", "ERROR", "DONE", "CANCELED"]:
-            next_run = pirus.runs.objects(status="WAITING").order_by('start')
-            if len(next_run) > 0:
-                if next_run[0].status == "PAUSE":
-                    start_run.delay(str(next_run[0].id))
-                else :
-                    run_start.delay(str(next_run[0].id))
-        elif run.status == "FINISHING":
-            terminate_run.delay(str(run.id))
-        # Push notification
-        msg = {"action":"run_changed", "data" : [run.export_client_data()] }
-        notify_all(None, json.dumps(msg))
 
 
 
@@ -584,14 +552,13 @@ class RunHandler:
         pipe_id = data["pipeline_id"]
         config = data["config"]
         inputs = data["inputs"]
-        config = { "run" : config, "pirus" : { "notify_url" : ""}}
         # Create the run 
         run = pirus.runs.create(pipe_id, config, inputs)
         if run is None:
             return error
         # start run
-        run_start.delay(str(run.id))
-        return rest_success(run.export_client_data())
+        pirus.runs.start(run["id"])
+        return rest_success(run)
 
 
     def get_pause(self, request):
@@ -600,8 +567,8 @@ class RunHandler:
             return rest_error("Id not found")
         result, run = pirus.runs.pause(run_id)
         if result:
-            return rest_success(run.export_client_data())
-        return rest_error("Unable to pause the run " + str(run_id))
+            return rest_success(run)
+        return rest_error("Unable to pause the run " + run["id"])
 
 
     def get_play(self, request):
@@ -610,8 +577,8 @@ class RunHandler:
             return rest_error("Id not found")
         result, run = pirus.runs.play(run_id)
         if result:
-            return rest_success(run.export_client_data())
-        return rest_error("Unable to restart the run " + str(run_id))
+            return rest_success(run)
+        return rest_error("Unable to restart the run " + run["id"])
 
 
     def get_stop(self, request):

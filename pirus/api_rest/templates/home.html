@@ -293,6 +293,7 @@
                                             <button id="browser_run_monitoring_refresh" type="button" class="btn btn-primary" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button>
                                             <button id="browser_run_monitoring_delete" type="button" class="btn btn-danger" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
                                         
+                                            <p id="browser_run_icon" style="float: left; display: block; font-size: 5em; margin: 10px; margin-top: 0px;"></p>
                                             <h3 id="browser_run_name" style="margin-left: 20px;"></h3>
                                             <div  style="margin-left: 58px; color:#999; margin-top:10px;">
                                                 <p id="browser_run_details" style="display:block; float: left;"></p>
@@ -305,12 +306,12 @@
                                         <div class="navbar-collapse" style="height: 1px;">
                                             <ul class="nav navbar-nav">
                                                 <li>
-                                                    <a class="btn btn-default" title="Stop" id="browser_run_playpause" style="width: 40px;padding:5px!important;margin: 9px;margin-right: 0;">
-                                                        <i class="fa fa-play" aria-hidden="true"></i>
+                                                    <a id="browser_run_playpause" class="btn btn-default" title="Play/Pause" style="width: 40px;padding:5px!important;margin: 9px;margin-right: 0;">
+                                                        
                                                     </a>
                                                 </li>
                                                 <li >
-                                                    <a class="btn btn-default" title="Cancel the run" id="browser_run_stop" style="width: 40px;padding:5px!important;margin: 9px;margin-right: 50px;">
+                                                    <a id="browser_run_stop" class="btn btn-default" title="Cancel the run" style="width: 40px;padding:5px!important;margin: 9px;margin-right: 50px;" onclick="javascript:run_cmd('stop');">
                                                         <i class="fa fa-stop" aria-hidden="true"></i>
                                                     </a>
                                                 </li>

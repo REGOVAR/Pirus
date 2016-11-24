@@ -14,7 +14,6 @@ from mongoengine import *
 from bson.objectid import ObjectId
 
 
-#from config import *
 from core.framework import *
 
 
@@ -390,21 +389,17 @@ class Run(Document):
 
     def import_data(self, data):
         try:
-            self.pipeline_id   = data['pipeline_id']
-            self.lxd_image = data['lxd_image']
-            self.name      = data['name']
-            self.config    = data['config']
-            self.start     = data['start']
-            self.status    = data['status']
-            self.progress  = data['progress']
-            if "lxd_container" in data:
-                self.lxd_container = data['lxd_container']
-            if "end" in data:
-                self.end = data['end']
-            if "inputs" in data:
-                self.inputs = data["inputs"]
-            if "outputs" in data:
-                self.outputs = data["outputs"]
+            if "pipeline_id"   in data.keys(): self.pipeline_id   = data['pipeline_id']
+            if "lxd_image"     in data.keys(): self.lxd_image     = data['lxd_image']
+            if "name"          in data.keys(): self.name          = data['name']
+            if "config"        in data.keys(): self.config        = data['config']
+            if "start"         in data.keys(): self.start         = data['start']
+            if "status"        in data.keys(): self.status        = data['status']
+            if "progress"      in data.keys(): self.progress      = data['progress']
+            if "lxd_container" in data.keys(): self.lxd_container = data['lxd_container']
+            if "end"           in data.keys(): self.end           = data['end']
+            if "inputs"        in data.keys(): self.inputs        = data["inputs"]
+            if "outputs"       in data.keys(): self.outputs       = data["outputs"]
         except KeyError as e:
             raise ValidationError('Invalid plugin: missing ' + e.args[0])
         return self 
