@@ -95,6 +95,43 @@ function update_run_header(data)
 }
 
 
+function update_file_header(data)
+{
+    progress = Math.round(data["upload_offset"] / Math.max(1, data["size"]) * 100);
+
+    // Header style / control according to the status of the file
+    if ($.inArray(data["status"],["PAUSE"]) > -1) $('#browser_file_header').attr('class', 'orange');
+    if ($.inArray(data["status"], ["ERROR"]) > -1) $('#browser_file_header').attr('class', 'red');
+    if ($.inArray(data["status"], ["UPLOADING"]) > -1) $('#browser_file_header').attr('class', 'blue');
+    if ($.inArray(data["status"],["UPLOADED", "CHECKED"]) > -1) $('#browser_file_header').attr('class', 'green');
+    $('#browser_file_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
+
+    
+    $("#browser_file_icon").html(get_file_icon(data["type"]));
+    $("#browser_file_name").html(data["name"]);
+    if ($.inArray(data["status"], ["UPLOADING", "PAUSE", "ERROR"]) > -1)
+        $("#browser_file_details").html("Size : {0} / <b>{1}</b>".format(humansize(data["upload_offset"]), humansize(data["size"])));
+    else
+        $("#browser_file_details").html("Size : <b>{0}</b>".format(humansize(data["size"])));
+    if ($.inArray(data["status"],["PAUSE"]) > -1)
+        $("#browser_file_status").html(data["status"] + "<br/><span style=\"font-size:12px; font-style:italic; font-weight:100;\">since " + data["status"] + "</span>");
+    else
+        $("#browser_file_status").html(data["status"]);
+
+    // Infos panel
+    html = "<ul>";
+    for (var k in data)
+    {
+        if (typeof data[k] !== 'function') 
+        {
+            html += "<li><b>{0} : </b>{1}</li>".format(k, data[k]);
+        }
+    }
+    html += "</ul>";
+    $("#file_tab_infos").html(html);
+}
+
+
 function show_tab(tab_id, id)
 {
     $('#browser_content > div').each( function( index, element )
@@ -124,6 +161,7 @@ function show_tab(tab_id, id)
             $("#browser_run_monitoring_stderr").animate({scrollTop : $("#browser_run_monitoring_stderr")[0].scrollHeight}, 1000 );
 
             $("#browser_run_monitoring_refresh").attr("onclick", "javascript:monitor_run('"+id+"')");
+            $("#browser_run_monitoring_delete").attr("onclick", "javascript:pirus_delete('run', '"+id+"')");
         });
 
 
@@ -171,38 +209,8 @@ function show_tab(tab_id, id)
         $.ajax({ url: rootURL + "/file/" + id, type: "GET", async: false}).done(function(jsonFile)
         {
             data = jsonFile["data"];
-            progress = Math.round(data["upload_offset"] / Math.max(1, data["size"]) * 100);
-
-            // Header style / control according to the status of the file
-            if ($.inArray(data["status"],["PAUSE"]) > -1) $('#browser_file_header').attr('class', 'orange');
-            if ($.inArray(data["status"], ["ERROR"]) > -1) $('#browser_file_header').attr('class', 'red');
-            if ($.inArray(data["status"], ["UPLOADING"]) > -1) $('#browser_file_header').attr('class', 'blue');
-            if ($.inArray(data["status"],["UPLOADED", "CHECKED"]) > -1) $('#browser_file_header').attr('class', 'green');
-            $('#browser_file_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
-
-            
-            $("#browser_file_icon").html(get_file_icon(data["type"]));
-            $("#browser_file_name").html(data["name"]);
-            if ($.inArray(data["status"], ["UPLOADING", "PAUSE", "ERROR"]) > -1)
-                $("#browser_file_details").html("Size : {0} / <b>{1}</b>".format(humansize(data["upload_offset"]), humansize(data["size"])));
-            else
-                $("#browser_file_details").html("Size : <b>{0}</b>".format(humansize(data["size"])));
-            if ($.inArray(data["status"],["PAUSE"]) > -1)
-                $("#browser_file_status").html(data["status"] + "<br/><span style=\"font-size:12px; font-style:italic; font-weight:100;\">since " + data["status"] + "</span>");
-            else
-                $("#browser_file_status").html(data["status"]);
-
-            // Infos panel
-            html = "<ul>";
-            for (var k in data)
-            {
-                if (typeof data[k] !== 'function') 
-                {
-                    html += "<li><b>{0} : </b>{1}</li>".format(k, data[k]);
-                }
-            }
-            html += "</ul>";
-            $("#file_tab_infos").html(html);
+            update_file_header(data);
+            $("#browser_file_delete").attr("onclick", "javascript:pirus_delete('file', '"+id+"')");
 
             // Edit panel
             $("#file_tab_edit_name").val(data["name"]);
@@ -217,24 +225,35 @@ function show_tab(tab_id, id)
 }
 
 
+var status_colorclass_map = {
+    "UPLOADING" : "text-primary",
+    "PAUSE" : "text-warning",
+    "UPLOADED" : "text-success",
+    "ERROR" : "text-alert", 
+    "CHECKED" : "text-success"
+};
+
 function select_file(file_id)
 {
     var count = Object.keys(demo_pirus_selection).length;
     var check = !$('#fileEntry-' + file_id + ' input')[0].checked;
     $('#fileEntry-' + file_id + ' input').prop('checked', check);
     var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').html().trim();
+    var file_status = $('#fileEntry-' + file_id + ' td:nth-child(7)').html().trim();
     if (check)
     {
         if (count == 0) $('#browserNavSelectionPanel > ul').html('');
         demo_pirus_selection[file_id] = file_name;
-        $('#browserNavSelectionPanel ul').append('<li id="browserNavSelectionPanel-' + file_id + '">' + file_name + '</li>');
-        count += 1
+        var html = '<li id="browserNavSelectionPanel-' + file_id + "\"><a onclick=\"javascript:show_tab('browser_file','" + file_id + "')\" href=\"#\">";
+        html += "<i class=\"fa fa-file " + status_colorclass_map[file_status] + "\" aria-hidden=\"true\"></i> " + file_name + '</a></li>';
+        $('#browserNavSelectionPanel ul').append(html);
+        count += 1;
     }
     else
     {
         delete demo_pirus_selection[file_id];
         $('#browserNavSelectionPanel-' + file_id).remove();
-        if (count == 1) $('#browserNavSelectionPanel > ul').html('<li class="detail">No file selected</li>');
+        if (count == 1) $('#browserNavSelectionPanel > ul').html('<li class="empty_selection">No file selected</li>');
         count -= 1
     }
     
@@ -242,8 +261,8 @@ function select_file(file_id)
 }
 
 var activity_inprogress_count = 0
-var demo_browser_file_entry =  "<tr id=\"activity_entry_{0}\" onmouseover=\"javascript:display_status_bar('{0}')\" onclick=\"javascript:select_file('{0}')\" style=\"cursor: pointer;\">";
-demo_browser_file_entry +=  "<td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td></tr>";
+var demo_browser_file_entry =  "<tr id=\"fileEntry-{0}\" onclick=\"javascript:select_file('{0}')\" style=\"cursor: pointer; {1}\">"
+demo_browser_file_entry +=  "<td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><td>{5}</td><td>{6}</td><td>{7}</td></tr>";
 
 
 
@@ -263,12 +282,14 @@ function add_new_activity_to_demo_browser(type, id)
         if (elmnt.length)
         {
             // elmnt exist, so update it
+            elmnt[0].replaceWith(demo_browser_file_entry.format(id, name, size, creation, comments, tags , id, status, status_colorclass_map[status]));
         }
         else
         {
             // add new entry into the table
+            $('#browser_files_table tbody').append(demo_browser_file_entry.format(id, name, size, creation, comments, tags , id, status, status_colorclass_map[status]));
         }
-        $('#browser_inprogress_files_table').append(demo_browser_file_entry.format(id, name, details, progress, status));
+        
     }
     else if (type == "pipeline")
     {

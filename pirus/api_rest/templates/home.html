@@ -131,7 +131,7 @@
                     <b>Warning!</b> Your browser does not seem to support the features necessary to run tus-js-client.
                 </div>
 
-                <div class="panel panel-default">
+                <div class="panel panel-default" style="box-shadow: 0 0 10px #ccc; border: 1px solid #ccc;">
                     <div class="panel-heading" style="position:relative;">
                         <img src="/assets/img/logo.png" width="100px" style="position:absolute; top:-10px; left:-100px;" /> 
                         <div class="row">
@@ -182,35 +182,48 @@
                             </div>
                         </div>
                     </div>
-                    <div class="panel-body" style="padding-top: 0; padding-bottom:0; padding-left:0;">
-                        <div class="row">
-                            <div id="browser_navpanel" class="col-md-3 browser-panel" style="height:500px; border-right: 1px solid #ddd; overflow-y: auto;">
+                    <div class="panel-body" style="padding: 0;">
+                        <div class="row" style="margin:0;">
+                            <div id="browser_navpanel" class="col-md-3 browser-panel">
 
-                                <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavSelectionPanel" aria-expanded="false" aria-controls="browserNavSelectionPanel">
-                                    <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-check-square-o" aria-hidden="true"></i> Selection <span id="selection_count" class="badge">0</span>
+                                <a class="btn section" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browserNavSelectionPanel" aria-expanded="false" aria-controls="browserNavSelectionPanel">
+                                    <i class="fa fa-check-square-o" aria-hidden="true">&nbsp;</i> Selection 
+                                        <span style="float:right;">
+                                            <span id="selection_count" class="badge">0</span>&nbsp;<i class="fa fa-chevron-right" aria-hidden="true" style="width:20px; text-align:center;"></i>
+                                        </span>
+                                    </i>
                                 </a>
                                 <div id="browserNavSelectionPanel" class="collapse">
                                     <ul>
-                                        <li class="detail">No file selected</li>
+                                        <li class="empty_selection">No file selected</li>
                                     </ul>
                                 </div>
                                 <hr/>
 
-                                <a class="btn" style="display:block; text-align:left;" role="button" onclick="javascript:show_tab('browser_files')"><i class="fa fa-files-o" aria-hidden="true"></i> All Files</a>
-                                <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browser_navpanel_inprogress" aria-controls="browser_navpanel_inprogress">
-                                    <i class="fa fa-chevron-right" aria-hidden="true"></i><i class="fa fa-tasks" aria-hidden="true"></i> In progress <span id="inprogress_count" class="badge">{{ total_inprogress }}</span>
+                                <a class="btn section" style="display:block; text-align:left;" role="button" onclick="javascript:show_tab('browser_files')"><i class="fa fa-files-o" aria-hidden="true">&nbsp;</i> All Files</a>
+                                
+                                <a class="btn section" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browser_navpanel_inprogress" aria-controls="browser_navpanel_inprogress">
+                                    <i class="fa fa-tasks" aria-hidden="true">&nbsp;</i> In progress 
+                                        <span style="float:right;">
+                                            <span id="inprogress_count" class="badge">{{ total_inprogress }}</span>&nbsp;<i class="fa fa-chevron-right" aria-hidden="true" style="width:20px; text-align:center;"></i>
+                                        </span>
+                                    </i>
                                 </a>
                                 <div id="browser_navpanel_inprogress">
                                     <div>
                                         <ul>
                                             {% for f in files_inprogress %}
                                             <li id="browser_navpanel_inprogress_file_{{f["id"]}}">
-                                                <a onclick="javascript:show_tab('browser_file','{{f["id"]}}')" href="#"><i class="fa fa-file-o" aria-hidden="true"></i> {{f["name"]}} <span>{{ f["progress"] }}%</span></a>
+                                                <a onclick="javascript:show_tab('browser_file','{{f["id"]}}')" href="#">
+                                                    <i class="fa fa-file {% if f["status"] in ["PAUSE"] %}text-warning{% elif f["status"] in ["UPLOADING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
+                                                    {{f["name"]}} <span>{{ f["progress"] }}%</span></a>
                                             </li>
                                             {% endfor %}
                                             {% for r in runs_inprogress %}
                                             <li id="browser_navpanel_inprogress_run_{{r["id"]}}">
-                                                <a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> {{r["name"]}} <span>{{ r["%"] }}%</span></a>
+                                                <a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
+                                                    <i class="fa fa-tasks {% if r["status"] in ["PAUSE", "WAITING"] %}text-warning{% elif r["status"] in ["RUNNING", "INITIALIZING", "FINISHING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
+                                                    {{r["name"]}} <span>{{ r["%"] }}%</span></a>
                                             </li>
                                             {% endfor %}
                                         </ul>
@@ -220,14 +233,19 @@
                                 <hr/>
 
                                 {% for p in pipes %}
-                                <a class="btn" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browser_navpanel_pipe_{{p["id"]}}" aria-expanded="false" aria-controls="browser_navpanel_pipe_{{p["id"]}}">
-                                <i class="fa fa-chevron-right" aria-hidden="true"></i> <i class="fa fa-puzzle-piece" aria-hidden="true"></i> Pipeline {{p["name"]}}</a>
+                                <a class="btn section" style="display:block; text-align:left;" role="button" data-toggle="collapse" href="#browser_navpanel_pipe_{{p["id"]}}" aria-expanded="false" aria-controls="browser_navpanel_pipe_{{p["id"]}}">
+                                    <i class="fa fa-puzzle-piece" aria-hidden="true">&nbsp;</i> Pipeline {{p["name"]}}
+                                        <span style="float:right;"><i class="fa fa-chevron-right" aria-hidden="true" style="width:20px; text-align:center;"></i></span>
+                                    </i>
+                                </a>
                                 <div id="browser_navpanel_pipe_{{p["id"]}}" class="collapse">
                                     <div>
                                         <ul>
                                             {% for r in p["runs"] %}
                                             {% if r["status"] in ["ERROR", "DONE", "CANCELED"] %}
-                                            <li><a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#"><i class="fa fa-tasks" aria-hidden="true"></i> {{r["name"]}}</a></li>
+                                            <li><a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
+                                                <i class="fa fa-tasks {% if r["status"] in ["ERROR", "CANCELED"] %}text-danger{% endif %}" aria-hidden="true"></i> 
+                                                 {{r["name"]}}</a></li>
                                             {% endif %}
                                             {% endfor %}
                                         </ul>
@@ -251,15 +269,16 @@
                                                 <th class="collapse">Comments</th>
                                                 <th class="collapse">Tags</th>
                                                 <th class="collapse">Id</th>
+                                                <th class="collapse">status</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {% for f in files_all %}
                                             <tr id="fileEntry-{{ f["id"] }}" onmouseover="javascript:display_status_bar('{{ f["id"] }}')" onclick="javascript:select_file('{{ f["id"] }}')" 
-                                                style="cursor: pointer;" {% if f["status"] == "ERROR" %}class="color-danger"{% endif %}>
+                                                style="cursor: pointer; {% if f["status"] == "ERROR" %}class="color-danger"{% endif %}">
                                                 <td><input type="checkbox" 
                                                         value="{{ f["id"] }}" 
-                                                        name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/> 
+                                                        name="{% if f["source"]["type"] == "output" %}{{ f["source"]["run_name"] }} > {% endif %}{{ f["name"] }}"/>
                                                 </td>
                                                 <td>{% if f["source"]["type"] == "output" %}
                                                     {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
@@ -269,11 +288,23 @@
                                                     <a href="#" data-toggle="tooltip" data-placement="right" title="{{f["comments"]}}"><i class="fa fa-info-circle" aria-hidden="true"></i></a>
                                                     {% endif %}
                                                 </td>
-                                                <td>{{ f["size"] }}</td>
+                                                <td>
+                                                    {% if f["status"] == "ERROR" %}
+                                                    <i class="fa fa-times text-danger" aria-hidden="true" style="font-weight:bold;"></i> 
+                                                    {% elif f["status"] == "PAUSE" %}
+                                                    <i class="fa fa-pause-circle-o text-warning" aria-hidden="true" style="font-weight:bold;"></i> 
+                                                    {% elif f["status"] in ["UPLOADING"] %}
+                                                    <i class="fa fa-arrow-circle-o-down text-primary" aria-hidden="true" style="font-weight:bold;"></i> 
+                                                    {% else %}
+                                                    <i class="fa fa-check text-success" aria-hidden="true" style="font-weight:bold;"></i> 
+                                                    {% endif %}
+                                                    {{ f["size"] }}
+                                                </td>
                                                 <td>{{ f["create_date"] }}</td>
                                                 <td class="collapse">{{ f["comments"] }}</td>
                                                 <td class="collapse">{% for t in f["tags"] %}{{t}}{% endfor %}</td>
                                                 <td class="collapse">{{ f["id"]}}</td>
+                                                <td class="collapse">{{ f["status"]}}</td>
                                             </tr>
                                             {% endfor %}
                                         </tbody>
@@ -291,7 +322,7 @@
 
                                         <div style="position:absolute; top:0; bottom:0; left:0; right:0">
                                             <button id="browser_run_monitoring_refresh" type="button" class="btn btn-primary" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-refresh" aria-hidden="true"></i> Refresh</button>
-                                            <button id="browser_run_monitoring_delete" type="button" class="btn btn-danger" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
+                                            <button id="browser_run_monitoring_delete" type="button" class="btn btn-danger" style="display; block; float:right; margin-top: 10px; margin-right:10px"><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
                                         
                                             <p id="browser_run_icon" style="float: left; display: block; font-size: 5em; margin: 10px; margin-top: 0px;"></p>
                                             <h3 id="browser_run_name" style="margin-left: 20px;"></h3>
@@ -325,6 +356,7 @@
                                     </nav>
                                     <div class="tab-content">
                                         <div id="monitoring_tab_inputs" class="tab-pane fade in active" style="padding: 20px;">
+
                                         </div>
                                         <div id="monitoring_tab_outputs" class="tab-pane fade" style="padding: 20px;">
                                         </div>
@@ -351,7 +383,7 @@
                                         </div>
 
                                         <div style="position:absolute; top:0; bottom:0; left:0; right:0">
-                                            <button id="browser_run_monitoring_delete" type="button" class="btn btn-danger" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
+                                            <button id="browser_file_delete" type="button" class="btn btn-danger" style="display; block; float:right; margin-top: 10px; margin-right:10px" ><i class="fa fa-trash" aria-hidden="true"></i> Delete</button>
                                         
                                             <p id="browser_file_icon" style="float: left; display: block; font-size: 5em; margin: 10px; margin-top: 0px;"></p>
                                             <h3 id="browser_file_name" style="margin-left: 20px;"></h3>
@@ -602,18 +634,19 @@
         var $message = $('#message');
 
 
-        function delete_pipeline(pipe_id)
+
+        function pirus_delete(type, id)
         {
             $.ajax(
             {
-                url: rootURL + "/pipeline/" + pipe_id,
+                url: "{0}/{1}/{2}".format(rootURL, type, id),
                 type: "DELETE"
             }).fail(function()
             {
-                alert( "ERROR" );
+                alert( "Unexpected error when trying to delete this " + type );
             }).done(function(txt) 
             {
-                alert( "SUCCESS\n" + txt);
+                location.reload();
             })
         }
         

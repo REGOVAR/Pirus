@@ -67,12 +67,9 @@ def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
 
 
 def notify_all(src, msg):
-    print ("HANDLER.notify_all : user[", end="")
     for ws in WebsocketHandler.socket_list:
         if src != ws[1]:
-            print(".", end="")
             ws[0].send_str(msg)
-    print ("]")
 
 # Give to the core the delegate to call to notify all via websockets
 pirus.set_notify_all(notify_all)
@@ -321,15 +318,15 @@ class FileHandler:
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
         id = request.match_info.get('file_id', -1)
-        pirus_file = pirus.files.get_from_id(id)
+        pirus_file = pirus.files.get_from_id(id, 0, ["name", "path", "id"])
         if pirus_file == None:
             return rest_error("File with id " + str(id) + "doesn't exits.")
         file = None
-        if os.path.isfile(pirus_file.path):
-            with open(pirus_file.path, 'br') as content_file:
+        if os.path.isfile(pirus_file["path"]):
+            with open(pirus_file["path"], 'br') as content_file:
                 file = content_file.read()
         return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file.name}),
+            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file["name"]}),
             body=file
         )
 
@@ -633,10 +630,8 @@ class WebsocketHandler:
 
         print('WS connection open by', ws_id)
         WebsocketHandler.socket_list.append((ws, ws_id))
-        print (len(WebsocketHandler.socket_list))
         msg = '{"action":"online_user", "data" : [' + ','.join(['"' + _ws[1] + '"' for _ws in WebsocketHandler.socket_list]) + ']}'
         notify_all(None, msg)
-        print(msg)
 
         try:
             async for msg in ws:
