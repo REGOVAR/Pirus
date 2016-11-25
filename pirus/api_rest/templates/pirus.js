@@ -238,8 +238,8 @@ function select_file(file_id)
     var count = Object.keys(demo_pirus_selection).length;
     var check = !$('#fileEntry-' + file_id + ' input')[0].checked;
     $('#fileEntry-' + file_id + ' input').prop('checked', check);
-    var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').html().trim();
-    var file_status = $('#fileEntry-' + file_id + ' td:nth-child(7)').html().trim();
+    var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').text().trim();
+    var file_status = $('#fileEntry-' + file_id + ' td:nth-child(7)').text().trim();
     if (check)
     {
         if (count == 0) $('#browserNavSelectionPanel > ul').html('');

@@ -226,7 +226,8 @@ class FileManager:
     def delete(self, file_id):
         file = PirusFile.from_id(file_id)
         if file != None:
-            shutil.rmtree(file.path)
+            # TODO : manage error / Check file exists ...
+            shutil.rmtree(file.path, True)
             file.delete()
 
 
@@ -566,9 +567,19 @@ class RunManager:
 
 
 
-    def delete(self, request):
-        # TODO
-        print ("DELETE run/<id=" + str(run_id) + ">")
+    def delete(self, run_id):
+        try:
+            # Start by doing a stop if running
+            result, run = self.stop(run_id)
+            # Remove files entries
+            root_path    = os.path.join(RUNS_DIR, run.lxd_container)
+            shutil.rmtree(root_path, True)
+            # Clean DB
+            run.delete()
+        except Exception as error:
+            # TODO : manage error
+            raise PirusException("core.RunManager.delete : Unable to delete the run with id " + str(run_id) + ". " + error.msg)
+        return True
 
 
 

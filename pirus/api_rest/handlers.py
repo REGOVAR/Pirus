@@ -451,17 +451,13 @@ class RunHandler:
         return rest_success(pirus.runs.get(fields, query, order, offset, limit, sub_level_loading), range_data)
 
 
-
-
-
     def delete(self, request):
-        run_id = request.match_info.get('run_id', -1)
+        run_id = request.match_info.get('run_id', "")
         try:
-            pirus.runs.delete(pipe_id)
+            return rest_success(pirus.runs.delete(pipe_id))
         except Exception as error:
             # TODO : manage error
             return rest_error("Unable to delete the runs with id " + str(pipe_id) + ". " + error.msg)
-        return rest_success("Run " + str(pipe_id) + " deleted.")
 
 
     def get_details(self, request):

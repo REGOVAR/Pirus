@@ -12,7 +12,7 @@ import pylxd
 import subprocess
 import shutil
 import uuid
-
+import hashlib
 
 from celery import Celery, Task
 from config import *
@@ -81,6 +81,14 @@ class PirusTask(Task):
         print(error_code + " : " + msg)
         self.notify_status('ERROR')
         return error_code
+
+
+    def hashfile(self, afile, hasher, blocksize=65536):
+        buf = afile.read(blocksize)
+        while len(buf) > 0:
+            hasher.update(buf)
+            buf = afile.read(blocksize)
+        return hasher.digest()
 
 
 
@@ -245,7 +253,7 @@ def terminate_run(self, run_id):
                     "upload_offset": os.path.getsize(file_path),
                     "status"       : "CHECKED",
                     "create_date"  : str(datetime.datetime.now().timestamp()),
-                    "md5sum"       : md5(file_path),
+                    "md5sum"       : self.hashfile(open(file_path, 'rb'), hashlib.md5()).hex(),
                     "runs"         : [ str(run.id) ],
                     "source"       : {"type" : "output", "run_id" : str(run.id), "run_name" : run.name}
                 })
