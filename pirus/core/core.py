@@ -168,7 +168,7 @@ class FileManager:
         pfile.save()
         # Notify all about the new status
         msg = {"action":"file_changed", "data" : [pfile.export_client_data()] }
-        pirus.notify_all(json.dumps([msg]))
+        pirus.notify_all(json.dumps(msg))
         # TODO : check if run was waiting the end of the upload to start
 
 
@@ -219,7 +219,7 @@ class FileManager:
         pfile.save()
         # Push notification
         msg = {"action":"file_changed", "data" : [pfile.export_client_data()] }
-        pirus.notify_all(json.dumps([msg]))
+        pirus.notify_all(json.dumps(msg))
 
 
 
@@ -634,16 +634,21 @@ class RunManager:
     def edit(self, run_id, json_data):
         run = Run.from_id(run_id)
         if run is not None:
-            if "status" in json_data.keys():
-                self.set_status(run, json_data["status"])
+            # special management when status change
+            if "status" in json_data.keys() :
+                self.set_status(run, json_data["status"], False)
             run.import_data(json_data)
             run.save()
+            # send notification only when realy needed
+            if "status" in json_data.keys() or "progress" in json_data.keys():
+                msg = {"action":"run_changed", "data" : [run.export_client_data()] }
+                pirus.notify_all(json.dumps(msg))
         return run.export_client_data()
 
 
     # Update the status of the run, and according to the new status will do specific action
     # Notify also every one via websocket that run status changed
-    def set_status(self, run, new_status):
+    def set_status(self, run, new_status, notify=True):
         global  pirus
         # Avoid useless notification
         # Impossible to change state of a run in error or canceled
@@ -653,7 +658,7 @@ class RunManager:
         run.status = new_status
         run.save()
 
-        #Need to do something according to the new status ?
+        # Need to do something according to the new status ?
         # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
         if run.status in ["PAUSE", "ERROR", "DONE", "CANCELED"]:
             next_run = Run.objects(status="WAITING").order_by('start')
@@ -665,8 +670,9 @@ class RunManager:
         elif run.status == "FINISHING":
             terminate_run.delay(str(run.id))
         # Push notification
-        msg = {"action":"run_changed", "data" : [run.export_client_data()] }
-        pirus.notify_all(json.dumps(msg))
+        if notify:
+            msg = {"action":"run_changed", "data" : [run.export_client_data()] }
+            pirus.notify_all(json.dumps(msg))
 
 
 

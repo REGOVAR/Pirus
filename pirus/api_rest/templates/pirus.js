@@ -1,5 +1,6 @@
 
 var demo_pirus_displayed_run;
+var demo_pirus_displayed_run_pipename;
 var demo_pirus_displayed_file;
 var demo_pirus_displayed_pipe;
 
@@ -42,7 +43,7 @@ function update_run_header(data)
 
     // Header according the status of the run
     $("#browser_run_name").html("Run : {0}".format(data["name"]));
-    $("#browser_run_details").html("Pipeline {0} : <b>{1} % </b>".format(data["pipeline_name"], progress));
+    $("#browser_run_details").html("Pipeline {0} : <b>{1} % </b>".format(demo_pirus_displayed_run_pipename, progress));
     $("#browser_run_status").html(data["status"]);
     $('#browser_run_monitoring_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
     if ($.inArray(data["status"],["PAUSE", "WAITING"]) > -1)$('#browser_run_monitoring_header').attr('class', 'orange');
@@ -105,10 +106,12 @@ function show_tab(tab_id, id)
     // Manage display of run data
     if (tab_id == 'browser_run')
     {        
-        demo_pirus_displayed_run = id;
         $.ajax({ url: rootURL + "/run/" + id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
         {
+
             data = jsonFile["data"];
+            demo_pirus_displayed_run = id;
+            demo_pirus_displayed_run_pipename = data["pipeline_name"];
 
             update_run_header(data)
             $("#browser_run_icon").html("<img src=\"{0}\" width=\"50px\" style=\"vertical-align:middle\"/>".format(data["pipeline_icon"]));
@@ -511,7 +514,7 @@ function ws_new_pipeline(msg_data)
 }
 
 function ws_new_run(msg_data)
-{
+{   
 }
 
 function ws_run_changed(data)

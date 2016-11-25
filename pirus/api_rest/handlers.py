@@ -67,9 +67,12 @@ def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
 
 
 def notify_all(src, msg):
+    print ("HANDLER.notify_all : user[", end="")
     for ws in WebsocketHandler.socket_list:
         if src != ws[1]:
+            print(".", end="")
             ws[0].send_str(msg)
+    print ("]")
 
 # Give to the core the delegate to call to notify all via websockets
 pirus.set_notify_all(notify_all)
@@ -535,12 +538,15 @@ class RunHandler:
 
     async def update_status(self, request):
         # 1- Retrieve data from request
+        print("Handler.update_status", end="")
         data = await request.json()
         run_id = request.match_info.get('run_id', -1)
         try:
+            print(" => pirus.runs.edit : ", data)
             run = pirus.runs.edit(run_id, data)
         except Exception as error:
             return rest_error("Unable to update information for the runs with id " + str(run_id) + ". " + error.msg)
+
         return rest_success(run)
 
 

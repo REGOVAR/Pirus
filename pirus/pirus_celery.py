@@ -7,6 +7,7 @@ import sys
 import time
 import requests
 import json
+import datetime
 import pylxd
 import subprocess
 import shutil
@@ -57,7 +58,7 @@ class PirusTask(Task):
     """Task that sends notification on completion."""
     abstract = True
 
-    notify_url = ""
+    notify_url = None
     run_path   = ""
 
     def after_return(self, status, retval, task_id, args, kwargs, einfo):
@@ -70,7 +71,10 @@ class PirusTask(Task):
 
 
     def notify_status(self, status:str):
-        requests.post(self.notify_url, data = '{"status": "'+status+'"}' )
+        if (self.notify_url is not None and self.notify_url != ""):
+            requests.post(self.notify_url, data = '{"status": "'+status+'"}' )
+        else :
+            self.error("Try to notify status but no url defined : " + status)
 
     def error(self, msg:str, error_code:int=500):
         # TODO : some log ?...
@@ -97,6 +101,7 @@ def start_run(self, run_id):
     print(self.notify_url)
 
 
+    print("WAITING !")
     self.notify_status("WAITING")
 
     # Check that all inputs files are ready to be used
@@ -106,6 +111,7 @@ def start_run(self, run_id):
             return self.error('Inputs file deleted before the start of the run. Run aborded.')
         if f.status not in ["CHECKED", "UPLOADED"]:
             # inputs not ready, we keep the run in the waiting status
+            print("INPUTS of the run not ready. waiting")
             return 1
         
     # Inputs files ready to use, looking for lxd resources now
@@ -116,10 +122,11 @@ def start_run(self, run_id):
     count = len(Run.objects(status="RUNNING")) + len(Run.objects(status="INITIALIZING")) + len(Run.objects(status="FINISHING"))
     if len(Run.objects(status="RUNNING")) >= LXD_MAX:
         # too many run in progress, we keep the run in the waiting status
+        print("To many run in progress, we keep the run in the waiting status")
         return 1
 
 
-
+    print("INITIALIZING !")
     self.notify_status("INITIALIZING")
 
     #LXD ready ! Prepare filesystem of the server to host lxc container files

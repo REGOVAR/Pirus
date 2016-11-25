@@ -734,10 +734,9 @@
             $message.attr("class", 'label label-info');
             var json = JSON.parse(ev.data);
 
+
             dt = new Date()
             $message.html(dt.toLocaleTimeString() + ' ' + json["action"] + ' : ' + json["data"]);
-
-
 
             switch(json["action"])
             {
