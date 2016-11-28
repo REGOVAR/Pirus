@@ -132,6 +132,16 @@ function update_file_header(data)
 }
 
 
+
+var monitoring_run_io_template = "<tr id=\"run_{10}_{0}\" onclick=\"javascript:select_file('{0}')\" style=\"cursor: pointer;\"><td><input type=\"checkbox\" value=\"{0}\" name=\"{0}\"{9}/></td><td>{1} {2}</td><td>{3} {4}</td><td>{5}</td><td class=\"collapse\">{6}</td><td class=\"collapse\">{7}</td><td class=\"collapse\">{0}</td><td class=\"collapse\">{8}</td></tr>";
+var file_status_icon_class_mapping = {
+    "ERROR" : "fa-times text-danger",
+    "PAUSE" : "fa-pause-circle-o text-warning",
+    "UPLOADING" : "fa-arrow-circle-o-down text-primary",
+    "CHECKED" : "fa-check text-success",
+    "UPLOADED" : "fa-check text-success"
+};
+
 function show_tab(tab_id, id)
 {
     $('#browser_content > div').each( function( index, element )
@@ -171,13 +181,28 @@ function show_tab(tab_id, id)
             data = jsonFile["data"];
             if (data["inputs"].length > 0)
             {
-                html = "<ul>";
+                var html = "";
                 for (var i=0; i<data["inputs"].length; i++)
                 {
-                    html += "<li><a href=\"" + rootURL + "/dl/f/" + data["inputs"][i]["id"] + "\" title=\"Download\">" + data["inputs"][i]["name"] + "</a> (" + humansize(data["inputs"][i]["size"]) + ")</li>";
+                    var d = data["inputs"][i];
+                    var id = d["id"];
+                    var name = d["name"];
+                    if (d["source"]["type"] == "output")
+                    {
+                        name = d["source"]["run_name"] + " <i class=\"fa fa-chevron-right\" aria-hidden=\"true\"></i>  " + name;
+                    }
+                    var comments = d["comments"];
+                    var tooltip = (comments != "") ? "<a href=\"#\" data-toggle=\"tooltip\" data-placement=\"right\" title=\"{0}\"><i class=\"fa fa-info-circle\" aria-hidden=\"true\"></i></a>".format(comments) : "";
+                    var status = d["status"];
+                    var status_icon = "<i class=\"fa " + file_status_icon_class_mapping[status] + "\" aria-hidden=\"true\" style=\"font-weight:bold;\"></i>";
+                    var size = humansize(d["size"]);
+                    var create = d["create_date"];
+                    var tags = d["tags"];
+                    var checked = "";
+                    if (id in demo_pirus_selection) { checked = " checked"; }
+                    html += monitoring_run_io_template.format(id, name, tooltip, status_icon, size, create, comments, tags, status, checked, "input");
                 }
-                html += "</ul>";
-                $("#monitoring_tab_inputs").html(html);
+                $("#monitoring_tab_inputs_table tbody").html(html);
             }
             else
             {
@@ -186,13 +211,24 @@ function show_tab(tab_id, id)
 
             if (data["outputs"].length > 0)
             {
-                html = "<ul>"
+                var html = "";
                 for (var i=0; i<data["outputs"].length; i++)
                 {
-                    html += "<li><a href=\"" + rootURL + "/dl/f/" + data["outputs"][i]["id"] + "\" title=\"Download\">" + data["outputs"][i]["name"] + "</a> (" + humansize(data["outputs"][i]["size"]) + ")</li>"
+                    var d = data["outputs"][i];
+                    var id = d["id"];
+                    var name = d["name"];
+                    var comments = d["comments"];
+                    var tooltip = (comments != "") ? "<a href=\"#\" data-toggle=\"tooltip\" data-placement=\"right\" title=\"{0}\"><i class=\"fa fa-info-circle\" aria-hidden=\"true\"></i></a>".format(comments) : "";
+                    var status = d["status"];
+                    var status_icon = "<i class=\"fa " + file_status_icon_class_mapping[status] + "\" aria-hidden=\"true\" style=\"font-weight:bold;\"></i>";
+                    var size = humansize(d["size"]);
+                    var create = d["create_date"];
+                    var tags = d["tags"];
+                    var checked = "";
+                    if (id in demo_pirus_selection) { checked = " checked"; }
+                    html += monitoring_run_io_template.format(id, name, tooltip, status_icon, size, create, comments, tags, status, checked, "output");
                 }
-                html += "</ul>"
-                $("#monitoring_tab_outputs").html(html)
+                $("#monitoring_tab_outputs_table tbody").html(html);
             }
             else
             {
@@ -238,6 +274,8 @@ function select_file(file_id)
     var count = Object.keys(demo_pirus_selection).length;
     var check = !$('#fileEntry-' + file_id + ' input')[0].checked;
     $('#fileEntry-' + file_id + ' input').prop('checked', check);
+    $('#run_input_' + file_id + ' input').prop('checked', check);
+    $('#run_output_' + file_id + ' input').prop('checked', check);
     var file_name =  $('#fileEntry-' + file_id + ' td:nth-child(2)').text().trim();
     var file_status = $('#fileEntry-' + file_id + ' td:nth-child(7)').text().trim();
     if (check)
