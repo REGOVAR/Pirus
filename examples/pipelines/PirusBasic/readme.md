@@ -55,7 +55,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         "description" : "Test pipeline for pirus",
         "version": "1.0.0",
         "pirus_api": "1.0.0",
-        "license" : "AGPL",
+        "license" : "AGPLv3",
         "developers" : ["Olivier GUEUDELOT"],
         "run" : "/pipeline/run/run.sh",
         "inputs" : "/pipeline/inputs",
@@ -71,7 +71,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         description: "Test pipeline for pirus"
         version : "1.0.0"
         pirus_api: "1.0.0"
-        license: "AGPL"
+        license: "AGPLv3"
         developers: ["Olivier GUEUDELOT"]
         run: "/pipeline/run/run.sh"
         logs: "/pipeline/logs"
