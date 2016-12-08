@@ -3,8 +3,8 @@
 import os
 
 # HOST
-HOST           = "dev1.absolumentg.fr"
-PORT           = "8080"
+HOST           = "0.0.0.0"
+PORT           = "8090"
 VERSION        = "v1"
 HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 

@@ -210,24 +210,22 @@
                                     </i>
                                 </a>
                                 <div id="browser_navpanel_inprogress">
-                                    <div>
-                                        <ul>
-                                            {% for f in files_inprogress %}
-                                            <li id="browser_navpanel_inprogress_file_{{f["id"]}}">
-                                                <a onclick="javascript:show_tab('browser_file','{{f["id"]}}')" href="#">
-                                                    <i class="fa fa-file {% if f["status"] in ["PAUSE"] %}text-warning{% elif f["status"] in ["UPLOADING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
-                                                    {{f["name"]}} <span>{{ f["progress"] }}%</span></a>
-                                            </li>
-                                            {% endfor %}
-                                            {% for r in runs_inprogress %}
-                                            <li id="browser_navpanel_inprogress_run_{{r["id"]}}">
-                                                <a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
-                                                    <i class="fa fa-tasks {% if r["status"] in ["PAUSE", "WAITING"] %}text-warning{% elif r["status"] in ["RUNNING", "INITIALIZING", "FINISHING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
-                                                    {{r["name"]}} <span>{{ r["%"] }}%</span></a>
-                                            </li>
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
+                                    <ul>
+                                        {% for f in files_inprogress %}
+                                        <li id="browser_navpanel_inprogress_file_{{f["id"]}}">
+                                            <a onclick="javascript:show_tab('browser_file','{{f["id"]}}')" href="#">
+                                                <i class="fa fa-file {% if f["status"] in ["PAUSE"] %}text-warning{% elif f["status"] in ["UPLOADING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
+                                                {{f["name"]}} <span>{{ f["progress"] }}%</span></a>
+                                        </li>
+                                        {% endfor %}
+                                        {% for r in runs_inprogress %}
+                                        <li id="browser_navpanel_inprogress_run_{{r["id"]}}">
+                                            <a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
+                                                <i class="fa fa-tasks {% if r["status"] in ["PAUSE", "WAITING"] %}text-warning{% elif r["status"] in ["RUNNING", "INITIALIZING", "FINISHING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
+                                                {{r["name"]}} <span>{{ r["%"] }}%</span></a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
                                 </div>
 
                                 <hr/>
@@ -239,17 +237,15 @@
                                     </i>
                                 </a>
                                 <div id="browser_navpanel_pipe_{{p["id"]}}" class="collapse">
-                                    <div>
-                                        <ul>
-                                            {% for r in p["runs"] %}
-                                            {% if r["status"] in ["ERROR", "DONE", "CANCELED"] %}
-                                            <li><a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
-                                                <i class="fa fa-tasks {% if r["status"] in ["ERROR", "CANCELED"] %}text-danger{% endif %}" aria-hidden="true"></i> 
-                                                 {{r["name"]}}</a></li>
-                                            {% endif %}
-                                            {% endfor %}
-                                        </ul>
-                                    </div>
+                                    <ul>
+                                        {% for r in p["runs"] %}
+                                        {% if r["status"] in ["ERROR", "DONE", "CANCELED"] %}
+                                        <li><a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
+                                            <i class="fa fa-tasks {% if r["status"] in ["ERROR", "CANCELED"] %}text-danger{% endif %}" aria-hidden="true"></i> 
+                                             {{r["name"]}}</a></li>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </ul>
                                 </div>
                                 {% endfor %}
                             </div>
