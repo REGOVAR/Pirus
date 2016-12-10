@@ -63,42 +63,26 @@ Endpoints
 =========
 Runs
 ----
-  ``GET /run/``
-     Description of the get run
+  ``GET /run``
+     Generic request to return a list of runs. Accepted (and all optional) query parameters :
+      - ``range`` : start-end :
+      - ``fields`` : the list (comma separedted) of fields that shall be loaded/return
+      - ``order_by`` : the list (comma separated) of fields in which the results shall be ordered
+      - ``sorted_by`` : this list shall be used accordingly with order_by to precise if the fields shall ordered ASC or DESC
+      - ``filter`` : [string] a value that will be used to filter on all fields. only elemnt that contain this string will be returned
      
-     Response example:
-.. code-block:: python
-    {
-        data: 
-        {
-            progress: 
-            {
-                value: "100",
-                label: "100 / 100",
-                max: "100",
-                min: "0"
-            },
-            end: null,
-            name: "t2",
-            config: "<json serialized>",
-            inputs: [
-                "580897120e95cb2d349fd3ce"
-            ],
-            id: "5808a28b0e95cb328c35c5c3",
-            status: "DONE",
-            outputs: null,
-            pipe_id: "5808a25a0e95cb328c35c5c2",
-            start: "1476960907.384298"
-        },
-        success: true
-    }
 
 
-  ``POST /run/``
-     Description of the get run
-
+  ``POST /run``
+     Init and start a run with provided information. The run is automatically start if there is enough resources; otherwise it will wait for that.
+     POST data must be JSON dictionary with the 3 requiered fields : 
+      - ``pipeline_id`` : [string] the id of the pipeline to use for the run
+      - ``config`` : [dict] the config key-values to configure the run
+      - ``inputs`` : [list] the list of file ids that shall be used as input by the run
+     
+     
   ``GET /run/{run_id}``
-     Description of the get run
+     **Description of the get run
 
   ``GET /run/{run_id}/progress`` 
      Description of the get run
