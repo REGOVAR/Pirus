@@ -202,7 +202,7 @@ def start_run(self, run_id):
         #     f = PirusFile.from_id(file_id)
         #     print ("push " + f.path + " to " + run.lxd_container + os.path.join(pipeline.lxd_inputs_path, f.name))
         #     subprocess.call(["lxc", "file", "push", f.path, run.lxd_container + os.path.join(pipeline.lxd_inputs_path, f.name)])
-        subprocess.call(["lxc", "exec", run.lxd_container, "chmod", "+x", lxd_run_file])
+        subprocess.call(["lxc", "exec", run.lxd_container, "--",  "chmod", "+x", lxd_run_file])
         subprocess.Popen(["lxc", "exec", run.lxd_container, lxd_run_file])
         self.notify_status("RUNNING")
     except:
@@ -215,7 +215,6 @@ def start_run(self, run_id):
 @app.task(base=PirusTask, queue='PirusQueue', bind=True)
 def terminate_run(self, run_id):
     # Init celery task
-
     from core.model import Run, PirusFile, Pipeline
     run = Run.from_id(run_id)
     if run is None :

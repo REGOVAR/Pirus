@@ -54,8 +54,8 @@ pirusFileInput.addEventListener("change", function(e)
     pirusFileUpload = new tus.Upload(file, options);
     pirusFileUpload.start();
 
-    fileId = pirusFileUpload.url.substr(pirusFileUpload.url.lastIndexOf('/') + 1);
-    add_new_activity_to_demo_browser("file", fileId);
+    // fileId = pirusFileUpload.url.substr(pirusFileUpload.url.lastIndexOf('/') + 1);
+    // add_new_activity_to_demo_browser("file", fileId);
     // Todo : while the upload of the file start/continue, display a form to edit file information (comments, tags, filename, ...)
 })
 

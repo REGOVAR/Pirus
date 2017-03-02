@@ -3,13 +3,13 @@
 import os
 
 # HOST (internal)
-HOST           = "0.0.0.0"
+HOST           = "127.0.0.1"
 PORT           = "8090"
 VERSION        = "v1"
 HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
 # HOST (public)
-HOST_P         = "pirus.absolumentg.fr/"
+HOST_P         = "pirus.absolumentg.fr"
 
 RANGE_DEFAULT = 20
 RANGE_MAX     = 1000
@@ -31,7 +31,7 @@ RUNS_DIR      = "/var/regovar/pirus/runs"
 PIRUS_DIR      = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR   = os.path.join(PIRUS_DIR, "api_rest/templates/")
 ERROR_ROOT_URL = "api.pirus.org/errorcode/"
-NOTIFY_URL     = "http://" + HOSTNAME + "/run/notify/"
+NOTIFY_URL     = "http://" + HOST_P + "/run/notify/"
 
 
 # LXD
