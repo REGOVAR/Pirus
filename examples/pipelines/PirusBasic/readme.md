@@ -14,6 +14,7 @@ This document explain you how to build a simple pipeline image for Pirus.
     lxc exec pirus -- /bin/bash
     
     # following directories are mandatory
+    mkdir /pipeline/
     mkdir /pipeline/run
     mkdir /pipeline/inputs
     mkdir /pipeline/outputs
@@ -23,10 +24,17 @@ This document explain you how to build a simple pipeline image for Pirus.
     # need curl if you want to notify server with the progress of your run
     apt install curl jq nano
     
-    # the script run.sh is the "entry point" of your run
-    echo "curl ${NOTIFY}50" > /pipeline/run/run.sh
-    echo "ls -l /pipeline/database/db > /pipeline/outputs/result.txt" >> /pipeline/run/run.sh
+    # Create the script run.sh. this will be the "entry point" of your run
+    # An example can be found on github (https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/run.sh)
+    nano /pipeline/run/run.sh
     chmod +x /pipeline/run/run.sh
+    
+    # To allow users to configure your pipeline, you shall put in your container a form.json file 
+    # that will describe a form to set parameter for your pipe.
+    # An example can be found on github (https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/form.json)
+    nano /pipeline/form.json
+    
+    # You can also put a a custom logo (png or jpeg file) in your pipeline.
     
     # exit the container
     exit
@@ -48,7 +56,7 @@ This document explain you how to build a simple pipeline image for Pirus.
     # add folowing informations into the metadata.yaml file
     sudo nano metadata.yaml
     
-    # si json
+    # if json
     "pirus":
     {
         "name" : "Pirus Simple",
@@ -65,7 +73,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         "form" : "/pipeline/form.json",
         "icon" : "/pipeline/logo.png"
     }
-    # si yaml
+    # if yaml
     pirus:
         name: "Pirus Simple"
         description: "Test pipeline for pirus"
@@ -79,6 +87,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         outputs: "/pipeline/outputs"
         databases: "/pipeline/db"
         form: "/pipeline/form.json"
+        icon: "/pipeline/logo.png"
 
     
     # You can repackage the image in tar.xz, to save space
