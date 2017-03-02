@@ -1,0 +1,72 @@
+{
+    "architecture": "x86_64",
+    "creation_date": 1475725740,
+    "properties": {
+        "architecture": "x86_64",
+        "description": "ubuntu xenial x86_64 (default) (20161006_03:49)",
+        "name": "ubuntu-xenial-x86_64-default-20161006_03:49",
+        "os": "ubuntu",
+        "release": "xenial",
+        "variant": "default"
+    },
+    "templates": {
+        "/etc/hostname": {
+            "template": "hostname.tpl",
+            "when": [
+                "create"
+            ]
+        },
+        "/etc/hosts": {
+            "template": "hosts.tpl",
+            "when": [
+                "create"
+            ]
+        },
+        "/etc/init/console.override": {
+            "template": "upstart-override.tpl",
+            "when": [
+                "create"
+            ]
+        },
+        "/etc/init/tty1.override": {
+            "template": "upstart-override.tpl",
+            "when": [
+                "create"
+            ]
+        },
+        "/etc/init/tty2.override": {
+            "template": "upstart-override.tpl",
+            "when": [
+                "create"
+            ]
+        },
+        "/etc/init/tty3.override": {
+            "template": "upstart-override.tpl",
+            "when": [
+                "create"
+            ]
+        },
+        "/etc/init/tty4.override": {
+            "template": "upstart-override.tpl",
+            "when": [
+                "create"
+            ]
+        }
+    },
+    "pirus":
+    {
+        "name" : "Pirus Simple",
+        "description" : "Test pipeline for pirus",
+        "version": "1.0.0",
+        "pirus_api": "1.0.0",
+        "license" : "AGPL",
+        "developers" : ["Olivier GUEUDELOT"],
+        "run" : "/pipeline/run/run.sh",
+        "inputs" : "/pipeline/inputs",
+        "outputs" : "/pipeline/outputs",
+        "databases" : "/pipeline/db",
+        "logs" : "/pipeline/logs",
+        "form" : "/pipeline/form.json"
+    }
+}
+
