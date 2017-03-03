@@ -59,19 +59,19 @@ This document explain you how to build a simple pipeline image for Pirus.
     # if json
     "pirus":
     {
-        "name" : "Pirus Simple",  # required : the name of your pipe
-        "description" : "Test pipeline for pirus",  # optional : the purpose of your pipe
-        "version": "1.0.0",  # optional : the version of your pipe
-        "pirus_api": "1.0.0",  # optional : the pirus api version
-        "license" : "AGPLv3",  # optional : the license of your pipe
+        "name" : "Pirus Simple",               # required : the name of your pipe
+        "description" : "Test pipeline",       # optional : the purpose of your pipe
+        "version": "1.0.0",                    # optional : the version of your pipe
+        "pirus_api": "1.0.0",                  # optional : the pirus api version
+        "license" : "AGPLv3",                  # optional : the license of your pipe
         "developers" : ["Olivier GUEUDELOT"],  # optional : a list of name
-        "run" : "/pipeline/run/run.sh",  # required : the command command that shall be execute to run your pipe (use absolute path)
-        "inputs" : "/pipeline/inputs",  # optional : absolute path to the folder (in the container) where inputs files for the pipe shall be put
-        "outputs" : "/pipeline/outputs",  # optional : absolute path to the folder (in the container) where ouputs files of the pipe will be put
-        "databases" : "/pipeline/db",  # optional : absolute path to the folder (in the container) where tierce databases (hg19 by example) shall be put
-        "logs" : "/pipeline/logs",  # optional : absolute path to the folder (in the container) where log of the run will be put
-        "form" : "/pipeline/form.json",  # optional : absolute path to the json file that describe the form for the user to configure the run of the pipe
-        "icon" : "/pipeline/logo.png"  # optional : absolute path to the image that shall be used as logo for the pipe
+        "run" : "/pipeline/run/run.sh",        # required : the command command that shall be execute to run your pipe (use absolute path)
+        "inputs" : "/pipeline/inputs",         # optional : absolute path to the folder (in the container) where inputs files for the pipe shall be put
+        "outputs" : "/pipeline/outputs",       # optional : absolute path to the folder (in the container) where ouputs files of the pipe will be put
+        "databases" : "/pipeline/db",          # optional : absolute path to the folder (in the container) where tierce databases (hg19 by example) shall be put
+        "logs" : "/pipeline/logs",             # optional : absolute path to the folder (in the container) where log of the run will be put
+        "form" : "/pipeline/form.json",        # optional : absolute path to the json file that describe the form for the user to configure the run of the pipe
+        "icon" : "/pipeline/logo.png"          # optional : absolute path to the image that shall be used as logo for the pipe
     }
     # if yaml
     pirus:
