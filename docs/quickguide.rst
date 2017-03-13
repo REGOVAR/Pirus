@@ -73,6 +73,46 @@ Enable this virtual host by creating a symbolic link ::
 	sudo /etc/init.d/nginx restart
 	
 
+Installing genomic databases
+----------------------------
+According to the config file of the Pirus application, you will install databases in the folder /var/pirus/databases by examples. You have to put in this directory all heavy databases used by pipes. The organisation shall stay simple, one folder by reference  ::
+
+	/var/pirus/databases
+		/hg19
+			hg19.fa
+			1000g.vcf.gz
+			1000g.vcf.gz.tbi
+			... <- all other files that could be used by pipelines
+		/hg38
+			hg38.fa
+			...
+		
+Below the command to get all files for hg19 from the gatk public repository ::
+	mkdir -p /var/pirus/databases/hg19
+	cd /var/pirus/databases/hg19
+	nohup wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/ -r &
+	# nohup allow the long task to run without bocking your shell session
+	# you can follow the execution by looking the log
+	tail -f nohup.out
+	# when all download are completed
+	mv ftp.broadinstitute.org/bundle/hg19/* .
+	
+	# Check that file are not corrupted
+	cat *.md5 >> all.md5
+	sed -i 's/humgen\/gsa-scr1\/pub\/bundle\/2.8\/hg19/var\/pirus\/databases\/hg19/' all.md5
+	md5sum -c all.md5
+	
+	# Unfortunately, all gz file in the gatk ftp are not in bzip format... so, to be used 
+	# by bioinformatic's pipelines, we need to redo compression with the good algorithm
+	# To get the bzip tool, you need to get and compile Htslib (https://github.com/samtools/htslib)
+	unzip *.vcf.gz
+	rm *.vcf.idx.gz
+	rm *.vcf.gz
+	<PATH_TO_HTSLIB_BIN>/bgzip *.vcf
+	<PATH_TO_HTSLIB_BIN>/tabix -p *.vcf.gz
+	
+	
+
 Run pirus
 ---------
 
