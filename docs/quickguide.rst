@@ -94,9 +94,21 @@ Below the command to get all files for hg19 from the gatk public repository ::
 	nohup wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/ -r &
 	# nohup allow the long task to run without bocking your shell session
 	# you can follow the execution by looking the log
-	tail -f nohup.out
-	# when all download are completed
+	tail -f nohup.out # Ctrl+C to quit
+	
+	# meanwhile, downloading hg19.fa ref
+	wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit
+	md5sum hg19.2bit # compare fingerprint with online md5
+	
+	# TODO : choice 1 : installing bioinfo tools on the server or choice 2 : download all file from a directory ?
+	twoBitToFa hg19.2bit hg19.fa
+	samtools faidx hg19.fa
+	bwa index hg19.fa
+	
+	
+	# when all other downloads are completed (look into nohup.out file)
 	mv ftp.broadinstitute.org/bundle/hg19/* .
+	
 	
 	# Check that file are not corrupted
 	cat *.md5 >> all.md5
