@@ -121,9 +121,9 @@ Below the command to get all files for hg19 from the gatk public repository ::
 	# To get the bzip tool, you need to get and compile Htslib (https://github.com/samtools/htslib)
 	gzip -d *.vcf.gz
 	rm *.vcf.idx.gz
-	rm *.vcf.gz
-	<PATH_TO_HTSLIB_BIN>/bgzip *.vcf
-	<PATH_TO_HTSLIB_BIN>/tabix -p *.vcf.gz
+	rm *.md5
+	bgzip *.vcf
+	tabix -p *.vcf.gz
 	
 	
 
