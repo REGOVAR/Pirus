@@ -88,6 +88,7 @@ According to the config file of the Pirus application, you will install database
 			...
 		
 Below the command to get all files for hg19 from the gatk public repository ::
+
 	mkdir -p /var/pirus/databases/hg19
 	cd /var/pirus/databases/hg19
 	nohup wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/ -r &
