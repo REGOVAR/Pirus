@@ -110,15 +110,16 @@ Below the command to get all files for hg19 from the gatk public repository ::
 	mv ftp.broadinstitute.org/bundle/hg19/* .
 	
 	
-	# Check that file are not corrupted
+	# If you don't trust your connection, you can check if file are not corrupted... 
+	# unfortunately, md5 provided by the broad institute are not for the good files :P
 	cat *.md5 >> all.md5
 	sed -i 's/humgen\/gsa-scr1\/pub\/bundle\/2.8\/hg19/var\/pirus\/databases\/hg19/' all.md5
 	md5sum -c all.md5
 	
-	# Unfortunately, all gz file in the gatk ftp are not in bzip format... so, to be used 
+	# Unfortunately -again-, all gz file in the gatk ftp are not in bzip format... so, to be used 
 	# by bioinformatic's pipelines, we need to redo compression with the good algorithm
 	# To get the bzip tool, you need to get and compile Htslib (https://github.com/samtools/htslib)
-	unzip *.vcf.gz
+	gzip -d *.vcf.gz
 	rm *.vcf.idx.gz
 	rm *.vcf.gz
 	<PATH_TO_HTSLIB_BIN>/bgzip *.vcf
