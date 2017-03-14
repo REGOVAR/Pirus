@@ -2,12 +2,14 @@
 # coding: utf-8 
 import os
 
-# HOST
+# HOST (internal)
 HOST           = "0.0.0.0"
-PORT           = "8090"
+PORT           = "8091"
 VERSION        = "v1"
 HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
+# HOST (public)
+HOST_P         = "dev1.absolumentg.fr/"
 
 RANGE_DEFAULT = 20
 RANGE_MAX     = 1000
@@ -18,11 +20,11 @@ DATABASE_NAME = "pirus"
 
 
 # FILESYSTEM
-FILES_DIR     = "/tmp/pirus_" + VERSION + "/files"
-TEMP_DIR      = "/tmp/pirus_" + VERSION + "/downloads"
-DATABASES_DIR = "/tmp/pirus_" + VERSION + "/databases"
-PIPELINES_DIR = "/tmp/pirus_" + VERSION + "/pipelines"
-RUNS_DIR      = "/tmp/pirus_" + VERSION + "/runs"
+FILES_DIR     = "/var/regovar/pirus/files"
+TEMP_DIR      = "/var/regovar/pirus/downloads"
+DATABASES_DIR = "/var/regovar/pirus/databases"
+PIPELINES_DIR = "/var/regovar/pirus/pipelines"
+RUNS_DIR      = "/var/regovar/pirus/runs"
 
 
 # AUTOCOMPUTED VALUES

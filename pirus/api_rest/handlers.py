@@ -158,7 +158,7 @@ class WebsiteHandler:
             "pipes"            : pirus.pipelines.get(None, None, ['-name'], None, None, 2),
             "runs_done"        : [r for r in pirus.runs.get(None, None, ['-start']) if r["status"] in ["ERROR", "DONE", "CANCELED"]],
             "runs_inprogress"  : [r for r in pirus.runs.get(None, None, ['-start']) if r["status"] in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]], 
-            "hostname"         : HOSTNAME
+            "hostname"         : HOST_P
         }
         for f in data["files_all"]: 
             f.update({"size" : humansize(f["size"])})
@@ -184,7 +184,7 @@ class WebsiteHandler:
             "host" : HOST,
             "port" : PORT,
             "version" : VERSION,
-            "base_url" : "http://" + HOSTNAME,
+            "base_url" : "http://" + HOST_P,
             "max_parallel_run " : LXD_MAX,
             "run_config " : LXD_HDW_CONF
         })

@@ -131,8 +131,8 @@ class PirusFile(Document):
         pfile.create_date = str(datetime.datetime.now().timestamp())
         pfile.source =  {"type" : "upload"}
         pfile.save()
-        pfile.url = "http://" + HOSTNAME + "/dl/f/" + str(pfile.id)
-        pfile.upload_url = "http://" + HOSTNAME + "/file/upload/" + str(pfile.id)
+        pfile.url = "http://" + HOST_P + "/dl/f/" + str(pfile.id)
+        pfile.upload_url = "http://" + HOST_P + "/file/upload/" + str(pfile.id)
         pfile.save()
         return pfile
 
@@ -260,10 +260,10 @@ class Pipeline(Document):
             
             if "form_file"  in data.keys():
                 self.form_file = data['form_file']
-                self.form_url = "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/form.json"
+                self.form_url = "http://" + HOST_P + "/pipeline/" + str(self.id) + "/form.json"
             if "icon_file" in data.keys():
                 self.icon_file = data['icon_file']
-                self.icon_url = "http://" + HOSTNAME + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.icon_file)
+                self.icon_url = "http://" + HOST_P + "/pipeline/" + str(self.id) + "/" + os.path.basename(self.icon_file)
         except KeyError as e:
             raise ValidationError('Invalid pipeline: missing ' + e.args[0])
         return self
@@ -281,8 +281,8 @@ class Pipeline(Document):
                 "status"        : "WAITING"
             })  
         pipe.save()
-        pipe.url = "http://" + HOSTNAME + "/pipeline/" + str(pipe.id)
-        pipe.upload_url = "http://" + HOSTNAME + "/pipeline/upload/" + str(pipe.id)
+        pipe.url = "http://" + HOST_P + "/pipeline/" + str(pipe.id)
+        pipe.upload_url = "http://" + HOST_P + "/pipeline/upload/" + str(pipe.id)
         pipe.save()
         return pipe
 

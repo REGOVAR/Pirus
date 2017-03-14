@@ -605,8 +605,8 @@ class RunManager:
         })
         run.save()
 
-        run.url = 'http://' + HOSTNAME + '/dl/r/' + str(run.id)
-        run.notify_url = 'http://' + HOSTNAME + '/run/notify/' + str(run.id)
+        run.url = 'http://' + HOST_P + '/dl/r/' + str(run.id)
+        run.notify_url = 'http://' + HOST_P + '/run/notify/' + str(run.id)
         config_data = json.loads(run.config)
         config_data["pirus"]["notify_url"] = run.notify_url
         run.config = json.dumps(config_data)
