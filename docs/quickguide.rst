@@ -122,8 +122,8 @@ Below the command to get all files for hg19 from the gatk public repository ::
 	gzip -d *.vcf.gz
 	rm *.vcf.idx.gz
 	rm *.md5
-	bgzip *.vcf
-	tabix -p *.vcf.gz
+	for i in `ls -L *.vcf`; bgzip $i;
+	for i in `ls -L *.vcf.gz`; tabix -p $i;
 	
 	
 
