@@ -73,6 +73,60 @@ Enable this virtual host by creating a symbolic link ::
 	sudo /etc/init.d/nginx restart
 	
 
+Installing genomic databases
+----------------------------
+According to the config file of the Pirus application, you will install databases in the folder /var/pirus/databases by examples. You have to put in this directory all heavy databases used by pipes. The organisation shall stay simple, one folder by reference  ::
+
+	/var/pirus/databases
+		/hg19
+			hg19.fa
+			1000g.vcf.gz
+			1000g.vcf.gz.tbi
+			... <- all other files that could be used by pipelines
+		/hg38
+			hg38.fa
+			...
+		
+Below the command to get all files for hg19 from the gatk public repository ::
+
+	mkdir -p /var/pirus/databases/hg19
+	cd /var/pirus/databases/hg19
+	nohup wget ftp://gsapubftp-anonymous@ftp.broadinstitute.org/bundle/hg19/ -r &
+	# nohup allow the long task to run without bocking your shell session
+	# you can follow the execution by looking the log
+	tail -f nohup.out # Ctrl+C to quit
+	
+	# meanwhile, downloading hg19.fa ref
+	wget http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/hg19.2bit
+	md5sum hg19.2bit # compare fingerprint with online md5
+	
+	# TODO : choice 1 : installing bioinfo tools on the server or choice 2 : download all file from a directory ?
+	twoBitToFa hg19.2bit hg19.fa
+	samtools faidx hg19.fa
+	bwa index hg19.fa
+	
+	
+	# when all other downloads are completed (look into nohup.out file)
+	mv ftp.broadinstitute.org/bundle/hg19/* .
+	
+	
+	# If you don't trust your connection, you can check if file are not corrupted... 
+	# unfortunately, md5 provided by the broad institute are not for the good files :P
+	cat *.md5 >> all.md5
+	sed -i 's/humgen\/gsa-scr1\/pub\/bundle\/2.8\/hg19/var\/pirus\/databases\/hg19/' all.md5
+	md5sum -c all.md5
+	
+	# Unfortunately -again-, all gz file in the gatk ftp are not in bzip format... so, to be used 
+	# by bioinformatic's pipelines, we need to redo compression with the good algorithm
+	# To get the bzip tool, you need to get and compile Htslib (https://github.com/samtools/htslib)
+	gzip -d *.vcf.gz
+	rm *.vcf.idx.gz
+	rm *.md5
+	for i in `ls -L *.vcf`; bgzip $i;
+	for i in `ls -L *.vcf.gz`; tabix -p vcf $i;
+	
+	
+
 Run pirus
 ---------
 

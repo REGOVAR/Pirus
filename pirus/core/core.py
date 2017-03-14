@@ -281,7 +281,7 @@ class PipelineManager:
         pipe = Pipeline.from_id(pipe_id)
         if pipe == None:
             raise PirusException("No pipeline with id " + str(pipe_id))
-        return pipe.export_client_data(sublvl, fields)
+        return pipe #.export_client_data(sublvl, fields)
 
 
 
@@ -290,23 +290,17 @@ class PipelineManager:
 
 
 
-    def register(self, fullpath, metadata={}):
+    def register(self, filename, file_size, metadata={}):
         """ 
             Create an entry for the pipeline in the database and return the id of the pipeline in pirus
             This method shall be used to init a resumable upload of a pipeline 
             (the pipeline is not yet installed and available, but we need to manipulate its pirus metadata)
         """
-        pipe = Pipeline()
-        pipe.import_data({
-                "name"          : fullpath,
-                "pirus_api"     : "Unknow",
-                "pipeline_file" : os.path.join(TEMP_DIR, str(uuid.uuid4())),
-                "size"          : file_size,
-                "upload_offset" : 0,
-                "status"        : "WAITING"
-            })
-        pipe.import_data(metadata);
-        pipe.save()
+        pipe = Pipeline.new_from_tus(filename, file_size)
+        if len(metadata) > 0:
+            pirusfile.import_data(metadata)
+            pirusfile.save()
+        plog.info('core.PipeManager.register : New pipe registered with the id {}'.format(pipe.id))
         return pipe.export_client_data()
 
 
@@ -356,7 +350,7 @@ class PipelineManager:
         if pipeline == None or pipeline.size != pipeline.upload_offset or pipeline.status != "UPLOADING":
             return None
 
-
+        ipdb.set_trace()
         lxd_alias     = str(uuid.uuid4())
         root_path     = os.path.join(PIPELINES_DIR, lxd_alias)
         old_file      = pipeline.pipeline_file
@@ -654,7 +648,7 @@ class RunManager:
             if "status" in json_data.keys() or "progress" in json_data.keys():
                 msg = {"action":"run_changed", "data" : [run.export_client_data()] }
                 pirus.notify_all(json.dumps(msg))
-        return run.export_client_data()
+        return run
 
 
     # Update the status of the run, and according to the new status will do specific action
@@ -701,8 +695,8 @@ class RunManager:
         if run.status in ["WAITING", "RUNNING"]:
             subprocess.Popen(["lxc", "pause", run.lxd_container])
             self.set_status(run, "PAUSE")
-            return True, run.export_client_data()
-        return False, run.export_client_data()
+            return True, run
+        return False, run
 
 
     def play(self, run_id):
@@ -712,8 +706,8 @@ class RunManager:
         if run.status == "PAUSE":
             subprocess.Popen(["lxc", "start", run.lxd_container])
             self.set_status(run, "RUNNING")
-            return True, run.export_client_data()
-        return False, run.export_client_data()
+            return True, run
+        return False, run
 
 
     def stop(self, run_id):
@@ -723,8 +717,8 @@ class RunManager:
         if run.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
             subprocess.Popen(["lxc", "delete", run.lxd_container, "--force"])
             self.set_status(run, "CANCELED")
-            return True, run.export_client_data()
-        return False, run.export_client_data()
+            return True, run
+        return False, run
 
 
     def monitoring(self, run_id):

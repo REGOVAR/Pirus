@@ -65,7 +65,7 @@ class TusFileWrapper:
             return PirusFileWrapper(pfile["id"])
 
         if "/pipeline/upload" in request.raw_path :
-            pipe = pirus.pipeline.upload_init(filename, file_size)
+            pipe = pirus.pipelines.register(filename, file_size)
             return PirusPipelineWrapper(pipe["id"])
 
 

@@ -540,7 +540,7 @@ class RunHandler:
         except Exception as error:
             return rest_error("Unable to update information for the runs with id " + str(run_id) + ". " + error.msg)
 
-        return rest_success(run)
+        return rest_success(run.export_client_data())
 
 
 
@@ -566,8 +566,8 @@ class RunHandler:
             return rest_error("Id not found")
         result, run = pirus.runs.pause(run_id)
         if result:
-            return rest_success(run)
-        return rest_error("Unable to pause the run " + run["id"])
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to pause the run {}".format(run.id))
 
 
     def get_play(self, request):
@@ -576,8 +576,8 @@ class RunHandler:
             return rest_error("Id not found")
         result, run = pirus.runs.play(run_id)
         if result:
-            return rest_success(run)
-        return rest_error("Unable to restart the run " + run["id"])
+            return rest_success(run.export_client_data())
+        return rest_error("Unable to restart the run {}".format(run.id))
 
 
     def get_stop(self, request):
@@ -587,7 +587,7 @@ class RunHandler:
         result, run = pirus.runs.stop(run_id)
         if result:
             return rest_success(run.export_client_data())
-        return rest_error("Unable to stop the run " + str(run_id))
+        return rest_error("Unable to stop the run {}".format(run.id))
 
 
     def get_monitoring(self, request):

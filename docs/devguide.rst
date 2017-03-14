@@ -14,6 +14,7 @@ Solution organisation
     * One branch by release; with the version number as name (by example branch "v1.0.0" for the v1.0.0)
  * Discussion : 
     * https://regovar.slack.com/
+    * dev@regovar.org
  
 
 
