@@ -9,7 +9,7 @@
             "description": "Sélectionner lequel est le `file1` parmis ceux que vous avez sélectionné pour le run.",
             "type": "string",
             "enum": "__PIRUS_INPUT_FILES__",
-            "required": true
+            "required": false
         },
         "file2": 
         {
@@ -25,14 +25,14 @@
             "description": "Choisissez votre génome de référence parmis les base de données disponible",
             "type": "string",
             "enum": "__PIRUS_DB_ALL__",
-            "required": true
+            "required": false
         },
         "confirm": 
         {
             "title": "Vous êtes sûr ?",
             "description": "En cochant cette case vous vous engagez blablabla.",
             "type": "boolean",
-            "default": true
+            "default": false
         },
         "witherror": 
         {
@@ -46,7 +46,7 @@
             "title": "Durée du run",
             "description": "Indiquez le nombre de seconde que va durer le run.",
             "type": "integer",
-            "required": true,
+            "required": false,
             "default" : 100
         },
         "outfilename": 
