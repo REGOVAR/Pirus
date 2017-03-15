@@ -4,12 +4,12 @@ import os
 
 # HOST (internal)
 HOST           = "127.0.0.1"
-PORT           = "8090"
+PORT           = "8200"
 VERSION        = "v1"
 HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
 # HOST (public)
-HOST_P         = "pirus.absolumentg.fr"
+HOST_P         = HOSTNAME
 
 RANGE_DEFAULT = 20
 RANGE_MAX     = 1000
