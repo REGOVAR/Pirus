@@ -33,7 +33,7 @@ Install Pirus dependencies:
     # apt update && apt upgrade
     # apt install git ca-certificates nginx rabbitmq-server mongodb lxd build-essential libssl-dev libffi-dev python3-dev virtualenv
     
-Setup lxd for Pirus containers (FIXME):
+Setup lxd for Pirus containers (FIXME). `newgrp` permet d'ajouter un groupe à l'utilisateur courant (et non pas de créer un groupe).
 
     # newgrp lxd
     # lxd init
