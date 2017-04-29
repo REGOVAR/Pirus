@@ -14,24 +14,40 @@ You need to do these steps every time you want to install Pirus in a container.
     $ lxc-create -n regovar_pirus -t download -- -d ubuntu -r xenial -a amd64
     $ lxc-start -n regovar_pirus
     $ lxc-attach -n regovar_pirus
-    
+
 ### Restart a stopped container
 If you have stopped a container either manually or by stopping the host computer, you can restart it.
 
     $ lxc-start -n regovar_pirus
     $ lxc-attach -n regovar_pirus
     
-## Pirus
+## Run Pirus
 
-Installation script for Pirus on a fresh Ubuntu Xenial:
+You can run Pirus on a fresh install of Ubuntu Xenial either on bare metal or in a container (see above).
+The following commands starting with a # have to be run as root.
+
+Install Pirus dependencies:
+    
     # apt update && apt upgrade
     # apt install git ca-certificates nginx rabbitmq-server mongodb lxd build-essential libssl-dev libffi-dev python3-dev virtualenv
+    
+Setup lxd for Pirus containers:
+
     # newgrp lxd
     # lxd init
+    
+#FIXME
+    
+Add an user account for Pirus and allow it to use lxd:
+
     # useradd pirus --create-home
     # sudo usermod -a -G lxd pirus
+    
+Create Pirus directories:
     # mkdir -p /var/regovar/pirus/{cache,downloads,files,databases,pipelines,runs}
     # chown -R pirus:pirus /var/regovar/pirus
+
+
     # su pirus
     $ lxc launch images:ubuntu/xenial firstContainerToInitLxd
     $ lxc delete firstContainerToInitLxd --force
