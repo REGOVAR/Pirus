@@ -1,3 +1,5 @@
+Documentation in progress
+
 ## Run Pirus in a container (optional)
 
 ### Run containers inside containers
@@ -24,7 +26,7 @@ If you have stopped a container either manually or by stopping the host computer
 ## Run Pirus
 
 You can run Pirus on a fresh install of Ubuntu Xenial either on bare metal or in a container (see above).
-The following commands starting with a # have to be run as root.
+The following commands starting with a `#` have to be run as root.
 
 Install Pirus dependencies:
     
@@ -35,7 +37,16 @@ Setup lxd for Pirus containers (FIXME):
 
     # newgrp lxd
     # lxd init
-    
+
+If you have choosen to run Pirus in a LXC contrainer, you have to configure it with `lxd init`:
+* Name of the storage backend to use (dir or zfs): dir
+* Would you like to have your containers share their parent's allocation (yes/no): yes
+* Would you like LXD to be available over the network (yes/no): yes
+* Address to bind LXD to (not including port): all
+* Port to bind LXD to: 8443
+* Trust password for new clients: password
+* Do you want to configure the LXD bridge: no
+
 Add an user account for Pirus and allow it to use lxd:
 
     # useradd pirus --create-home
@@ -46,13 +57,12 @@ Create Pirus directories:
     # mkdir -p /var/regovar/pirus/{cache,downloads,files,databases,pipelines,runs}
     # chown -R pirus:pirus /var/regovar/pirus
     
-Launch a LXD container to get an Ubuntu Xenial image:
+Launch a LXD container to get an Ubuntu Xenial image. This will generate a client certificate and make the subsequent container creations faster.
   
     # su pirus
     $ lxc launch images:ubuntu/xenial firstContainerToInitLxd
     $ lxc delete firstContainerToInitLxd --force
     
-
     
     $ git clone https://github.com/REGOVAR/Pirus.git ~/Pirus
     $ cd ~/Pirus
