@@ -6,7 +6,7 @@ You only to do this step once when you want to install Pirus for the first time.
     $ echo 'lxc.mount.auto = cgroup
     lxc.aa_profile = lxc-container-default-with-nesting' >> ~/.config/lxc/default.conf
 
-"The first will cause the cgroup manager socket to be bound into the container, so that lxc inside the container is able to administer cgroups for its nested containers. The second causes the container to run in a looser Apparmor policy which allows the container to do the mounting required for starting containers. Note that this policy, when used with a privileged container, is much less safe than the regular policy or an unprivileged container." See [LXC documentation on Ubuntu help](https://help.ubuntu.com/lts/serverguide/lxc.html)
+"The first will cause the cgroup manager socket to be bound into the container, so that lxc inside the container is able to administer cgroups for its nested containers. The second causes the container to run in a looser Apparmor policy which allows the container to do the mounting required for starting containers. Note that this policy, when used with a privileged container, is much less safe than the regular policy or an unprivileged container." See [LXC documentation on Ubuntu help](https://help.ubuntu.com/lts/serverguide/lxc.html).
 
 ### Create a lxc container and start it
 You need to do these steps every time you want to install Pirus in a container.
@@ -31,26 +31,29 @@ Install Pirus dependencies:
     # apt update && apt upgrade
     # apt install git ca-certificates nginx rabbitmq-server mongodb lxd build-essential libssl-dev libffi-dev python3-dev virtualenv
     
-Setup lxd for Pirus containers:
+Setup lxd for Pirus containers (FIXME):
 
     # newgrp lxd
     # lxd init
     
-#FIXME
-    
 Add an user account for Pirus and allow it to use lxd:
 
     # useradd pirus --create-home
-    # sudo usermod -a -G lxd pirus
+    # usermod -a -G lxd pirus
     
 Create Pirus directories:
+
     # mkdir -p /var/regovar/pirus/{cache,downloads,files,databases,pipelines,runs}
     # chown -R pirus:pirus /var/regovar/pirus
-
-
+    
+Launch a LXD container to get an Ubuntu Xenial image:
+  
     # su pirus
     $ lxc launch images:ubuntu/xenial firstContainerToInitLxd
     $ lxc delete firstContainerToInitLxd --force
+    
+
+    
     $ git clone https://github.com/REGOVAR/Pirus.git ~/Pirus
     $ cd ~/Pirus
     $ virtualenv -p /usr/bin/python3.5 venv
