@@ -1,12 +1,27 @@
-Optional, if you want to wrap Pirus into a lxc container:
-In order to run containers inside containers :
-    
+## Run Pirus in a container (optional)
+
+### Run containers inside containers
+You only to do this step once when you want to install Pirus for the first time.
+   
     $ echo 'lxc.mount.auto = cgroup
     lxc.aa_profile = lxc-container-default-with-nesting' >> ~/.config/lxc/default.conf
-    
+
+"The first will cause the cgroup manager socket to be bound into the container, so that lxc inside the container is able to administer cgroups for its nested containers. The second causes the container to run in a looser Apparmor policy which allows the container to do the mounting required for starting containers. Note that this policy, when used with a privileged container, is much less safe than the regular policy or an unprivileged container." See [LXC documentation on Ubuntu help](https://help.ubuntu.com/lts/serverguide/lxc.html)
+
+### Create a lxc container and start it
+You need to do these steps every time you want to install Pirus in a container.
+
     $ lxc-create -n regovar_pirus -t download -- -d ubuntu -r xenial -a amd64
     $ lxc-start -n regovar_pirus
     $ lxc-attach -n regovar_pirus
+    
+### Restart a stopped container
+If you have stopped a container either manually or by stopping the host computer, you can restart it.
+
+    $ lxc-start -n regovar_pirus
+    $ lxc-attach -n regovar_pirus
+    
+## Pirus
 
 Installation script for Pirus on a fresh Ubuntu Xenial:
     # apt update && apt upgrade
