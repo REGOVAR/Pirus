@@ -104,9 +104,18 @@ Configure nginx as a reverse proxy for the Pirus application and static assets:
             root /var/regovar/pirus;
         }
     }' > /etc/nginx/sites-available/pirus
+    
+Disable the "Welcome to nginx!" page on port 80:    
+    
     # rm /etc/nginx/sites-enabled/default
+    
+Enable the pirus site in nginx on port 80:
+    
     # ln -s /etc/nginx/sites-available/pirus /etc/nginx/sites-enabled
-    # /etc/init.d/nginx restart
+    
+Restart nginx:    
+    
+    # service nginx restart
 
 ## Run Pirus in a container (optional and experimental)
 
