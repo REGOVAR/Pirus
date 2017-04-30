@@ -1,31 +1,8 @@
 Documentation in progress
-
-## Run Pirus in a container (optional)
-
-### Run containers inside containers
-You only to do this step once when you want to install Pirus for the first time.
-   
-    $ echo 'lxc.mount.auto = cgroup
-    lxc.aa_profile = lxc-container-default-with-nesting' >> ~/.config/lxc/default.conf
-
-"The first will cause the cgroup manager socket to be bound into the container, so that lxc inside the container is able to administer cgroups for its nested containers. The second causes the container to run in a looser Apparmor policy which allows the container to do the mounting required for starting containers. Note that this policy, when used with a privileged container, is much less safe than the regular policy or an unprivileged container." See [LXC documentation on Ubuntu help](https://help.ubuntu.com/lts/serverguide/lxc.html).
-
-### Create a lxc container and start it
-You need to do these steps every time you want to install Pirus in a container.
-
-    $ lxc-create -n regovar_pirus -t download -- -d ubuntu -r xenial -a amd64
-    $ lxc-start -n regovar_pirus
-    $ lxc-attach -n regovar_pirus
-
-### Restart a stopped container
-If you have stopped a container either manually or by stopping the host computer, you can restart it.
-
-    $ lxc-start -n regovar_pirus
-    $ lxc-attach -n regovar_pirus
     
 ## Run Pirus
 
-You can run Pirus on a fresh install of Ubuntu Xenial either on bare metal or in a container (see above).
+You can run Pirus on a fresh install of Ubuntu Xenial either on bare metal or in a container (see below).
 The following commands starting with a `#` have to be run as root.
 
 Install Pirus dependencies:
@@ -38,14 +15,20 @@ Setup lxd for Pirus containers (FIXME). `newgrp` permet d'ajouter un groupe à l
     # newgrp lxd
     # lxd init
 
-If you have choosen to run Pirus in a LXC contrainer, you have to configure it with `lxd init`:
+You have to configure LXD with `lxd init`:
 * Name of the storage backend to use (dir or zfs): dir
-* Would you like to have your containers share their parent's allocation (yes/no): yes
-* Would you like LXD to be available over the network (yes/no): yes
-* Address to bind LXD to (not including port): all
-* Port to bind LXD to: 8443
-* Trust password for new clients: password
-* Do you want to configure the LXD bridge: no
+* Would you like LXD to be available over the network (yes/no): no
+* Do you want to configure the LXD bridge: yes
+* Would you like to setup a network bridge for LXD containers now? Yes
+* Bridge interface name: (keep default)
+* Would you like to setup an IPv4 subnet? Yes
+* IPv4 address: (keep default)
+* IPv4 CIDR mask: (keep default)
+* First DHCP address: (keep default)
+* Last DHCP address: (keep default)
+* Max number of DHCP clients: (keep default)
+* Do you want to NAT the IPv4 traffic? No
+* Do you want to setup an IPv6 subnet? No
 
 Add an user account for Pirus and allow it to use lxd:
 
@@ -102,3 +85,26 @@ Launch a LXD container to get an Ubuntu Xenial image. This will generate a clien
     # rm /etc/nginx/sites-enabled/default
     # ln -s /etc/nginx/sites-available/pirus /etc/nginx/sites-enabled
     # /etc/init.d/nginx restart
+
+## Run Pirus in a container (optional and experimental)
+
+### Run containers inside containers
+You only to do this step once when you want to install Pirus for the first time.
+   
+    $ echo 'lxc.mount.auto = cgroup
+    lxc.aa_profile = lxc-container-default-with-nesting' >> ~/.config/lxc/default.conf
+
+"The first will cause the cgroup manager socket to be bound into the container, so that lxc inside the container is able to administer cgroups for its nested containers. The second causes the container to run in a looser Apparmor policy which allows the container to do the mounting required for starting containers. Note that this policy, when used with a privileged container, is much less safe than the regular policy or an unprivileged container." See [LXC documentation on Ubuntu help](https://help.ubuntu.com/lts/serverguide/lxc.html).
+
+### Create a lxc container and start it
+You need to do these steps every time you want to install Pirus in a container.
+
+    $ lxc-create -n regovar_pirus -t download -- -d ubuntu -r xenial -a amd64
+    $ lxc-start -n regovar_pirus
+    $ lxc-attach -n regovar_pirus
+
+### Restart a stopped container
+If you have stopped a container either manually or by stopping the host computer, you can restart it.
+
+    $ lxc-start -n regovar_pirus
+    $ lxc-attach -n regovar_pirus
