@@ -1,5 +1,3 @@
-Documentation in progress
-    
 ## Run Pirus
 
 You can run Pirus on a fresh install of Ubuntu Xenial either on bare metal or in a container (see below).
