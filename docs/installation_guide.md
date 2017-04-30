@@ -45,17 +45,39 @@ Launch a LXD container to get an Ubuntu Xenial image. This will generate a clien
     # su pirus
     $ lxc launch images:ubuntu/xenial firstContainerToInitLxd
     $ lxc delete firstContainerToInitLxd --force
-    
+   
+Get the Pirus source code and assets:   
     
     $ git clone https://github.com/REGOVAR/Pirus.git ~/Pirus
     $ cd ~/Pirus
+    
+Create a virtual environment to use Python 3.5 without conflicting with other setups:
+
     $ virtualenv -p /usr/bin/python3.5 venv
+    
+Activate the virtual environment:
+    
     $ source venv/bin/activate
+    
+Install Pirus Python dependencies:    
+    
     $ pip install -r requirements.txt
+    
+Launch Celery to keep track of jobs:
+
     $ cd pirus
     $ make cel &!
+    
+Launch Pirus itself:    
+    
     $ make app &!
+    
+Leave the pirus user session (Celery and the Pirus application are still running); this leaves the virtual environment at the same time: 
+    
     $ exit
+    
+Configure nginx as a reverse proxy for the Pirus application and static assets:
+    
     # echo 'upstream aiohttp_pirus
     {
         server 127.0.0.1:8200 fail_timeout=0;
