@@ -25,7 +25,7 @@ You have to configure LXD with `lxd init`:
 * First DHCP address: (keep default)
 * Last DHCP address: (keep default)
 * Max number of DHCP clients: (keep default)
-* Do you want to NAT the IPv4 traffic? No
+* Do you want to NAT the IPv4 traffic? Yes
 * Do you want to setup an IPv6 subnet? No
 
 Add an user account for Pirus and allow it to use lxd:
