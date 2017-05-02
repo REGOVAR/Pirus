@@ -350,7 +350,7 @@ class PipelineManager:
         if pipeline == None or pipeline.size != pipeline.upload_offset or pipeline.status != "UPLOADING":
             return None
 
-        ipdb.set_trace()
+        # ipdb.set_trace()
         lxd_alias     = str(uuid.uuid4())
         root_path     = os.path.join(PIPELINES_DIR, lxd_alias)
         old_file      = pipeline.pipeline_file

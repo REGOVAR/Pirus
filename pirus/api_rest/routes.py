@@ -36,6 +36,8 @@ app.router.add_route('GET',    "/",          website.home)
 app.router.add_route('GET',    "/www",    website.home)
 app.router.add_route('GET',    "/config", website.get_config)
 app.router.add_route('GET',    "/db",     website.get_db)
+app.router.add_route('GET',    "/db/{ref}", website.get_db)
+app.router.add_route('GET',    "/db/{ref}/{bundle}", website.get_db)
 app.router.add_route('GET',    "/ws",     websocket.get)
 
 app.router.add_route('GET',    "/pipeline",                      pipeHdl.get)
@@ -78,7 +80,7 @@ app.router.add_route('POST',   "/run/notify/{run_id}", runHdl.update_status)
 
 # DEV/DEBUG - Routes that should be manages directly by NginX
 app.router.add_static('/assets', TEMPLATE_DIR)
-app.router.add_static('/db', DATABASES_DIR)
+app.router.add_static('/databases', DATABASES_DIR)
 app.router.add_static('/pipelines', PIPELINES_DIR)
 app.router.add_static('/files', FILES_DIR)
 

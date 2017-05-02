@@ -193,7 +193,19 @@ class WebsiteHandler:
 
 
     def get_db(self, request):
-        return rest_success([f for f in os.listdir(DATABASES_DIR) if os.path.isfile(os.path.join(DATABASES_DIR, f))])
+        ref = request.match_info.get('ref', None)
+        bundle = request.match_info.get('bundle', None)
+        
+        json = {r:{} for r in os.listdir(DATABASES_DIR) if os.path.isdir(os.path.join(DATABASES_DIR, r))}
+        for r in json.keys():
+            json[r] = {b:{
+                "size": humansize(os.path.getsize(os.path.join(DATABASES_DIR, r,b))),
+                "bsize" : os.path.getsize(os.path.join(DATABASES_DIR, r,b)),
+                "url" : "http://{}/databases/{}/{}".format(HOST_P, r, b),
+                "path" : os.path.join(r,b)
+                } for b in os.listdir(os.path.join(DATABASES_DIR, r))}
+
+        return rest_success(json)
 
 
  

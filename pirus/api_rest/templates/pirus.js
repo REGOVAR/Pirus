@@ -331,7 +331,7 @@ function add_new_activity_to_demo_browser(type, id)
     }
     else if (type == "pipeline")
     {
-        $('#browser_inprogress_pipes_table').append(demo_browser_file_entry.format(id, name, size, creation, comments));
+        //$('#browser_inprogress_pipes_table').append(demo_browser_file_entry.format(id, name, size, creation, comments));
     }
     else if (type == "run")
     {
@@ -405,17 +405,35 @@ function init_run(pipe_id)
         alert( "ERROR" );
     }).done(function(json) 
     {
+        // get list of database
         var json_db = [];
+        var db_ref = [];
+        var db_all = {};
+        $.ajax({ url: rootURL + "/db", type: "GET", async: false}).done(function(jsonDB)
+        {
+            json_db = jsonDB["data"];
+        })
+        $.each(json_db, function(index, ref) 
+        {
+            db_ref.push(ref);
+            db_all[ref] = {};
+            $.each(json_db[ref], function(index, doc) 
+            {
+
+            });
+            var percentage = (item["upload_offset"] / item["set_notify_all"] * 100).toFixed(2);
+
+            buildProgressBar(percentage, item["status"], "browser_inprogress_pipes_table_td_progress_" + item["id"]);
+            var tdElement = $("#run-" + item["id"] + "-status");
+            tdElement.html(item["status"]);
+        });
+
+
+
+        
 
         if (json.indexOf("__PIRUS_DB_ALL__") != -1)
         {
-
-            // get list of database
-            $.ajax({ url: rootURL + "/db", type: "GET", async: false}).done(function(jsonDB)
-            {
-                json_db = jsonDB["data"];
-            })
-
             json = json.replace(/"__PIRUS_DB_ALL__"/g, JSON.stringify(json_db));
         }
         runConfigForm = json;
