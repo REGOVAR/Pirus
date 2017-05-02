@@ -32,7 +32,7 @@ app.on_shutdown.append(on_shutdown)
 
 
 # Routes
-app.router.add_route('GET',    "/",          website.home)
+app.router.add_route('GET',    "/",       website.home)
 app.router.add_route('GET',    "/www",    website.home)
 app.router.add_route('GET',    "/config", website.get_config)
 app.router.add_route('GET',    "/db",     website.get_db)
@@ -64,18 +64,18 @@ app.router.add_route('GET',    "/run/{run_id}/stop",       runHdl.get_stop)
 app.router.add_route('GET',    "/run/{run_id}/monitoring", runHdl.get_monitoring)
 #app.router.add_route('GET',    "/run/{run_id}/{filename}", fileHdl.dl_run_file)
 
-app.router.add_route('GET',    "/file", fileHdl.get)
-app.router.add_route('DELETE', "/file/{file_id}",        fileHdl.delete)
-app.router.add_route('PUT',    "/file/{file_id}",        fileHdl.edit_infos)
-app.router.add_route('GET',    "/file/{file_id}",        fileHdl.get_details)
-app.router.add_route('POST',   "/file/upload",           fileHdl.tus_upload_init)
-app.router.add_route('OPTIONS',"/file/upload",           fileHdl.tus_config)
-app.router.add_route('HEAD',   "/file/upload/{file_id}", fileHdl.tus_upload_resume)
-app.router.add_route('PATCH',  "/file/upload/{file_id}", fileHdl.tus_upload_chunk)
-app.router.add_route('DELETE', "/file/upload/{file_id}", fileHdl.tus_upload_delete)
+app.router.add_route('GET',    "/v1/file", fileHdl.get)
+app.router.add_route('DELETE', "/v1/file/{file_id}",        fileHdl.delete)
+app.router.add_route('PUT',    "/v1/file/{file_id}",        fileHdl.edit_infos)
+app.router.add_route('GET',    "/v1/file/{file_id}",        fileHdl.get_details)
+app.router.add_route('POST',   "/v1/file/upload",           fileHdl.tus_upload_init)
+app.router.add_route('OPTIONS',"/v1/file/upload",           fileHdl.tus_config)
+app.router.add_route('HEAD',   "/v1/file/upload/{file_id}", fileHdl.tus_upload_resume)
+app.router.add_route('PATCH',  "/v1/file/upload/{file_id}", fileHdl.tus_upload_chunk)
+app.router.add_route('DELETE', "/v1/file/upload/{file_id}", fileHdl.tus_upload_delete)
 
 # Websockets / realtime notification
-app.router.add_route('POST',   "/run/notify/{run_id}", runHdl.update_status)
+app.router.add_route('POST',   "/v1/run/notify/{run_id}", runHdl.update_status)
 
 
 # DEV/DEBUG - Routes that should be manages directly by NginX

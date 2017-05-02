@@ -1,18 +1,18 @@
 # PirusBasic Pipeline
 
-This document explain you how to build a simple pipeline image for Pirus. 
+This document explain you how to build a simple pipeline image for Pirus.
 
 ## Requirement
  * You need LXD on your computer to create it
  * You should read the official doc of Pirus
 
-##Instructions
+## Instructions
 
     # create a container
     lxc launch images:ubuntu/xenial pirus
     # configure it
     lxc exec pirus -- /bin/bash
-    
+
     # following directories are mandatory
     mkdir /pipeline/
     mkdir /pipeline/run
@@ -20,25 +20,25 @@ This document explain you how to build a simple pipeline image for Pirus.
     mkdir /pipeline/outputs
     mkdir /pipeline/logs
     mkdir /pipeline/db
-    
+
     # need curl if you want to notify server with the progress of your run
     apt install curl jq nano --fix-missing
-    
+
     # Create the script run.sh. this will be the "entry point" of your run
     # An example can be found on github (https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/run.sh)
     nano /pipeline/run/run.sh
     chmod +x /pipeline/run/run.sh
-    
-    # To allow users to configure your pipeline, you shall put in your container a form.json file 
+
+    # To allow users to configure your pipeline, you shall put in your container a form.json file
     # that will describe a form to set parameter for your pipe.
     # An example can be found on github (https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/form.json)
     nano /pipeline/form.json
-    
+
     # You can also put a a custom logo (png or jpeg file) in your pipeline.
-    
+
     # exit the container
     exit
-    
+
     # stop it and create an image
     lxc stop pirus
     lxc publish pirus --alias=PirusSimple
@@ -49,13 +49,13 @@ This document explain you how to build a simple pipeline image for Pirus.
 ## Export image as file and edit image conf to create a piruse package installable on any pirus server
 
     lxc image export PirusSimple
-    # following command shall be done as root to avoid image corruption 
+    # following command shall be done as root to avoid image corruption
     # (as it will try to create symlink to computer resource in /dev folder by example)
     sudo tar xf <the_name_of_lxc_export_something_like_a8d44d24fcs...8fzef54e5>.tar.gz
 
     # add folowing informations into the metadata.yaml file
     sudo nano metadata.yaml
-    
+
     # if json
     "pirus":
     {
@@ -89,7 +89,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         form: "/pipeline/form.json"
         icon: "/pipeline/logo.png"
 
-    
+
     # You can repackage the image in tar.xz, to save space
     sudo tar cfJ PirusSimple.tar.xz metadata.yaml rootfs templates
     sudo rm -fr metadata.yaml rootfs templates
