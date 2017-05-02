@@ -4,7 +4,7 @@ import os
 
 # HOST (internal)
 HOST           = "127.0.0.1"
-PORT           = "8090"
+PORT           = "8200"
 VERSION        = "v1"
 HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
@@ -15,7 +15,12 @@ RANGE_DEFAULT = 20
 RANGE_MAX     = 1000
 
 # DB
+DATABASE_HOST = "localhost"
+DATABASE_PORT = 5432
+DATABASE_USER = "pirus"
+DATABASE_PWD = "pirus"
 DATABASE_NAME = "pirus"
+DATABASE_POOL_SIZE = 7
 
 
 
@@ -29,6 +34,7 @@ RUNS_DIR      = "/var/regovar/pirus/runs"
 
 # AUTOCOMPUTED VALUES
 PIRUS_DIR      = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR        = PIRUS_DIR
 TEMPLATE_DIR   = os.path.join(PIRUS_DIR, "api_rest/templates/")
 ERROR_ROOT_URL = "api.pirus.org/errorcode/"
 NOTIFY_URL     = "http://" + HOST_P + "/run/notify/"
