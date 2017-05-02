@@ -228,24 +228,24 @@ def file_init(self, loading_depth=0):
     """
         If loading_depth is > 0, children objects will be loaded. Max depth level is 2.
         Children objects of a file are :
-            - "source" property which can be set to empty if uploaded by a pirus user, 
-                or set with a Job object if the file have been created by a job. 
-            - "jobs" property which contains the list of jobs in which the file is used or created
-
-        If loading_depth == 0, children objects are not loaded, so source will be set with the id of the job if exists
+            - job_source : set with a Job object if the file have been created by a job. 
+            - jobs       : the list of jobs in which the file is used or created
+        If loading_depth == 0, children objects are not loaded
     """
-    # control max depth level allowed.
     self.loading_depth = min(2, loading_depth)
-    # Load children objects:
-    if self.loading_depth > 0:
+    self.jobs_ids = JobFile.get_jobs_ids(self.id)
+    self.jobs = []
+    self.job_source = None
+    self.loading_depth(loading_depth)
+            
+
+def file_loading_depth(self, loading_depth):
+    if loading_depth > 0:
         try:
-            self.source = Job.from_id(self.source, self.loading_depth-1)
+            self.job_source = Job.from_id(self.job_source_id, self.loading_depth-1)
             self.jobs = JobFile.get_jobs(self.id, self.loading_depth-1)
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
-    else:
-        self.jobs = JobFile.get_jobs_ids(self.id)
-            
 
 
 def file_from_id(file_id, loading_depth=0):
@@ -301,23 +301,45 @@ def file_load(self, data):
         if "update_date"   in data.keys(): self.update_date    = data['update_date']
         if "md5sum"        in data.keys(): self.md5sum         = data["md5sum"]
         if "tags"          in data.keys(): self.tags           = data['tags']
-        # ToDO
-        # if "source"        in data.keys(): self.source         = data["source"]
-        # if "runs"          in data.keys(): self.runs           = data["runs"]
+
+        # Job source and jobs list shall never be updated like that. See core method in the FileManager.
+        # if "job_source_id" in data.keys(): self.job_source_id  = data["job_source_id"] # TODO : need to update job_source if loading_depth > 0
+        # if "jobs_ids"      in data.keys(): self.jobs_ids       = data["jobs_ids"]      # TODO : need to update jobs if loading_depth > 0
         self.save()
     except KeyError as e:
         raise RegovarException('Invalid input file: missing ' + e.args[0])
     return self
 
 
+def file_save(self):
+    vm_settings_json = self.vm_settings
+    ui_form_json = self.ui_form
+    if isinstance(self.vm_settings, dict): 
+        self.vm_settings = json.dumps(self.vm_settings)
+    if isinstance(self.ui_form, dict): 
+        self.ui_form = json.dumps(self.ui_form)
+
+    generic_save(self)
+
+    if vm_settings_json: 
+        self.vm_settings = json.loads(vm_settings_json)
+    if ui_form_json: 
+        self.ui_form = json.loads(ui_form_json)
+
+
+
+
+
+
 File = Base.classes.file
 File.public_fields = ["id", "name", "type", "path", "size", "upload_offset", "status", "create_date", "update_date", "tags", "md5sum", "source", "jobs"]
 File.init = file_init
+File.loading_depth = file_loading_depth
 File.from_id = file_from_id
 File.from_ids = file_from_ids
 File.to_json = file_to_json
 File.load = file_load
-File.save = generic_save
+File.save = file_save
 
 
 
@@ -333,24 +355,33 @@ def pipeline_init(self, loading_depth=0):
     """
         If loading_depth is > 0, children objects will be loaded. Max depth level is 2.
         Child object of a pipeline is :
+            - "image_file" : the file of the pipeline image (if exists)
             - "jobs" property which contains the list of jobs that use the pipeline
 
         If loading_depth == 0, child object are not loaded, so jobs will be set with the  list of job's id
     """
-    # control max depth level allowed.
     self.loading_depth = min(2, loading_depth)
-    # Load children objects:
-    if self.loading_depth > 0:
+    self.jobs_ids = []
+    self.jobs = []
+    self.image_file = None
+    jobs = __db_session.query.filter(Job).filter_by(pipeline_id=self.id).all()
+    for j in jobs:
+        self.jobs_ids.append(f.id)
+    self.loading_depth(loading_depth)
+            
+
+def pipeline_loading_depth(self, loading_depth):
+    if loading_depth > 0:
         try:
-            self.jobs = JobFile.get_jobs(self.id, self.loading_depth-1)
+            self.image_file = File.from_id(self.image_file_id, self.loading_depth-1)
+            self.jobs = []
+            jobs = Job.query.filter(Job.id.in_(self.jobs_ids)).all()
+            for j in jobs:
+                self.jobs.append(f.init(loading_depth-1))
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
-    else:
-        self.jobs = []
-        jobs = __db_session.query.filter(Job).filter_by(pipeline_id=self.id).all()
-        for j in jobs:
-            self.jobs.append(f.init(loading_depth-1))
-            
+
+
 
 def pipeline_from_id(pipeline_id, loading_depth=0):
     """
@@ -447,6 +478,7 @@ def pipeline_save(self):
 Pipeline = Base.classes.pipeline
 Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "vm_image", "vm_settings", "ui_form", "ui_icon", "jobs"]
 Pipeline.init = pipeline_init
+Pipeline.loading_depth = pipeline_loading_depth
 Pipeline.from_id = pipeline_from_id
 Pipeline.from_ids = pipeline_from_ids
 Pipeline.to_json = pipeline_to_json
@@ -474,25 +506,41 @@ def job_init(self, loading_depth=0):
     """
         If loading_depth is > 0, children objects will be loaded. Max depth level is 2.
         Children objects of a job are :
-            - "inputs" property set with inputs files (or just file_id). 
-            - "outputs" property set with outputs files (or just file_id). 
+            - "inputs" property set with inputs files (file id are in inputs_ids property). 
+            - "outputs" property set with outputs files (file id are in outputs_ids property). 
 
         If loading_depth == 0, children objects are not loaded, so source will be set with the id of the job if exists
     """
-    # control max depth level allowed.
     self.loading_depth = min(2, loading_depth)
-    # Load children objects:
-    if self.loading_depth > 0:
+    self.inputs_ids = []
+    self.outputs_ids = []
+    self.inputs = []
+    self.outputs = []
+    files = __db_session.query.filter(JobFile).filter_by(job_id=self.id).all()
+    for f in files:
+        if file.as_input:
+            self.inputs_ids.append(f.id)
+        else:
+            self.outputs_ids.append(f.id)
+    self.loading_depth(loading_depth)
+            
+
+def pipeline_loading_depth(self, loading_depth):
+    if loading_depth > 0:
         try:
-            self.jobs = JobFile.get_jobs(self.id, self.loading_depth-1)
+            self.inputs = []
+            self.outputs = []
+            files = File.query.filter(File.id.in_(self.inputs_ids)).all()
+            for f in files:
+                self.inputs.append(f.init(loading_depth-1))
+            files = File.query.filter(File.id.in_(self.outputs_ids)).all()
+            for f in files:
+                self.outputs.append(f.init(loading_depth-1))
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
-    else:
-        self.jobs = []
-        jobs = __db_session.query.filter(Job).filter_by(job_id=self.id).all()
-        for j in jobs:
-            self.jobs.append(f.init(loading_depth-1))
-            
+
+
+
 
 
 def job_from_id(job_id, loading_depth=0):
@@ -518,13 +566,34 @@ def job_to_json(self, fields=None):
     """
         Export the job into json format with only requested fields
     """
+
+    #         for k in fields:
+#             if k == "id":
+#                 result.update({"id" : str(self.id)})
+#             elif k == "pipeline_id":
+#                 result.update({"pipeline_id" : str(self.pipeline_id)})
+#             elif k == "config":
+#                 result.update({"config" : json.loads(self.config)})
+#             elif k == "inputs":
+#                 if sub_level_loading == 0:
+#                     result.update({"inputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.inputs)]})
+#                 else:
+#                     result.update({"inputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.inputs)]})
+#             elif k == "outputs":
+#                 if sub_level_loading == 0:
+#                     result.update({"outputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.outputs)]})
+#                 else:
+#                     result.update({"outputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.outputs)]})
+#             else:
+#                 result.update({k : eval("self."+k)})
+
     result = {}
     if fields is None:
         fields = User.public_fields
     for f in fields:
-        if f == "installation_date":
+        if f == "start_date" or f == "update_date" :
             result.update({f: eval("self." + f + ".ctime()")})
-        elif f == "jobs":
+        elif f == "inputs":
             if self.loading_depth == 0:
                 result.update({"jobs" : [i for i in self.jobs]})
             else:
@@ -539,30 +608,19 @@ def job_to_json(self, fields=None):
 def job_load(self, data):
     try:
         # Required fields
-        if "name"             in data.keys(): self.name             = data['name']
-        if "pirus_api"        in data.keys(): self.pirus_api        = data["pirus_api"]
-        if "size"             in data.keys(): self.size             = int(data["size"])
-        if "upload_offset"    in data.keys(): self.upload_offset    = int(data["upload_offset"])
-        if "status"           in data.keys(): self.status           = data["status"]
-        if "job_file"    in data.keys(): self.job_file    = data["job_file"]
-        if "description"      in data.keys(): self.description      = data["description"]
-        if "version"          in data.keys(): self.version          = data['version']
-        if "license"          in data.keys(): self.license          = data["license"]
-        if "developers"       in data.keys(): self.developers       = data["developers"]
-        if "root_path"        in data.keys(): self.root_path        = data['root_path']
-        if "lxd_alias"        in data.keys(): self.lxd_alias        = data['lxd_alias']
-        if "lxd_inputs_path"  in data.keys(): self.lxd_inputs_path  = data['lxd_inputs_path']
-        if "lxd_outputs_path" in data.keys(): self.lxd_outputs_path = data['lxd_outputs_path']
-        if "lxd_logs_path"    in data.keys(): self.lxd_logs_path    = data['lxd_logs_path']
-        if "lxd_db_path"      in data.keys(): self.lxd_db_path      = data['lxd_db_path']
-        if "lxd_run_cmd"      in data.keys(): self.lxd_run_cmd      = data['lxd_run_cmd']
+        if "pipe_id" in data.keys(): self.pipe_id = data['pipe_id']
+        if "config" in data.keys(): self.config = data["config"]
+        if "start_date" in data.keys(): self.start_date = int(data["start_date"])
+        if "update_date" in data.keys(): self.update_date = int(data["update_date"])
+        if "status" in data.keys(): self.status = data["status"]
+        if "status" in data.keys(): self.status = data["status"]
+        if "progress_value" in data.keys(): self.progress_value = data["progress_value"]
+        if "progress_label" in data.keys(): self.progress_label = data['progress_label']
+
+        # TODO
+        if "inputs" in data.keys(): self.inputs = data["inputs"]
+        if "outputs" in data.keys(): self.outputs = data["outputs"]
         
-        if "form_file"  in data.keys():
-            self.form_file = data['form_file']
-            self.form_url = "http://" + HOST_P + "/job/" + str(self.id) + "/form.json"
-        if "icon_file" in data.keys():
-            self.icon_file = data['icon_file']
-            self.icon_url = "http://" + HOST_P + "/job/" + str(self.id) + "/" + os.path.basename(self.icon_file)
         self.save()
     except KeyError as e:
         raise RegovarException('Invalid input job: missing ' + e.args[0])
@@ -600,110 +658,36 @@ Job.save = job_save
 
 
 
-#     def export_server_data(self):
-#         return {
-#             "id"        : str(self.id),
-#             "pipeline_id"   : str(self.pipeline_id),
-#             "lxd_container" : self.lxd_container,
-#             "lxd_image" : self.lxd_image,
-#             "name"      : self.name,
-#             "config"    : self.config,
-#             "start"     : self.start,
-#             "end"       : self.end,
-#             "status"    : self.status,
-#             "inputs"    : self.inputs,
-#             "outputs"   : self.outputs,
-#             "progress"  : self.progress,
-#             "url"       : self.url,
-#             "notify_url": self.notify_url
-#         }
-
-
-#     def export_client_data(self, sub_level_loading=0, fields=None):
-#         result = {}
-#         if fields is None:
-#             fields = Run.public_fields
-
-#         for k in fields:
-#             if k == "id":
-#                 result.update({"id" : str(self.id)})
-#             elif k == "pipeline_id":
-#                 result.update({"pipeline_id" : str(self.pipeline_id)})
-#             elif k == "config":
-#                 result.update({"config" : json.loads(self.config)})
-#             elif k == "inputs":
-#                 if sub_level_loading == 0:
-#                     result.update({"inputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.inputs)]})
-#                 else:
-#                     result.update({"inputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.inputs)]})
-#             elif k == "outputs":
-#                 if sub_level_loading == 0:
-#                     result.update({"outputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.outputs)]})
-#                 else:
-#                     result.update({"outputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.outputs)]})
-#             else:
-#                 result.update({k : eval("self."+k)})
-#         return result
-
-
-#     def import_data(self, data):
-#         try:
-#             if "pipeline_id"   in data.keys(): self.pipeline_id   = data['pipeline_id']
-#             if "lxd_image"     in data.keys(): self.lxd_image     = data['lxd_image']
-#             if "name"          in data.keys(): self.name          = data['name']
-#             if "config"        in data.keys(): self.config        = data['config']
-#             if "start"         in data.keys(): self.start         = data['start']
-#             if "status"        in data.keys(): self.status        = data['status']
-#             if "progress"      in data.keys(): self.progress      = data['progress']
-#             if "lxd_container" in data.keys(): self.lxd_container = data['lxd_container']
-#             if "end"           in data.keys(): self.end           = data['end']
-#             if "inputs"        in data.keys(): self.inputs        = data["inputs"]
-#             if "outputs"       in data.keys(): self.outputs       = data["outputs"]
-#         except KeyError as e:
-#             raise ValidationError('Invalid plugin: missing ' + e.args[0])
-#         return self 
-
-
-
-
-#     @staticmethod
-#     def from_id(run_id):
-#         if not ObjectId.is_valid(run_id):
-#             return None;
-#         run = Run.objects(pk=run_id)
-#         return run[0] if len(run) > 0 else None
-
-
-
-#     @staticmethod
-#     def from_ids(ids):
-#         result = []
-#         for id in ids:
-#             r = Run.from_id(id)
-#             if r is not None:
-#                 result.append(r)
-#         return result
-
-
 
 # =====================================================================================================================
-# JOB
+# JOBFILE associations
 # =====================================================================================================================
 JobFile = Base.classes.job_file
 
 
-# JobFile.get_jobs(self, file_id, loading_depth=0)
-# JobFile.get_inputs(self, job_id, loading_depth=0)
-# JobFile.get_outputs(self, job_id, loading_depth=0)
+def jobfile_get_jobs(file_id, loading_depth=0):
+    pass
+def jobfile_get_inputs(job_id, loading_depth=0):
+    pass
+def jobfile_get_outputs(job_id, loading_depth=0):
+    pass
+def jobfile_get_jobs_ids(file_id):
+    pass
+def jobfile_get_inputs_ids(job_id):
+    pass
+def jobfile_get_outputs_ids(job_id):
+    pass
 
-# JobFile.get_jobs_ids(self, file_id)
-# JobFile.get_inputs_ids(self, job_id)
-# JobFile.get_outputs_ids(self, job_id)
+JobFile.get_jobs = jobfile_get_jobs
+JobFile.get_inputs = jobfile_get_inputs
+JobFile.get_outputs = jobfile_get_outputs
+JobFile.get_jobs_ids = jobfile_get_jobs_ids
+JobFile.get_inputs_ids = jobfile_get_inputs_ids
+JobFile.get_outputs_ids = jobfile_get_outputs_ids
 
 
 
-
-
+A bouger dans le core ?
 
 
 # Pipeline

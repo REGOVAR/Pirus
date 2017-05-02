@@ -46,7 +46,7 @@ CREATE TABLE public.pipeline
     version character varying(50) COLLATE pg_catalog."C",
     pirus_api character varying(50) COLLATE pg_catalog."C",
 
-    vm_image int,
+    image_file_id int,
     vm_settings text COLLATE pg_catalog."C",
     ui_form text COLLATE pg_catalog."C",
     ui_icon character varying(255) COLLATE pg_catalog."C",
