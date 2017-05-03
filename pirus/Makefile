@@ -19,6 +19,12 @@ test:
 	# psql -U postgres -c "DROP DATABASE IF EXISTS pirus_test"
 
 
+install:
+	cp ../install/config.default config.py
+	echo "Don't forget to update the config.py file with your settings"
+
+
+
 app:
 	python pirus_server.py
 
