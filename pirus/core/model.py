@@ -548,14 +548,16 @@ def job_load_depth(self, loading_depth):
         try:
             self.inputs = []
             self.outputs = []
-            files = __db_session.query(File).filter(File.id.in_(self.inputs_ids)).all()
-            for f in files:
-                f.init(loading_depth-1)
-                self.inputs.append(f)
-            files = __db_session.query(File).filter(File.id.in_(self.outputs_ids)).all()
-            for f in files:
-                f.init(loading_depth-1)
-                self.outputs.append(f)
+            if len(self.inputs_ids) > 0:
+                files = __db_session.query(File).filter(File.id.in_(self.inputs_ids)).all()
+                for f in files:
+                    f.init(loading_depth-1)
+                    self.inputs.append(f)
+            if len(self.outputs_ids) > 0:
+                files = __db_session.query(File).filter(File.id.in_(self.outputs_ids)).all()
+                for f in files:
+                    f.init(loading_depth-1)
+                    self.outputs.append(f)
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
 
@@ -568,7 +570,8 @@ def job_from_id(job_id, loading_depth=0):
         Retrieve job with the provided id in the database
     """
     job = __db_session.query(Job).filter_by(id=job_id).first()
-    job.init(loading_depth)
+    if job:
+        job.init(loading_depth)
     return job
 
 
@@ -577,7 +580,7 @@ def job_from_ids(job_ids, loading_depth=0):
         Retrieve jobs corresponding to the list of provided id
     """
     jobs = []
-    if jobs and len(job_ids) > 0:
+    if job_ids and len(job_ids) > 0:
         jobs = __db_session.query(Job).filter(Job.id.in_(job_ids)).all()
         for f in jobs:
             f.init(loading_depth)
@@ -604,6 +607,8 @@ def job_to_json(self, fields=None):
                 result.update({"outputs" : [o.to_json() for o in self.outputs]})
             else:
                 result.update({"outputs" : self.outputs})
+        elif f == "config" and self.config:
+            result.update({f: json.loads(self.config)})
         else:
             result.update({f: eval("self." + f)})
     return result
@@ -612,20 +617,29 @@ def job_to_json(self, fields=None):
 def job_load(self, data):
     try:
         # Required fields
+        if "name" in data.keys(): self.name = data['name']
         if "pipe_id" in data.keys(): self.pipe_id = data['pipe_id']
         if "config" in data.keys(): self.config = data["config"]
         if "start_date" in data.keys(): self.start_date = int(data["start_date"])
         if "update_date" in data.keys(): self.update_date = int(data["update_date"])
         if "status" in data.keys(): self.status = data["status"]
-        if "status" in data.keys(): self.status = data["status"]
         if "progress_value" in data.keys(): self.progress_value = data["progress_value"]
         if "progress_label" in data.keys(): self.progress_label = data['progress_label']
-
-        # TODO
-        if "inputs" in data.keys(): self.inputs = data["inputs"]
-        if "outputs" in data.keys(): self.outputs = data["outputs"]
-        
+        if "inputs_ids" in data.keys(): self.inputs_ids = data["inputs_ids"]
+        if "outputs_ids" in data.keys(): self.outputs_ids = data["outputs_ids"]
         self.save()
+
+        # delete old file/job links
+        __db_session.query(JobFile).filter_by(job_id=self.id).delete(synchronize_session=False)
+        # create new links
+        for fid in self.inputs_ids: JobFile.new(self.id, fid, True)
+        for fid in self.outputs_ids: JobFile.new(self.id, fid, False)
+
+        # check to reload dynamics properties
+        if self.loading_depth > 0:
+            self.inputs = []
+            self.outputs = []
+            self.load_depth(loading_depth)
     except KeyError as e:
         raise RegovarException('Invalid input job: missing ' + e.args[0])
     return self
@@ -635,16 +649,31 @@ def job_save(self):
     generic_save(self)
 
     # Todo : save job/files associations
-    if self.inputs: 
+    if hasattr(self, 'inputs') and self.inputs: 
         # clear all associations
         # save new associations
         pass
-    if self.outputs: 
+    if hasattr(self, 'outputs') and self.outputs: 
         # clear all associations
         # save new associations
         pass
 
 
+def job_delete(job_id):
+    """
+        Delete the job with the provided id in the database
+    """
+    __db_session.query(Job).filter_by(id=job_id).delete(synchronize_session=False)
+
+
+def job_new():
+    """
+        Create a new job and init/synchronise it with the database
+    """
+    j = Job()
+    j.save()
+    j.init()
+    return j
 
 
 Job = Base.classes.job
@@ -656,6 +685,8 @@ Job.from_ids = job_from_ids
 Job.to_json = job_to_json
 Job.load = job_load
 Job.save = job_save
+Job.new = job_new
+Job.delete = job_delete
 
 
 
@@ -744,12 +775,24 @@ def jobfile_get_outputs_ids(job_id):
         result.append(f.file_id)
     return result
 
+
+def jobfile_new(job_id, file_id, as_input):
+    """
+        Create a new job-file association and save it in the database
+    """
+    jf = JobFile(job_id=job_id, file_id=file_id, as_input=as_input)
+    jf.save()
+    return jf
+
+
 JobFile.get_jobs = jobfile_get_jobs
 JobFile.get_inputs = jobfile_get_inputs
 JobFile.get_outputs = jobfile_get_outputs
 JobFile.get_jobs_ids = jobfile_get_jobs_ids
 JobFile.get_inputs_ids = jobfile_get_inputs_ids
 JobFile.get_outputs_ids = jobfile_get_outputs_ids
+JobFile.save = generic_save
+JobFile.new = jobfile_new
 
 
 

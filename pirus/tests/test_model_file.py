@@ -19,8 +19,6 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 TU_PIRUS_FILE_PUBLIC_FIELDS = ["id", "name", "type", "path", "size", "upload_offset", "status", "create_date", "update_date", "tags", "md5sum", "job_source_id", "jobs_ids", "job_source", "jobs"]
 
-TU_PIRUS_FILE_NEWFILE_ID = 0
-
 
 
 
