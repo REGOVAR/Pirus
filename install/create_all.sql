@@ -60,7 +60,7 @@ ALTER TABLE public.pipeline OWNER TO pirus;
 CREATE TABLE public.job
 (
     id serial NOT NULL,
-    pipe_id int,
+    pipeline_id int,
     name character varying(255) COLLATE pg_catalog."C",
 
     config text COLLATE pg_catalog."C",

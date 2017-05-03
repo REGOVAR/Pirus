@@ -17,7 +17,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-TU_PIRUS_JOB_PUBLIC_FIELDS = ["id", "pipe_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
+TU_PIRUS_JOB_PUBLIC_FIELDS = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
 
 
 
@@ -125,7 +125,7 @@ class TestModelJob(unittest.TestCase):
         # UPDATE loading
         j2.load({
             "name" : "FinalJob", 
-            "pipe_id" : 2, 
+            "pipeline_id" : 2, 
             "config" : '{"param1" : 1, "param2" : [1,2,3]}',
             "status" : "finalizing",
             "progress_value" : 0.9,
@@ -135,7 +135,7 @@ class TestModelJob(unittest.TestCase):
             })
         self.assertNotEqual(update1, j2.update_date)
         self.assertEqual(j2.name,"FinalJob")
-        self.assertEqual(j2.pipe_id,2)
+        self.assertEqual(j2.pipeline_id,2)
         configjson = json.loads(j2.config)
 
         self.assertEqual(configjson["param2"][1], 2)

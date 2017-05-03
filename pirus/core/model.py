@@ -381,8 +381,8 @@ def pipeline_init(self, loading_depth=0):
     self.image_file = None
     jobs = __db_session.query(Job).filter_by(pipeline_id=self.id).all()
     for j in jobs:
-        self.jobs_ids.append(f.id)
-    self.loading_depth(loading_depth)
+        self.jobs_ids.append(j.id)
+    self.load_depth(loading_depth)
             
 
 def pipeline_loading_depth(self, loading_depth):
@@ -390,9 +390,10 @@ def pipeline_loading_depth(self, loading_depth):
         try:
             self.image_file = File.from_id(self.image_file_id, self.loading_depth-1)
             self.jobs = []
-            jobs = Job.query.filter(Job.id.in_(self.jobs_ids)).all()
-            for j in jobs:
-                self.jobs.append(f.init(loading_depth-1))
+            if len(self.jobs_ids) > 0:
+                jobs = __db_session.query(Job).filter(Job.id.in_(self.jobs_ids)).all()
+                for j in jobs:
+                    self.jobs.append(j.init(loading_depth-1))
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
 
@@ -403,7 +404,8 @@ def pipeline_from_id(pipeline_id, loading_depth=0):
         Retrieve pipeline with the provided id in the database
     """
     pipeline = __db_session.query(Pipeline).filter_by(id=pipeline_id).first()
-    pipeline.init(loading_depth)
+    if pipeline:
+        pipeline.init(loading_depth)
     return pipeline
 
 
@@ -412,10 +414,10 @@ def pipeline_from_ids(pipeline_ids, loading_depth=0):
         Retrieve pipelines corresponding to the list of provided id
     """
     pipelines = []
-    if pipelines and len(pipelines) > 0:
+    if pipeline_ids and len(pipeline_ids) > 0:
         pipelines = __db_session.query(Pipeline).filter(Pipeline.id.in_(pipeline_ids)).all()
-        for f in pipelines:
-            f.init(loading_depth)
+        for p in pipelines:
+            p.init(loading_depth)
     return pipelines
 
 
@@ -425,7 +427,7 @@ def pipeline_to_json(self, fields=None):
     """
     result = {}
     if fields is None:
-        fields = User.public_fields
+        fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "vm_settings", "ui_form", "ui_icon"]
     for f in fields:
         if f == "installation_date":
             result.update({f: eval("self." + f + ".ctime()")})
@@ -434,8 +436,10 @@ def pipeline_to_json(self, fields=None):
                 result.update({"jobs" : [i for i in self.jobs]})
             else:
                 result.update({"jobs" : [r.to_json() for r in self.jobs]})
-        elif (f == "ui_form" and self.ui_form)  or ("vm_settings" and self.vm_settings):
-                result.update({f : json.loads(eval("self." + f))})
+        elif f == "ui_form" and self.ui_form:
+            result.update({"ui_form" : json.loads(self.ui_form)})
+        elif f == "vm_settings" and self.vm_settings:
+            result.update({"vm_settings" : json.loads(self.vm_settings)})
         else:
             result.update({f: eval("self." + f)})
     return result
@@ -446,61 +450,56 @@ def pipeline_load(self, data):
         # Required fields
         if "name" in data.keys(): self.name = data['name']
         if "type" in data.keys(): self.type = data["type"]
-        if "status" in data.keys(): self.status = int(data["status"])
-        if "description" in data.keys(): self.description = int(data["description"])
+        if "status" in data.keys(): self.status = data["status"]
+        if "description" in data.keys(): self.description = data["description"]
         if "license" in data.keys(): self.license = data["license"]
         if "developers" in data.keys(): self.developers = data["developers"]
         if "installation_date" in data.keys(): self.installation_date = data["installation_date"]
         if "version" in data.keys(): self.version = data['version']
         if "pirus_api" in data.keys(): self.pirus_api = data["pirus_api"]
-        if "vm_image" in data.keys(): self.vm_image    = data["vm_image"]
-        if "vm_settings" in data.keys():
-            if data['vm_settings'] : 
-                self.vm_settings = json.load(data['vm_settings'])
-            else: 
-                self.vm_settings = data['vm_settings']
-        if "ui_form" in data.keys(): 
-            if data['ui_form'] : 
-                self.ui_form = json.load(data['ui_form'])
-            else:
-                self.ui_form = data['ui_form']
+        if "image_file_id" in data.keys(): self.image_file_id = data["image_file_id"]
         if "ui_icon" in data.keys(): self.ui_icon = data['ui_icon']
-
-        # TODOs
-        if "jobs" in data.keys(): self.jobs = data['jobs']
-        
+        if "vm_settings" in data.keys(): self.vm_settings = data['vm_settings']
+        if "ui_form" in data.keys(): self.ui_form = data['ui_form']
+        # check to reload dynamics properties
+        if self.loading_depth > 0:
+            self.jobs = []
+            self.image_file = None
+            self.load_depth(loading_depth)
         self.save()
     except KeyError as e:
         raise RegovarException('Invalid input pipeline: missing ' + e.args[0])
     return self
 
 
-def pipeline_save(self):
-    vm_settings_json = self.vm_settings
-    ui_form_json = self.ui_form
-    if isinstance(self.vm_settings, dict): 
-        self.vm_settings = json.dumps(self.vm_settings)
-    if isinstance(self.ui_form, dict): 
-        self.ui_form = json.dumps(self.ui_form)
+def file_delete(pipeline_id):
+    """
+        Delete the pipeline with the provided id in the database
+    """
+    __db_session.query(Pipeline).filter_by(id=pipeline_id).delete(synchronize_session=False)
 
-    generic_save(self)
 
-    if vm_settings_json: 
-        self.vm_settings = json.loads(vm_settings_json)
-    if ui_form_json: 
-        self.ui_form = json.loads(ui_form_json)
-
+def file_new():
+    """
+        Create a new file and init/synchronise it with the database
+    """
+    p = Pipeline()
+    p.save()
+    p.init()
+    return p
 
 
 Pipeline = Base.classes.pipeline
-Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "vm_image", "vm_settings", "ui_form", "ui_icon", "jobs"]
+Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "jobs_ids", "jobs"]
 Pipeline.init = pipeline_init
-Pipeline.loading_depth = pipeline_loading_depth
+Pipeline.load_depth = pipeline_loading_depth
 Pipeline.from_id = pipeline_from_id
 Pipeline.from_ids = pipeline_from_ids
 Pipeline.to_json = pipeline_to_json
 Pipeline.load = pipeline_load
-Pipeline.save = pipeline_save
+Pipeline.save = generic_save
+Pipeline.delete = file_delete
+Pipeline.new = file_new
 
 
 
@@ -593,7 +592,7 @@ def job_to_json(self, fields=None):
     """
     result = {}
     if fields is None:
-        fields = ["id", "pipe_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids"]
+        fields = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids"]
     for f in fields:
         if f == "start_date" or f == "update_date" :
             result.update({f: eval("self." + f + ".ctime()")})
@@ -618,7 +617,7 @@ def job_load(self, data):
     try:
         # Required fields
         if "name" in data.keys(): self.name = data['name']
-        if "pipe_id" in data.keys(): self.pipe_id = data['pipe_id']
+        if "pipeline_id" in data.keys(): self.pipeline_id = data['pipeline_id']
         if "config" in data.keys(): self.config = data["config"]
         if "start_date" in data.keys(): self.start_date = int(data["start_date"])
         if "update_date" in data.keys(): self.update_date = int(data["update_date"])
@@ -664,6 +663,7 @@ def job_delete(job_id):
         Delete the job with the provided id in the database
     """
     __db_session.query(Job).filter_by(id=job_id).delete(synchronize_session=False)
+    __db_session.query(JobFile).filter_by(job_id=job_id).delete(synchronize_session=False)
 
 
 def job_new():
@@ -677,7 +677,7 @@ def job_new():
 
 
 Job = Base.classes.job
-Job.public_fields = ["id", "pipe_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
+Job.public_fields = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
 Job.init = job_init
 Job.load_depth = job_load_depth
 Job.from_id = job_from_id

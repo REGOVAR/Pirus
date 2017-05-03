@@ -6,6 +6,7 @@ import unittest
 
 from tests.test_model_file import TestModelFile
 from tests.test_model_job import TestModelJob
+from tests.test_model_pipeline import TestModelPipeline
 
 
 
@@ -23,6 +24,9 @@ if __name__ == '__main__':
 
     for test in [m for m in TestModelJob.__dict__.keys() if str.startswith(m, "test_")]:
         suite.addTest(TestModelJob(test))
+
+    for test in [m for m in TestModelPipeline.__dict__.keys() if str.startswith(m, "test_")]:
+        suite.addTest(TestModelPipeline(test))
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)
