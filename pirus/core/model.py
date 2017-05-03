@@ -577,7 +577,7 @@ def job_from_ids(job_ids, loading_depth=0):
         Retrieve jobs corresponding to the list of provided id
     """
     jobs = []
-    if jobs and len(jobs) > 0:
+    if jobs and len(job_ids) > 0:
         jobs = __db_session.query(Job).filter(Job.id.in_(job_ids)).all()
         for f in jobs:
             f.init(loading_depth)
@@ -674,9 +674,10 @@ def jobfile_get_jobs(file_id, loading_depth=0):
     """
         Return the list of jobs that are using the file (as input and/or output)
     """
-    result = []
+    result = jobs = []
     jobs_ids = jobfile_get_jobs_ids(file_id)
-    jobs = __db_session.query(Job).filter(Job.id.in_(jobs_ids)).all()
+    if len(jobs_ids) > 0:
+        jobs = __db_session.query(Job).filter(Job.id.in_(jobs_ids)).all()
     for j in jobs:
         j.init(loading_depth)
         result.append(j)
@@ -687,9 +688,10 @@ def jobfile_get_inputs(job_id, loading_depth=0):
     """
         Return the list of input's files of the job
     """
-    result = []
+    result = files = []
     files_ids = jobfile_get_inputs_ids(job_id)
-    files = __db_session.query(File).filter(File.id.in_(files_ids)).all()
+    if len(files) > 0:
+        files = __db_session.query(File).filter(File.id.in_(files_ids)).all()
     for f in files:
         f.init(loading_depth)
         result.append(f)
@@ -700,9 +702,10 @@ def jobfile_get_outputs(job_id, loading_depth=0):
     """
         Return the list of output's files of the job
     """
-    result = []
+    result = files = []
     files_ids = jobfile_get_outputs_ids(job_id)
-    files = __db_session.query(File).filter(File.id.in_(files_ids)).all()
+    if len(files) > 0:
+        files = __db_session.query(File).filter(File.id.in_(files_ids)).all()
     for f in files:
         f.init(loading_depth)
         result.append(f)
