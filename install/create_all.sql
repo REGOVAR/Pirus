@@ -15,8 +15,8 @@ CREATE TYPE job_status AS ENUM ('waiting', 'initializing', 'running', 'pause', '
 CREATE TABLE public.file
 (
     id serial NOT NULL,
-    name character varying(255) COLLATE pg_catalog."C" NOT NULL,
-    type character varying(5) COLLATE pg_catalog."C",
+    name character varying(255) COLLATE pg_catalog."C",
+    type character varying(50) COLLATE pg_catalog."C",
     "path" text COLLATE pg_catalog."C",
     size bigint DEFAULT 0,
     upload_offset bigint DEFAULT 0,
@@ -35,9 +35,9 @@ ALTER TABLE public.file OWNER TO pirus;
 CREATE TABLE public.pipeline
 (
     id serial NOT NULL,
-    name character varying(255) COLLATE pg_catalog."C" NOT NULL,
-    type character varying(50) COLLATE pg_catalog."C" NOT NULL,
-    status pipe_status NOT NULL,
+    name character varying(255) COLLATE pg_catalog."C",
+    type character varying(50) COLLATE pg_catalog."C",
+    status pipe_status,
     description text COLLATE pg_catalog."C",
     license character varying(255) COLLATE pg_catalog."C",
     developers text COLLATE pg_catalog."C",
@@ -60,7 +60,7 @@ ALTER TABLE public.pipeline OWNER TO pirus;
 CREATE TABLE public.job
 (
     id serial NOT NULL,
-    pipe_id int NOT NULL,
+    pipe_id int,
     name character varying(255) COLLATE pg_catalog."C",
 
     config text COLLATE pg_catalog."C",

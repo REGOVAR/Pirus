@@ -2,33 +2,36 @@
 # coding: utf-8 
 import os
 
-# HOST
-HOST           = "dev1.absolumentg.fr"
-PORT           = "8081"
-VERSION        = "tu"
+# HOST (internal)
+HOST           = "127.0.0.1"
+PORT           = "8200"
+VERSION        = "v1"
 HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
 
+# HOST (public)
+HOST_P         = HOSTNAME
 
 RANGE_DEFAULT = 20
 RANGE_MAX     = 1000
 
 # DB
-DATABASE_NAME = "pirus_tu"
+DATABASE_NAME = "pirus_test"
+
 
 
 # FILESYSTEM
-FILES_DIR     = "/tmp/pirus_unittest/files"
-TEMP_DIR      = "/tmp/pirus_unittest/downloads"
-DATABASES_DIR = "/tmp/pirus_unittest/databases"
-PIPELINES_DIR = "/tmp/pirus_unittest/pipelines"
-RUNS_DIR      = "/tmp/pirus_unittest/runs"
+FILES_DIR     = "/var/regovar/pirus/files"
+TEMP_DIR      = "/var/regovar/pirus/downloads"
+DATABASES_DIR = "/var/regovar/pirus/databases"
+PIPELINES_DIR = "/var/regovar/pirus/pipelines"
+RUNS_DIR      = "/var/regovar/pirus/runs"
 
 
 # AUTOCOMPUTED VALUES
 PIRUS_DIR      = os.path.dirname(os.path.abspath(__file__))
 TEMPLATE_DIR   = os.path.join(PIRUS_DIR, "api_rest/templates/")
 ERROR_ROOT_URL = "api.pirus.org/errorcode/"
-NOTIFY_URL     = "http://" + HOSTNAME + "/run/notify/"
+NOTIFY_URL     = "http://" + HOST_P + "/run/notify/"
 
 
 # LXD

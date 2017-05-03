@@ -4,7 +4,7 @@
 import unittest
 
 
-from tests.test_core_file import TestCoreFile
+from tests.test_model_file import TestModelFile
 
 
 
@@ -17,8 +17,8 @@ if __name__ == '__main__':
     suite = unittest.TestSuite()
 
     # Load test to execute
-    for test in [m for m in TestCoreFile.__dict__.keys() if str.startswith(m, "test_")]:
-        suite.addTest(TestCoreFile(test))
+    for test in [m for m in TestModelFile.__dict__.keys() if str.startswith(m, "test_")]:
+        suite.addTest(TestModelFile(test))
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

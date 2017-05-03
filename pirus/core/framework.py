@@ -11,6 +11,16 @@ import config as C
 from config import LOG_DIR
 
 
+
+#
+# As Pirus is a subproject of Regovar, thanks to keep framework complient
+# TODO : find a way to manage it properly with github (subproject ?)
+#
+
+
+
+
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TOOLS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -171,7 +181,7 @@ def log_snippet(longmsg, exception: RegovarException=None):
 # PIRUS CORE - Container Manager Abstracts
 # =====================================================================================================================
 
-class PirusManager(Object):
+class PirusManager():
     """
         This abstract method shall be overrided by all pirus managers.
         Pirus managers clain to manage virtualisation of job with a specific technologie.

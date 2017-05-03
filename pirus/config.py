@@ -3,51 +3,51 @@
 import os
 
 # HOST (internal)
-HOST           = "127.0.0.1"
-PORT           = "8200"
-VERSION        = "v1"
-HOSTNAME       = HOST + ":" + PORT + "/" + VERSION
+HOST = "127.0.0.1"
+PORT = "8200"
+VERSION = "v1"
+HOSTNAME = HOST + ":" + PORT + "/" + VERSION
 
 # HOST (public)
-HOST_P         = "pirus.absolumentg.fr"
+HOST_P = "pirus.absolumentg.fr"
 
 RANGE_DEFAULT = 20
-RANGE_MAX     = 1000
+RANGE_MAX = 1000
 
 # DB
 DATABASE_HOST = "localhost"
 DATABASE_PORT = 5432
 DATABASE_USER = "pirus"
 DATABASE_PWD = "pirus"
-DATABASE_NAME = "pirus"
+DATABASE_NAME = "pirus_test"  # if you change this line, you have to update the sed command of the "test" rule of the Makefile too
 DATABASE_POOL_SIZE = 7
 
 
 
 # FILESYSTEM
-FILES_DIR     = "/var/regovar/pirus/files"
-TEMP_DIR      = "/var/regovar/pirus/downloads"
+FILES_DIR = "/var/regovar/pirus/files"
+TEMP_DIR = "/var/regovar/pirus/downloads"
 DATABASES_DIR = "/var/regovar/pirus/databases"
 PIPELINES_DIR = "/var/regovar/pirus/pipelines"
 RUNS_DIR      = "/var/regovar/pirus/runs"
 
 
 # AUTOCOMPUTED VALUES
-PIRUS_DIR      = os.path.dirname(os.path.abspath(__file__))
-LOG_DIR        = PIRUS_DIR
-TEMPLATE_DIR   = os.path.join(PIRUS_DIR, "api_rest/templates/")
+PIRUS_DIR = os.path.dirname(os.path.abspath(__file__))
+LOG_DIR = PIRUS_DIR
+TEMPLATE_DIR = os.path.join(PIRUS_DIR, "api_rest/templates/")
 ERROR_ROOT_URL = "api.pirus.org/errorcode/"
-NOTIFY_URL     = "http://" + HOST_P + "/run/notify/"
+NOTIFY_URL = "http://" + HOST_P + "/run/notify/"
 
 
 # LXD
-PIRUS_UID      = 1000
-PIRUS_GID      = PIRUS_UID
-LXD_UID        = 165537
-LXD_GID        = LXD_UID
-LXD_MAX        = 2
+PIRUS_UID = 1000
+PIRUS_GID = PIRUS_UID
+LXD_UID = 165537
+LXD_GID = LXD_UID
+LXD_MAX = 2
 LXD_CONTAINER_PREFIX  = "pirus-run-"
-LXD_IMAGE_PREFIX      = "pirus-pipe-"
+LXD_IMAGE_PREFIX = "pirus-pipe-"
 LXD_HDW_CONF = {
     "CPU"  : None,
     "CORE" : None,

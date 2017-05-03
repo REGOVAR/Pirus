@@ -135,7 +135,6 @@ def get_or_create(session, model, defaults=None, **kwargs):
     except Exception as e:
         raise e
 
-        
 
 def generic_save(obj):
     """
@@ -146,6 +145,8 @@ def generic_save(obj):
         if not s :
             s = Session()
             s.add(obj)
+
+        obj.update_date = datetime.datetime.now()
         s.commit()
     except Exception as err:
         raise RegovarException(ERR.E100002.format(type(obj), "E100002", err))
@@ -236,10 +237,10 @@ def file_init(self, loading_depth=0):
     self.jobs_ids = JobFile.get_jobs_ids(self.id)
     self.jobs = []
     self.job_source = None
-    self.loading_depth(loading_depth)
+    self.load_depth(loading_depth)
             
 
-def file_loading_depth(self, loading_depth):
+def file_load_depth(self, loading_depth):
     if loading_depth > 0:
         try:
             self.job_source = Job.from_id(self.job_source_id, self.loading_depth-1)
@@ -253,7 +254,8 @@ def file_from_id(file_id, loading_depth=0):
         Retrieve file with the provided id in the database
     """
     file = __db_session.query(File).filter_by(id=file_id).first()
-    file.init(loading_depth)
+    if file:
+        file.init(loading_depth)
     return file
 
 
@@ -261,35 +263,45 @@ def file_from_ids(file_ids, loading_depth=0):
     """
         Retrieve files corresponding to the list of provided id
     """
-    files = __db_session.query.filter(File.id.in_(file_ids)).all()
-    for f in files:
-        f.init(loading_depth)
+    files = []
+    if file_ids and len(file_ids) > 0:
+        files = __db_session.query(File).filter(File.id.in_(file_ids)).all()
+        for f in files:
+            f.init(loading_depth)
     return files
 
 
 def file_to_json(self, fields=None):
     """
-        Export the file into json format with only requested fields
+        Export the file into json format with requested fields
     """
     result = {}
     if fields is None:
-        fields = User.public_fields
+        fields = ["id", "name", "type", "size", "upload_offset", "status", "create_date", "update_date", "tags", "job_source_id", "jobs_ids"]
     for f in fields:
         if f == "create_date" or f == "update_date":
             result.update({f: eval("self." + f + ".ctime()")})
         elif f == "jobs":
             if self.loading_depth == 0:
-                result.update({"jobs" : [i for i in self.jobs]})
+                result.update({"jobs" : self.jobs})
             else:
-                result.update({"jobs" : [r.to_json() for r in self.jobs]})
-        elif f == "source" and self.loading_depth > 0:
-                result.update({"source" : self.source.to_json()})
+                result.update({"jobs" : [j.to_json() for j in self.jobs]})
+        elif f == "job_source" and self.loading_depth > 0:
+            if self.job_source:
+                result.update({"job_source" : self.job_source.to_json()})
+            else:
+                result.update({"job_source" : self.job_source})
         else:
             result.update({f: eval("self." + f)})
     return result
 
 
 def file_load(self, data):
+    """
+        Helper to update several paramters at the same time. Note that dynamics properties like job_source and jobs
+        cannot be updated with this method. However, you can update job_source_id.
+        jobs list cannot be edited from the file, each run have to be edited
+    """
     try:
         if "name"          in data.keys(): self.name           = data['name']
         if "type"          in data.keys(): self.type           = data['type']
@@ -301,45 +313,48 @@ def file_load(self, data):
         if "update_date"   in data.keys(): self.update_date    = data['update_date']
         if "md5sum"        in data.keys(): self.md5sum         = data["md5sum"]
         if "tags"          in data.keys(): self.tags           = data['tags']
-
-        # Job source and jobs list shall never be updated like that. See core method in the FileManager.
-        # if "job_source_id" in data.keys(): self.job_source_id  = data["job_source_id"] # TODO : need to update job_source if loading_depth > 0
-        # if "jobs_ids"      in data.keys(): self.jobs_ids       = data["jobs_ids"]      # TODO : need to update jobs if loading_depth > 0
+        if "job_source_id" in data.keys(): self.job_source_id  = int(data["job_source_id"])
+        # check to reload dynamics properties
+        if self.loading_depth > 0:
+            self.jobs = []
+            self.job_source = None
+            self.load_depth(loading_depth)
         self.save()
-    except KeyError as e:
-        raise RegovarException('Invalid input file: missing ' + e.args[0])
+    except Exception as err:
+        raise RegovarException('Invalid input data to load.', "", err)
     return self
 
 
-def file_save(self):
-    vm_settings_json = self.vm_settings
-    ui_form_json = self.ui_form
-    if isinstance(self.vm_settings, dict): 
-        self.vm_settings = json.dumps(self.vm_settings)
-    if isinstance(self.ui_form, dict): 
-        self.ui_form = json.dumps(self.ui_form)
 
-    generic_save(self)
-
-    if vm_settings_json: 
-        self.vm_settings = json.loads(vm_settings_json)
-    if ui_form_json: 
-        self.ui_form = json.loads(ui_form_json)
+def file_delete(file_id):
+    """
+        Delete the file with the provided id in the database
+    """
+    __db_session.query(File).filter_by(id=file_id).delete(synchronize_session=False)
 
 
-
-
+def file_new():
+    """
+        Create a new file and init/synchronise it with the database
+    """
+    f = File()
+    f.save()
+    f.init()
+    return f
 
 
 File = Base.classes.file
-File.public_fields = ["id", "name", "type", "path", "size", "upload_offset", "status", "create_date", "update_date", "tags", "md5sum", "source", "jobs"]
+File.public_fields = ["id", "name", "type", "path", "size", "upload_offset", "status", "create_date", "update_date", "tags", "md5sum", "job_source_id", "jobs_ids", "job_source", "jobs"]
 File.init = file_init
-File.loading_depth = file_loading_depth
+File.load_depth = file_load_depth
 File.from_id = file_from_id
 File.from_ids = file_from_ids
 File.to_json = file_to_json
 File.load = file_load
-File.save = file_save
+File.save = generic_save
+File.delete = file_delete
+File.new = file_new
+
 
 
 
@@ -364,7 +379,7 @@ def pipeline_init(self, loading_depth=0):
     self.jobs_ids = []
     self.jobs = []
     self.image_file = None
-    jobs = __db_session.query.filter(Job).filter_by(pipeline_id=self.id).all()
+    jobs = __db_session.query(Job).filter_by(pipeline_id=self.id).all()
     for j in jobs:
         self.jobs_ids.append(f.id)
     self.loading_depth(loading_depth)
@@ -396,9 +411,11 @@ def pipeline_from_ids(pipeline_ids, loading_depth=0):
     """
         Retrieve pipelines corresponding to the list of provided id
     """
-    pipelines = __db_session.query.filter(Pipeline.id.in_(pipeline_ids)).all()
-    for f in pipelines:
-        f.init(loading_depth)
+    pipelines = []
+    if pipelines and len(pipelines) > 0:
+        pipelines = __db_session.query(Pipeline).filter(Pipeline.id.in_(pipeline_ids)).all()
+        for f in pipelines:
+            f.init(loading_depth)
     return pipelines
 
 
@@ -516,26 +533,29 @@ def job_init(self, loading_depth=0):
     self.outputs_ids = []
     self.inputs = []
     self.outputs = []
-    files = __db_session.query.filter(JobFile).filter_by(job_id=self.id).all()
+
+    files = __db_session.query(JobFile).filter_by(job_id=self.id).all()
     for f in files:
-        if file.as_input:
-            self.inputs_ids.append(f.id)
+        if f.as_input:
+            self.inputs_ids.append(f.file_id)
         else:
-            self.outputs_ids.append(f.id)
-    self.loading_depth(loading_depth)
+            self.outputs_ids.append(f.file_id)
+    self.load_depth(loading_depth)
             
 
-def pipeline_loading_depth(self, loading_depth):
+def job_load_depth(self, loading_depth):
     if loading_depth > 0:
         try:
             self.inputs = []
             self.outputs = []
-            files = File.query.filter(File.id.in_(self.inputs_ids)).all()
+            files = __db_session.query(File).filter(File.id.in_(self.inputs_ids)).all()
             for f in files:
-                self.inputs.append(f.init(loading_depth-1))
-            files = File.query.filter(File.id.in_(self.outputs_ids)).all()
+                f.init(loading_depth-1)
+                self.inputs.append(f)
+            files = __db_session.query(File).filter(File.id.in_(self.outputs_ids)).all()
             for f in files:
-                self.outputs.append(f.init(loading_depth-1))
+                f.init(loading_depth-1)
+                self.outputs.append(f)
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
 
@@ -547,7 +567,7 @@ def job_from_id(job_id, loading_depth=0):
     """
         Retrieve job with the provided id in the database
     """
-    job = __db_session.query(Pipeline).filter_by(id=job_id).first()
+    job = __db_session.query(Job).filter_by(id=job_id).first()
     job.init(loading_depth)
     return job
 
@@ -556,9 +576,11 @@ def job_from_ids(job_ids, loading_depth=0):
     """
         Retrieve jobs corresponding to the list of provided id
     """
-    jobs = __db_session.query.filter(Pipeline.id.in_(job_ids)).all()
-    for f in jobs:
-        f.init(loading_depth)
+    jobs = []
+    if jobs and len(jobs) > 0:
+        jobs = __db_session.query(Job).filter(Job.id.in_(job_ids)).all()
+        for f in jobs:
+            f.init(loading_depth)
     return jobs
 
 
@@ -566,40 +588,22 @@ def job_to_json(self, fields=None):
     """
         Export the job into json format with only requested fields
     """
-
-    #         for k in fields:
-#             if k == "id":
-#                 result.update({"id" : str(self.id)})
-#             elif k == "pipeline_id":
-#                 result.update({"pipeline_id" : str(self.pipeline_id)})
-#             elif k == "config":
-#                 result.update({"config" : json.loads(self.config)})
-#             elif k == "inputs":
-#                 if sub_level_loading == 0:
-#                     result.update({"inputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.inputs)]})
-#                 else:
-#                     result.update({"inputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.inputs)]})
-#             elif k == "outputs":
-#                 if sub_level_loading == 0:
-#                     result.update({"outputs" : [{"id" : str(f.id), "name" : f.name, "url": f.url} for f in PirusFile.from_ids(self.outputs)]})
-#                 else:
-#                     result.update({"outputs" : [f.export_client_data(sub_level_loading-1) for f in PirusFile.from_ids(self.outputs)]})
-#             else:
-#                 result.update({k : eval("self."+k)})
-
     result = {}
     if fields is None:
-        fields = User.public_fields
+        fields = ["id", "pipe_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids"]
     for f in fields:
         if f == "start_date" or f == "update_date" :
             result.update({f: eval("self." + f + ".ctime()")})
         elif f == "inputs":
             if self.loading_depth == 0:
-                result.update({"jobs" : [i for i in self.jobs]})
+                result.update({"inputs" : [i.to_json() for i in self.inputs]})
             else:
-                result.update({"jobs" : [r.to_json() for r in self.jobs]})
-        elif (f == "ui_form" and self.ui_form)  or ("vm_settings" and self.vm_settings):
-                result.update({f : json.loads(eval("self." + f))})
+                result.update({"inputs" : self.inputs})
+        elif f == "inputs":
+            if self.loading_depth == 0:
+                result.update({"outputs" : [o.to_json() for o in self.outputs]})
+            else:
+                result.update({"outputs" : self.outputs})
         else:
             result.update({f: eval("self." + f)})
     return result
@@ -644,8 +648,9 @@ def job_save(self):
 
 
 Job = Base.classes.job
-Job.public_fields = ["id", "pipe_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs", "outputs"]
+Job.public_fields = ["id", "pipe_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
 Job.init = job_init
+Job.load_depth = job_load_depth
 Job.from_id = job_from_id
 Job.from_ids = job_from_ids
 Job.to_json = job_to_json
@@ -666,17 +671,75 @@ JobFile = Base.classes.job_file
 
 
 def jobfile_get_jobs(file_id, loading_depth=0):
-    pass
+    """
+        Return the list of jobs that are using the file (as input and/or output)
+    """
+    result = []
+    jobs_ids = jobfile_get_jobs_ids(file_id)
+    jobs = __db_session.query(Job).filter(Job.id.in_(jobs_ids)).all()
+    for j in jobs:
+        j.init(loading_depth)
+        result.append(j)
+    return result
+
+
 def jobfile_get_inputs(job_id, loading_depth=0):
-    pass
+    """
+        Return the list of input's files of the job
+    """
+    result = []
+    files_ids = jobfile_get_inputs_ids(job_id)
+    files = __db_session.query(File).filter(File.id.in_(files_ids)).all()
+    for f in files:
+        f.init(loading_depth)
+        result.append(f)
+    return result
+
+
 def jobfile_get_outputs(job_id, loading_depth=0):
-    pass
+    """
+        Return the list of output's files of the job
+    """
+    result = []
+    files_ids = jobfile_get_outputs_ids(job_id)
+    files = __db_session.query(File).filter(File.id.in_(files_ids)).all()
+    for f in files:
+        f.init(loading_depth)
+        result.append(f)
+    return result
+
+
 def jobfile_get_jobs_ids(file_id):
-    pass
+    """
+        Return the list of job's id that are using the file (as input and/or output)
+    """
+    result = []
+    jobs = __db_session.query(JobFile).filter_by(file_id=file_id).all()
+    for j in jobs:
+        result.append(j.job_id)
+    return result
+    
+
 def jobfile_get_inputs_ids(job_id):
-    pass
+    """
+        Return the list of file's id that are used as input for the job
+    """
+    result = []
+    files = __db_session.query(JobFile).filter_by(job_id=job_id, as_input=True).all()
+    for f in files:
+        result.append(f.file_id)
+    return result
+
+
 def jobfile_get_outputs_ids(job_id):
-    pass
+    """
+        Return the list of file's id that are used as output for the job
+    """
+    result = []
+    files = __db_session.query(JobFile).filter_by(job_id=job_id, as_input=False).all()
+    for f in files:
+        result.append(f.file_id)
+    return result
 
 JobFile.get_jobs = jobfile_get_jobs
 JobFile.get_inputs = jobfile_get_inputs
@@ -687,7 +750,7 @@ JobFile.get_outputs_ids = jobfile_get_outputs_ids
 
 
 
-A bouger dans le core ?
+#A bouger dans le core ?
 
 
 # Pipeline
