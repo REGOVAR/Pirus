@@ -235,7 +235,7 @@ class PirusContainerManager():
             Pause the execution of the job to save server resources by example
         """
         if self.supported_features["pause_job"]:
-            raise RegovarException("The abstract method \"pause_job\" of PirusManager must be implemented.")
+            raise RegovarException("The abstract method \"pause_job\" of PirusManager shall be implemented.")
 
 
     def stop_job(self, job_id):
@@ -244,7 +244,7 @@ class PirusContainerManager():
             Stop the job. The job is canceled and the container shall be destroyed
         """
         if self.supported_features["stop_job"]:
-            raise RegovarException("The abstract method \"stop_job\" of PirusManager must be implemented.")
+            raise RegovarException("The abstract method \"stop_job\" of PirusManager shall be implemented.")
 
 
     def monitoring_job(self, job_id):
@@ -254,7 +254,7 @@ class PirusContainerManager():
             settings (CPU/RAM used, etc)
         """
         if self.supported_features["monitoring_job"]:
-            raise RegovarException("The abstract method \"monitoring_job\" of PirusManager must be implemented.")
+            raise RegovarException("The abstract method \"monitoring_job\" of PirusManager shall be implemented.")
 
 
     def terminate_job(self, job_id):

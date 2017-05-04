@@ -61,7 +61,7 @@ __async_jobs = {}
 
 
 
-def private_execute_async(async_job_id, query):
+def __execute_async(async_job_id, query):
     """
         Internal method used to execute query asynchronously
     """
@@ -81,7 +81,7 @@ def private_execute_async(async_job_id, query):
     return (async_job_id, result)
 
 
-def private_execute_callback(result):
+def __execute_callback(result):
     """
         Internal callback method for asynch query execution. 
     """
@@ -196,7 +196,7 @@ def execute_bw(query, callback=None):
     """
     global __async_job_id, __async_jobs, __db_pool
     __async_job_id += 1
-    t = __db_pool.apply_async(private_execute_async, args = (__async_job_id, query,), callback=private_execute_callback)
+    t = __db_pool.apply_async(__execute_async, args = (__async_job_id, query,), callback=__execute_callback)
     __async_jobs[__async_job_id] = {"task" : t, "callback": callback, "query" : query, "start": datetime.datetime.now}
     return __async_job_id
 
@@ -208,7 +208,7 @@ async def execute_aio(query):
     """
     # Execute the query in another thread via coroutine
     loop = asyncio.get_event_loop()
-    futur = loop.run_in_executor(None, private_execute_async, None, query)
+    futur = loop.run_in_executor(None, __execute_async, None, query)
 
     # Aio wait the end of the async task to return result
     result = await futur
