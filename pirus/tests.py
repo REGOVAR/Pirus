@@ -4,10 +4,10 @@
 import unittest
 
 
-from tests.test_model_file import TestModelFile
-from tests.test_model_job import TestModelJob
-from tests.test_model_pipeline import TestModelPipeline
-from tests.test_core_filemanager import TestCoreFileManager
+from tests.model.test_model_file import TestModelFile
+from tests.model.test_model_job import TestModelJob
+from tests.model.test_model_pipeline import TestModelPipeline
+from tests.core.test_core_filemanager import TestCoreFileManager
 
 
 

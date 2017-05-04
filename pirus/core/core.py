@@ -16,7 +16,8 @@ import requests
 from config import *
 from core.framework import *
 from core.model import *
-from core.managers import *
+from core.managers.lxd_manager import LxdManager
+from core.managers.github_manager import GithubManager
 from pirus_celery import start_job, terminate_job
 
 
@@ -24,7 +25,8 @@ from pirus_celery import start_job, terminate_job
 
 
 
-
+def notify_all_print(msg):
+    print(msg)
 
 
 
@@ -36,9 +38,7 @@ class Core:
         self.files = FileManager()
         self.pipelines = PipelineManager()
         self.jobs = JobManager()
-
-        # method handler for some spe
-        self.notify_all_delegate = None
+        self.container_managers = {}
 
         # CHECK filesystem
         if not os.path.exists(JOBS_DIR):
@@ -52,13 +52,15 @@ class Core:
         if not os.path.exists(DATABASES_DIR):
             os.makedirs(DATABASES_DIR)
 
+        # Load Container managers
+        self.container_managers["lxd"] = LxdManager()
+        self.container_managers["github"] = GithubManager()
 
-    def init(self):
-        """
-            Do some verifications on the server to check that all is good.
-             - check that config parameters are consistency
-        """
-        pass
+        # method handler to notify all
+        # according to api that will be pluged on the core, this method should be overriden 
+        # to really do a notification. (See how api_rest override this method)
+        self.notify_all = notify_all_print
+
 
 
  
@@ -69,36 +71,6 @@ class Core:
 class FileManager:
     def __init__(self):
         pass
-
-
-
-    # def public_fields(self):
-    #     return File.public_fields
-
-
-    # def total(self):
-    #     return File.count()
-
-
-    # def get_from_id(self, file_id, sublvl=0, fields=None):
-    #     return File.from_id(file_id)
-
-
-    # def get_from_ids(self, file_ids, sublvl=0, fields=None):
-    #     return [f.export_client_data(sublvl, fields) for f in File.from_ids(file_ids)]
-
-
-
-    # def update(self, file_id, json_data):
-    #     """
-    #         Update file data and notify all users
-    #     """
-    #     # Retrieve file
-    #     pfile = File.from_id(file_id)
-    #     if pfile == None:
-    #         raise RegovarException("Unable to retrieve the pirus file with the provided id : " + file_id)
-    #     pfile.load(json_data)
-
 
 
     def get(self, fields=None, query=None, order=None, offset=None, limit=None, sublvl=0):
@@ -223,6 +195,7 @@ class FileManager:
 
 
 
+
     def from_local(self, path, move=False, metadata={}):
         """ 
             Copy or move a local file on server and create a new Pirus file. Of course the source file shall have good access rights. 
@@ -270,88 +243,10 @@ class PipelineManager:
 
 
 
-    # def public_fields(self):
-    #     return Pipeline.public_fields
-
-
-    # def total(self):
-    #     return Pipeline.objects.count()
-
-
-    # def get_from_id(self, pipe_id, sublvl=0, fields=None):
-    #     pipe = Pipeline.from_id(pipe_id)
-    #     if pipe == None:
-    #         raise RegovarException("No pipeline with id " + str(pipe_id))
-    #     return pipe #.export_client_data(sublvl, fields)
-
-
-    # def get_from_ids(self, pipe_ids, sublvl=0, fields=None):
-    #     return [p.export_client_data(sublvl, fields) for p in Pipeline.from_id(pipe_ids)]
-
-
-    # def get(self, fields=None, query=None, order=None, offset=None, limit=None, sublvl=0):
-    #     """
-    #         Generic method to get pipelines metadata according to provided filtering options
-    #     """
-    #     if fields is None:
-    #         fields = Pipeline.public_fields
-    #     if query is None:
-    #         query = {}
-    #     if order is None:
-    #         order = ['-create_date', "name"]
-    #     if offset is None:
-    #         offset = 0
-    #     if limit is None:
-    #         limit = offset + RANGE_MAX
-    #     return [p.export_client_data(sublvl, fields) for p in Pipeline.objects(__raw__=query).order_by(*order)[offset:limit]]
-
-
-    def update(self, file_id, json_data):
-        pipe = Pipeline.from_id(pipe_id)
-        if pipe == None:
-            raise RegovarException("No pipeline with id " + str(pipe_id))
-        pipe.import_data(metadata);
-        pipe.save()
-        return pipe.export_client_data()
-
-
-
-    def delete(self, pipe_id, delete_also_job=False):
-        try:
-            pipe = Pipeline.from_id(pipe_id)
-            if pipe != None:
-                # Clean filesystem
-                if pipe.root_path is not None:
-                    shutil.rmtree(pipe.root_path)
-                if os.path.exists(pipe.pipeline_file):
-                    if os.path.isdir(pipe.pipeline_file):
-                        shutil.rmtree(pipe.pipeline_file)
-                    else:
-                        os.unlink(pipe.pipeline_file)
-                # Clean LXD
-                if pipe.lxd_alias is not None:
-                    try:
-                        cmd = ["lxc", "image", "delete", pipe.lxd_alias]
-                        out_tmp = '/tmp/' + pipe.lxd_alias + '-out'
-                        err_tmp = '/tmp/' + pipe.lxd_alias + '-err'
-                        subprocess.call(cmd, stdout=open(out_tmp, "r+"), stderr=open(err_tmp, "r+"))
-                    except Exception as err:
-                        rlog.info('W: Unable to clean LXD for the pipe : ' + pipe.lxd_alias)
-                # Clean DB
-                pipe.delete()
-        except Exception as error:
-            # TODO : manage error
-            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipe_id) + ". " + error.msg)
-        return True
-
-
-
-
-
-
     def install_init_image_upload(self, filename, file_size, metadata={}):
         """ 
-            Initialise a pipeline installation. To use if the image have to be uploaded on the server.
+            Initialise a pipeline installation. 
+            To use if the image have to be uploaded on the server.
             Create an entry for the pipeline and the file (image that will be uploaded) in the database.
             Return the Pipeline and the File objects created
 
@@ -372,44 +267,100 @@ class PipelineManager:
         return pipe, pfile
 
 
-    def install_init_image_url(self, url, metadata={}): pass
-    def install_init_image_local(self, filepath, metadata={}): pass
-    def install_init_no_image(self, name, type, settings): pass
 
+    async def install_init_image_url(self, url, metadata={}):
+        """ 
+            Initialise a pipeline installation. 
+            To use if the image have to be retrieved via an url.
+            Create an entry for the pipeline and the file (image) in the database.
+            Async method as the download start immediatly, followed by the installation when it's done
 
-
-
-    def install(self, pipe_id):
+            Return the Pipeline object ready to be used
         """
-            Install the pipeline. The initialization shall be done (image ready to be used)
-            
+        raise NotImplementedError("TODO")
+
+
+
+    def install_init_image_local(self, filepath, metadata={}):
+        """ 
+            Initialise a pipeline installation. 
+            To use if the image have to be retrieved on the local server.
+            Create an entry for the pipeline and the file (image) in the database.
+            Copy the local file into dedicated Pirus directory and start the installation of the Pipeline
+
+            Return the Pipeline object ready to be used
+        """
+        raise NotImplementedError("TODO")
+
+
+
+
+    async def install(self, pipeline_id, pipeline_type):
+        """
+            Install the pipeline. The initialization shall be done (image ready to be used), 
+            Except for 'github' pipeline's type which.
         """
         global pirus
         ipdb.set_trace()
 
-        pipeline = Pipeline.from_id(pipe_id, 1)
+        pipeline = Pipeline.from_id(pipeline_id, 1)
         if not pipeline : 
             raise RegovarException("Pipeline not found.")
         if pipeline.status != "initializing":
             raise RegovarException("Pipeline status is not \"initializing\". Cannot perform an installation.")
+
         if not pipeline.image_file and pipeline.image_file.status not in ["uploaded", "checked"]:
             raise RegovarException("Pipeline image upload is not complete.")
         if not pipeline.type :
             raise RegovarException("Pipeline type not set. Unable to know which kind of installation shall be performed.")
-        if pipeline.type not in pirus.pipeline_managers.keys():
+        if pipeline.type not in pirus.container_managers.keys():
             raise RegovarException("Unknow pipeline's type. Installation cannot be performed.")
 
         try:
-            # TODO : install shall be async in order to not freeze the whole application
-            pirus.pipeline_managers[pipeline.type].install(pipe_id)
+            await pirus.container_managers[pipeline.type].install_pipeline(pipeline_id)
         except Exception as err:
             # Todo clean
             raise RegovarException("Error occured during installation of the pipeline. Installation canceled.")
 
 
-    def delete(self, pipeline_id):
-        # TODO
-        pass
+
+
+
+
+
+
+    def delete(self, pipeline_id, delete_also_job=False):
+        try:
+            pipe = Pipeline.from_id(pipeline_id)
+            if pipe != None:
+                # Clean filesystem
+                if pipe.root_path is not None:
+                    shutil.rmtree(pipe.root_path)
+                if os.path.exists(pipe.pipeline_file):
+                    if os.path.isdir(pipe.pipeline_file):
+                        shutil.rmtree(pipe.pipeline_file)
+                    else:
+                        os.unlink(pipe.pipeline_file)
+                # Clean LXD
+                if pipe.lxd_alias is not None:
+                    try:
+                        cmd = ["lxc", "image", "delete", pipe.lxd_alias]
+                        out_tmp = '/tmp/' + pipe.lxd_alias + '-out'
+                        err_tmp = '/tmp/' + pipe.lxd_alias + '-err'
+                        subprocess.call(cmd, stdout=open(out_tmp, "r+"), stderr=open(err_tmp, "r+"))
+                    except Exception as err:
+                        rlog.info('W: Unable to clean LXD for the pipe : ' + pipe.lxd_alias)
+                # Clean DB
+                pipe.delete()
+        except Exception as err:
+            # TODO : manage error
+            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline_id), err)
+        return True
+
+
+
+
+
 
 
 

@@ -3,12 +3,12 @@
 import os
 
 
-from core.framework import PirusManager
+from core.framework import *
 
 
 
 
-class GithubManager(PirusManager):
+class GithubManager(PirusContainerManager):
     """
         Pirus manager to run pipeline that are describe/define in a github repository
     """
