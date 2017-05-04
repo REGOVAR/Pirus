@@ -830,26 +830,3 @@ JobFile.get_inputs_ids = jobfile_get_inputs_ids
 JobFile.get_outputs_ids = jobfile_get_outputs_ids
 JobFile.save = generic_save
 JobFile.new = jobfile_new
-
-
-
-#A bouger dans le core ?
-
-
-# Pipeline
-#     @staticmethod
-#     def new_from_tus(filename, file_size):
-#         pipe   = Pipeline()
-#         pipe.import_data({
-#                 "name"          : filename,
-#                 "pirus_api"     : "Unknow",
-#                 "pipeline_file" : os.path.join(TEMP_DIR, str(uuid.uuid4())),
-#                 "size"          : file_size,
-#                 "upload_offset" : 0,
-#                 "status"        : "WAITING"
-#             })  
-#         pipe.save()
-#         pipe.url = "http://" + HOST_P + "/pipeline/" + str(pipe.id)
-#         pipe.upload_url = "http://" + HOST_P + "/pipeline/upload/" + str(pipe.id)
-#         pipe.save()
-#         return pipe

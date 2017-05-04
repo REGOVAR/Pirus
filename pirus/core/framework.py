@@ -181,20 +181,86 @@ def log_snippet(longmsg, exception: RegovarException=None):
 # PIRUS CORE - Container Manager Abstracts
 # =====================================================================================================================
 
-class PirusManager():
+class PirusContainerManager():
     """
         This abstract method shall be overrided by all pirus managers.
         Pirus managers clain to manage virtualisation of job with a specific technologie.
         Pirus managers implementations are in the core/managers/ directory
     """
+    def __init__(self):
+        self.supported_features = {
+            "pause_job" : False,
+            "stop_job" : False,
+            "monitoring_job" : False
+        }
+
+
+    def install_pipeline(pipeline):
+        """
+            IMPLEMENTATION REQUIRED
+            Install the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
+        """
+        raise RegovarException("The abstract method \"install_pipeline\" of PirusManager must be implemented.")
+
+
+    def uninstall_pipeline(pipeline):
+        """
+            IMPLEMENTATION REQUIRED
+            Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
+        """
+        raise RegovarException("The abstract method \"uninstall_pipeline\" of PirusManager must be implemented.")
+
+
+
+    def init_job(job_id):
+        """
+            IMPLEMENTATION REQUIRED
+            Init a job by checking its settings (stored in database) and preparing the container for this job.
+        """
+        raise RegovarException("The abstract method \"init_job\" of PirusManager must be implemented.")
+
+
     def start_job(job_id):
+        """
+            IMPLEMENTATION REQUIRED
+            Start the job into the container. The container may already exists as this method can be call
+            after init_job and pause_job.
+        """
         raise RegovarException("The abstract method \"start_job\" of PirusManager must be implemented.")
 
 
+    def pause_job(job_id):
+        """
+            IMPLEMENTATION OPTIONAL (according to self.supported_features)
+            Pause the execution of the job to save server resources by example
+        """
+        raise RegovarException("The abstract method \"pause_job\" of PirusManager must be implemented.")
+
+
+    def stop_job(job_id):
+        """
+            IMPLEMENTATION OPTIONAL (according to self.supported_features)
+            Stop the job. The job is canceled and the container shall be destroyed
+        """
+        raise RegovarException("The abstract method \"stop_job\" of PirusManager must be implemented.")
+
+
+    def monitoring_job(job_id):
+        """
+            IMPLEMENTATION OPTIONAL (according to self.supported_features)
+            Provide monitoring information about the execution of the job (log stdout/stderr) and container
+            settings (CPU/RAM used, etc)
+        """
+        raise RegovarException("The abstract method \"monitoring_job\" of PirusManager must be implemented.")
+
+
     def terminate_job(job_id):
+        """
+            IMPLEMENTATION REQUIRED
+            Clean temp resources created by the container (log shall be kept), copy outputs file from the container
+            to the right place on the server, register them into the database and associates them to the job.
+        """
         raise RegovarException("The abstract method \"terminate_job\" of PirusManager must be implemented.")
-
-
 
 
 

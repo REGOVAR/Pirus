@@ -2,7 +2,7 @@
 -- CREATE ALL - V1.0.0
 --
 CREATE TYPE file_status AS ENUM ('uploading', 'uploaded', 'checked', 'error');
-CREATE TYPE pipe_status AS ENUM ('installing', 'ready', 'error');
+CREATE TYPE pipe_status AS ENUM ('initializing', 'installing', 'ready', 'error');
 CREATE TYPE job_status AS ENUM ('waiting', 'initializing', 'running', 'pause', 'finalizing', 'done', 'canceled', 'error');
 
 
@@ -64,6 +64,7 @@ CREATE TABLE public.job
     name character varying(255) COLLATE pg_catalog."C",
 
     config text COLLATE pg_catalog."C",
+    settings text COLLATE pg_catalog."C",
     start_date timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_date timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status job_status,

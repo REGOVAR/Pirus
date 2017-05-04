@@ -1,11 +1,12 @@
 init:
 	pip install -r requirements.txt
 
-clear_db:
+clear:
 	sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'pirus'"
 	sudo -u postgres psql -c "DROP DATABASE pirus"
 	sudo -u postgres psql -c "CREATE DATABASE pirus OWNER pirus"
 	psql -U pirus -d pirus -f ../install/create_all.sql
+
 
 test:
 	sudo -u postgres psql -c "DROP DATABASE IF EXISTS pirus_test"
