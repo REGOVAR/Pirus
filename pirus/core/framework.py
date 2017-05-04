@@ -195,72 +195,75 @@ class PirusContainerManager():
         }
 
 
-    def install_pipeline(pipeline):
+    def install_pipeline(self, pipeline):
         """
             IMPLEMENTATION REQUIRED
             Install the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
         """
-        raise RegovarException("The abstract method \"install_pipeline\" of PirusManager must be implemented.")
+        raise NotImplementedError("The abstract method \"install_pipeline\" of PirusManager must be implemented.")
 
 
-    def uninstall_pipeline(pipeline):
+    def uninstall_pipeline(self, pipeline):
         """
             IMPLEMENTATION REQUIRED
             Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
         """
-        raise RegovarException("The abstract method \"uninstall_pipeline\" of PirusManager must be implemented.")
+        raise NotImplementedError("The abstract method \"uninstall_pipeline\" of PirusManager must be implemented.")
 
 
 
-    def init_job(job_id):
+    def init_job(self, job_id):
         """
             IMPLEMENTATION REQUIRED
             Init a job by checking its settings (stored in database) and preparing the container for this job.
         """
-        raise RegovarException("The abstract method \"init_job\" of PirusManager must be implemented.")
+        raise NotImplementedError("The abstract method \"init_job\" of PirusManager must be implemented.")
 
 
-    def start_job(job_id):
+    def start_job(self, job_id):
         """
             IMPLEMENTATION REQUIRED
             Start the job into the container. The container may already exists as this method can be call
             after init_job and pause_job.
         """
-        raise RegovarException("The abstract method \"start_job\" of PirusManager must be implemented.")
+        raise NotImplementedError("The abstract method \"start_job\" of PirusManager must be implemented.")
 
 
-    def pause_job(job_id):
+    def pause_job(self, job_id):
         """
             IMPLEMENTATION OPTIONAL (according to self.supported_features)
             Pause the execution of the job to save server resources by example
         """
-        raise RegovarException("The abstract method \"pause_job\" of PirusManager must be implemented.")
+        if self.supported_features["pause_job"]:
+            raise RegovarException("The abstract method \"pause_job\" of PirusManager must be implemented.")
 
 
-    def stop_job(job_id):
+    def stop_job(self, job_id):
         """
             IMPLEMENTATION OPTIONAL (according to self.supported_features)
             Stop the job. The job is canceled and the container shall be destroyed
         """
-        raise RegovarException("The abstract method \"stop_job\" of PirusManager must be implemented.")
+        if self.supported_features["stop_job"]:
+            raise RegovarException("The abstract method \"stop_job\" of PirusManager must be implemented.")
 
 
-    def monitoring_job(job_id):
+    def monitoring_job(self, job_id):
         """
             IMPLEMENTATION OPTIONAL (according to self.supported_features)
             Provide monitoring information about the execution of the job (log stdout/stderr) and container
             settings (CPU/RAM used, etc)
         """
-        raise RegovarException("The abstract method \"monitoring_job\" of PirusManager must be implemented.")
+        if self.supported_features["monitoring_job"]:
+            raise RegovarException("The abstract method \"monitoring_job\" of PirusManager must be implemented.")
 
 
-    def terminate_job(job_id):
+    def terminate_job(self, job_id):
         """
             IMPLEMENTATION REQUIRED
             Clean temp resources created by the container (log shall be kept), copy outputs file from the container
             to the right place on the server, register them into the database and associates them to the job.
         """
-        raise RegovarException("The abstract method \"terminate_job\" of PirusManager must be implemented.")
+        raise NotImplementedError("The abstract method \"terminate_job\" of PirusManager must be implemented.")
 
 
 
