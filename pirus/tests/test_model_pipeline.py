@@ -106,7 +106,9 @@ class TestModelPipeline(unittest.TestCase):
     def test_CRUD(self):
         """ Test creation of a new file object, update, read and delete """
         # CREATE
+        total = Pipeline.count()
         p1 = Pipeline.new()
+        self.assertEqual(Pipeline.count(), total + 1)
         self.assertNotEqual(p1.id, None)
         # UPDATE
         p1.name = "TestPipeline"
@@ -150,3 +152,4 @@ class TestModelPipeline(unittest.TestCase):
         Pipeline.delete(p3.id)
         p4 = Pipeline.from_id(p3.id)
         self.assertEqual(p4, None)
+        self.assertEqual(Pipeline.count(), total)

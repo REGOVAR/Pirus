@@ -112,7 +112,9 @@ class TestModelJob(unittest.TestCase):
     def test_CRUD(self):
         """ Test creation of a new file object, update, read and delete """
         # CREATE
+        total = Job.count()
         j1 = Job.new()
+        self.assertEqual(Job.count(), total + 1)
         self.assertNotEqual(j1.id, None)
         # UPDATE
         j1.name = "TestJob"
@@ -156,3 +158,4 @@ class TestModelJob(unittest.TestCase):
         Job.delete(j3.id)
         j4 = Job.from_id(j3.id)
         self.assertEqual(j4, None)
+        self.assertEqual(Job.count(), total)

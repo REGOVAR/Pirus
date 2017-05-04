@@ -510,6 +510,13 @@ def file_new():
     return p
 
 
+def pipeline_count():
+    """
+        Return total of Pipeline entries in database
+    """
+    return generic_count(Pipeline)
+
+
 Pipeline = Base.classes.pipeline
 Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "jobs_ids", "jobs"]
 Pipeline.init = pipeline_init
@@ -521,6 +528,7 @@ Pipeline.load = pipeline_load
 Pipeline.save = generic_save
 Pipeline.delete = file_delete
 Pipeline.new = file_new
+Pipeline.count = pipeline_count
 
 
 
@@ -697,6 +705,13 @@ def job_new():
     return j
 
 
+def job_count():
+    """
+        Return total of Job entries in database
+    """
+    return generic_count(Job)
+
+
 Job = Base.classes.job
 Job.public_fields = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
 Job.init = job_init
@@ -708,6 +723,7 @@ Job.load = job_load
 Job.save = job_save
 Job.new = job_new
 Job.delete = job_delete
+Job.count = job_count
 
 
 
