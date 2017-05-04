@@ -92,15 +92,15 @@ class TestModelPipeline(unittest.TestCase):
         json.dumps(j)
 
         # Test export with only requested fields
-        j = f.to_json(["id", "ui_form", "status", "jobs_ids"])
+        j = p.to_json(["id", "ui_form", "status", "jobs_ids"])
         self.assertEqual(len(j), 4)
         json.dumps(j)
 
         # Test export with depth loading
-        j = f.to_json(["id", "ui_form", "status", "jobs"])
+        j = p.to_json(["id", "ui_form", "status", "jobs"])
         self.assertEqual(len(j), 4)
-        self.assertEqual(j["jobs_ids"][0], 1)
-        self.assertEqual(j["jobs"][1].progress_value, 0.5)
+        self.assertEqual(j["jobs"][0]["id"], 1)
+        self.assertEqual(j["jobs"][1]["progress_value"], 0.5)
 
 
     def test_CRUD(self):

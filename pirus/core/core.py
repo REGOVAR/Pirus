@@ -15,6 +15,7 @@ import requests
 
 from core.framework import *
 from core.model import *
+from core.managers. import *
 from pirus_celery import start_run, terminate_run
 
 
@@ -51,11 +52,6 @@ class Core:
         if not os.path.exists(DATABASES_DIR):
             os.makedirs(DATABASES_DIR)
 
-        # CHECK consistensy between database and filesystem
-        # Todo
-
-
-
 
     def set_notify_all(self, deletegate):
         self.notify_all_delegate = deletegate
@@ -69,7 +65,6 @@ class Core:
         """
             Do some verifications on the server to check that all is good.
              - check that config parameters are consistency
-             - check that 
         """
         pass
 
@@ -86,12 +81,12 @@ class FileManager:
 
 
     def public_fields(self):
-        return PirusFile.public_fields
+        return File.public_fields
 
 
 
     def total(self):
-        return PirusFile.objects.count()
+        return File.count()
 
 
 

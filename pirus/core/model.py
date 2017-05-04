@@ -149,7 +149,20 @@ def generic_save(obj):
         obj.update_date = datetime.datetime.now()
         s.commit()
     except Exception as err:
-        raise RegovarException(ERR.E100002.format(type(obj), "E100002", err))
+        raise RegovarException("Unable to save object in the database", "", err)
+
+
+def generic_count(obj):
+    """
+        generic method to count how many object in the table
+    """
+    try:
+        s = __db_session
+        return s.query(obj).count()
+
+    except Exception as err:
+        raise RegovarException("Unable to count how many object in the table", "", err)
+    
 
 
 def session():
@@ -343,6 +356,13 @@ def file_new():
     return f
 
 
+def file_count():
+    """
+        Return total of File entries in database
+    """
+    return generic_count(File)
+
+
 File = Base.classes.file
 File.public_fields = ["id", "name", "type", "path", "size", "upload_offset", "status", "create_date", "update_date", "tags", "md5sum", "job_source_id", "jobs_ids", "job_source", "jobs"]
 File.init = file_init
@@ -354,6 +374,7 @@ File.load = file_load
 File.save = generic_save
 File.delete = file_delete
 File.new = file_new
+File.count = file_count
 
 
 
@@ -385,15 +406,15 @@ def pipeline_init(self, loading_depth=0):
     self.load_depth(loading_depth)
             
 
-def pipeline_loading_depth(self, loading_depth):
+def pipeline_load_depth(self, loading_depth):
     if loading_depth > 0:
         try:
             self.image_file = File.from_id(self.image_file_id, self.loading_depth-1)
             self.jobs = []
             if len(self.jobs_ids) > 0:
-                jobs = __db_session.query(Job).filter(Job.id.in_(self.jobs_ids)).all()
-                for j in jobs:
-                    self.jobs.append(j.init(loading_depth-1))
+                self.jobs = __db_session.query(Job).filter(Job.id.in_(self.jobs_ids)).all()
+                for j in self.jobs:
+                    j.init(loading_depth-1)
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
 
@@ -432,10 +453,10 @@ def pipeline_to_json(self, fields=None):
         if f == "installation_date":
             result.update({f: eval("self." + f + ".ctime()")})
         elif f == "jobs":
-            if self.loading_depth == 0:
-                result.update({"jobs" : [i for i in self.jobs]})
+            if self.jobs and self.loading_depth > 0:
+                result.update({"jobs" : [j.to_json() for j in self.jobs]})
             else:
-                result.update({"jobs" : [r.to_json() for r in self.jobs]})
+                result.update({"jobs" : self.jobs})
         elif f == "ui_form" and self.ui_form:
             result.update({"ui_form" : json.loads(self.ui_form)})
         elif f == "vm_settings" and self.vm_settings:
@@ -492,7 +513,7 @@ def file_new():
 Pipeline = Base.classes.pipeline
 Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "jobs_ids", "jobs"]
 Pipeline.init = pipeline_init
-Pipeline.load_depth = pipeline_loading_depth
+Pipeline.load_depth = pipeline_load_depth
 Pipeline.from_id = pipeline_from_id
 Pipeline.from_ids = pipeline_from_ids
 Pipeline.to_json = pipeline_to_json

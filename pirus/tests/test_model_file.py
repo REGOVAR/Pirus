@@ -105,7 +105,9 @@ class TestModelFile(unittest.TestCase):
     def test_CRUD(self):
         """ Test creation of a new file object, update, read and delete """
         # CREATE
+        total = File.count()
         f1 = File.new()
+        self.assertEqual(File.count(), total + 1)
         self.assertNotEqual(f1.id, None)
         # UPDATE
         f1.name = "TestFile"
@@ -142,3 +144,4 @@ class TestModelFile(unittest.TestCase):
         File.delete(f3.id)
         f4 = File.from_id(f3.id)
         self.assertEqual(f4, None)
+        self.assertEqual(File.count(), total)
