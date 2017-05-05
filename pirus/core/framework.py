@@ -17,7 +17,23 @@ from config import LOG_DIR
 # TODO : find a way to manage it properly with github (subproject ?)
 #
 
+# =====================================================================================================================
+# GENERIC TOOLS
+# =====================================================================================================================
+asyncio_main_loop = asyncio.get_event_loop()
+def run_until_complete(future):
+    """
+        Allow calling of an async method into a "normal" method (which is not a coroutine)
+    """
+    asyncio_main_loop.run_until_complete(future)
 
+
+def run_async(future, *args):
+    """
+        Call a "normal" method into another thread 
+        (don't block the caller method, but cannot retrieve result)
+    """
+    asyncio_main_loop.run_in_executor(None, future, *args)
 
 
 
@@ -188,6 +204,9 @@ class PirusContainerManager():
         Pirus managers implementations are in the core/managers/ directory
     """
     def __init__(self):
+        # To allow the core to know if this kind of pipeline need an image to be donwloaded for the installation
+        self.need_image_file = True
+        # Job's control features supported by this bind of pipeline
         self.supported_features = {
             "pause_job" : False,
             "stop_job" : False,
@@ -195,7 +214,7 @@ class PirusContainerManager():
         }
 
 
-    async def install_pipeline(self, pipeline):
+    def install_pipeline(self, pipeline):
         """
             IMPLEMENTATION REQUIRED
             Install the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
@@ -204,7 +223,7 @@ class PirusContainerManager():
         raise NotImplementedError("The abstract method \"install_pipeline\" of PirusManager must be implemented.")
 
 
-    async def uninstall_pipeline(self, pipeline):
+    def uninstall_pipeline(self, pipeline):
         """
             IMPLEMENTATION REQUIRED
             Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
@@ -264,7 +283,7 @@ class PirusContainerManager():
             raise RegovarException("The abstract method \"monitoring_job\" of PirusManager shall be implemented.")
 
 
-    async def terminate_job(self, job):
+    def terminate_job(self, job):
         """
             IMPLEMENTATION REQUIRED
             Clean temp resources created by the container (log shall be kept), copy outputs file from the container

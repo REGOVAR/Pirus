@@ -4,10 +4,11 @@
 import unittest
 
 
-from tests.model.test_model_file import TestModelFile
-from tests.model.test_model_job import TestModelJob
-from tests.model.test_model_pipeline import TestModelPipeline
-from tests.core.test_core_filemanager import TestCoreFileManager
+from tests.model.test_model_file import *
+from tests.model.test_model_job import *
+from tests.model.test_model_pipeline import *
+from tests.core.test_core_filemanager import *
+from tests.core.test_core_pipelinemanager import *
 
 
 
@@ -31,6 +32,9 @@ if __name__ == '__main__':
 
     for test in [m for m in TestCoreFileManager.__dict__.keys() if str.startswith(m, "test_")]:
         suite.addTest(TestCoreFileManager(test))
+
+    for test in [m for m in TestCorePipelineManager.__dict__.keys() if str.startswith(m, "test_")]:
+        suite.addTest(TestCorePipelineManager(test))
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

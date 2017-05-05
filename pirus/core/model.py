@@ -493,14 +493,14 @@ def pipeline_load(self, data):
     return self
 
 
-def file_delete(pipeline_id):
+def pipeline_delete(pipeline_id):
     """
         Delete the pipeline with the provided id in the database
     """
     __db_session.query(Pipeline).filter_by(id=pipeline_id).delete(synchronize_session=False)
 
 
-def file_new():
+def pipeline_new():
     """
         Create a new file and init/synchronise it with the database
     """
@@ -526,8 +526,8 @@ Pipeline.from_ids = pipeline_from_ids
 Pipeline.to_json = pipeline_to_json
 Pipeline.load = pipeline_load
 Pipeline.save = generic_save
-Pipeline.delete = file_delete
-Pipeline.new = file_new
+Pipeline.delete = pipeline_delete
+Pipeline.new = pipeline_new
 Pipeline.count = pipeline_count
 
 

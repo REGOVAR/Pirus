@@ -3,10 +3,12 @@
 
 
 import os
+import unittest
 import asyncio
+import time
 
 from config import *
-from core.framework import PirusContainerManager
+from core.framework import PirusContainerManager, run_until_complete
 from core.model import File, Pipeline
 from core.core import pirus
 
@@ -25,51 +27,53 @@ class FakeContainerManager4Test(PirusContainerManager):
         Note that there are dedicated tests by container manager's type (lxd, github, ...)
     """
     def __init__(self):
+        self.need_image_file = True
         self.supported_features = {
             "pause_job" : True,
             "stop_job" : True,
             "monitoring_job" : False
         }
+        self.is_installed = False
 
-    async def install_pipeline(self, pipeline):
-        """ Fake installation, success if pipeline id is odd; failed otherwise """
-        await asyncio.sleep(0)
-        return pipeline.id % 2 == 0
 
-    async def uninstall_pipeline(self, pipeline):
-        """ Fake uninstallation, success if pipeline id is odd; failed otherwise """
-        await asyncio.sleep(0)
-        return pipeline.id % 2 == 0
+    def install_pipeline(self, pipeline):
+        """ Fake installation, success if pipeline's name contains "success"; failed otherwise """
+        self.is_installed = "success" in pipeline.name
+        return self.is_installed
+
+    def uninstall_pipeline(self, pipeline):
+        """ Fake uninstallation, success if pipeline's name contains "success"; failed otherwise """
+        self.is_installed = "success" in pipeline.name
+        return self.is_installed
 
     def init_job(self, job):
-        """ Fake init job : success if pipeline id is odd; failed otherwise """
-        return job.id % 2 == 0
+        """ Fake init job : success if job's name contains "success"; failed otherwise """
+        return "success" in job.name
 
 
     def start_job(self, job):
-        """ Fake start job : success if pipeline id is odd; failed otherwise """
-        return job.id % 2 == 0
+        """ Fake start job : success if job's name contains "success"; failed otherwise """
+        return "success" in job.name
 
 
     def pause_job(self, job):
-        """ Fake pause job : success if pipeline id is odd; failed otherwise """
-        return job.id % 2 == 0
+        """ Fake pause job : success if job's name contains "success"; failed otherwise """
+        return "success" in job.name
 
 
     def stop_job(self, job):
-        """ Fake stop job : success if pipeline id is odd; failed otherwise """
-        return job.id % 2 == 0
+        """ Fake stop job : success if job's name contains "success"; failed otherwise """
+        return "success" in job.name
 
 
-    async def terminate_job(self, job):
-        """ Fake terminate job : success if pipeline id is odd; failed otherwise """
-        await asyncio.sleep(0)
-        return job.id % 2 == 0
+    def terminate_job(self, job):
+        """ Fake terminate job : success if job's name contains "success"; failed otherwise """
+        return "success" in job.name
 
 
 
 
-class TestCoreFileManager(unittest.TestCase):
+class TestCorePipelineManager(unittest.TestCase):
     """ Test case for pirus model File's features. """
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -79,7 +83,7 @@ class TestCoreFileManager(unittest.TestCase):
     @classmethod
     def setUpClass(self):
         # Before test we add our fake ContainerManager in the core
-        pirus.container_managers["test"] = FakeContainerManager4Test()
+        pirus.container_managers["FakeManager4Test"] = FakeContainerManager4Test()
 
 
     @classmethod
@@ -99,13 +103,17 @@ class TestCoreFileManager(unittest.TestCase):
         """ Check that upload's features are working as expected """
 
         # Upload init
-        f = pirus.files.upload_init("test_upload.tar.gz", 10, {'tags':'Coucou'})
-        self.assertEqual(f.name, "test_upload.tar.gz")
+        p, f = pirus.pipelines.install_init_image_upload("test_image_success.tar.gz", 10, {"type" : "FakeManager4Test"})
+        self.assertEqual(f.name, "test_image_success.tar.gz")
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, 0)
         self.assertEqual(f.status, "uploading")
-        self.assertEqual(f.type, "gz")
         self.assertEqual(f.path.startswith(TEMP_DIR), True)
+        self.assertEqual(p.name, f.name)
+        self.assertEqual(p.status, "initializing")
+        self.assertEqual(p.type, "FakeManager4Test")
+        self.assertEqual(p.image_file_id, f.id)
+
         old_path = f.path
 
         # Upload chunk
@@ -113,10 +121,10 @@ class TestCoreFileManager(unittest.TestCase):
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, 5)
         self.assertEqual(f.status, "uploading")
-        self.assertEqual(os.path.isfile(f.path),True) 
-        self.assertEqual(os.path.getsize(f.path), f.upload_offset)
+        self.assertEqual(p.status, "initializing")
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_installed, False)
 
-        # Upload finish
+        # Upload finish -> installation shall start automatically as the type have been set
         f = pirus.files.upload_chunk(f.id, 5, 5, b'chunk')
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, f.size)
@@ -126,16 +134,20 @@ class TestCoreFileManager(unittest.TestCase):
         self.assertEqual(os.path.isfile(f.path), True)
         self.assertEqual(os.path.getsize(f.path), f.size)
 
-        # Install Pipe
-        with open(f.path, "r") as r:
-            c = r.readlines()
-        self.assertEqual(c, ['chunkchunk'])
+        time.sleep(0.1) # Wait that other thread call for the install ends
 
-        # Delete file
-        pirus.files.delete(f.id)
-        f2 = File.from_id(f.id)
-        self.assertEqual(f2, None)
-        self.assertEqual(os.path.isfile(f.path), False)
+        # Check that install_pipeline method have been successfully called
+        p = Pipeline.from_id(p.id)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_installed, True)
+        self.assertEqual(p.status, "ready")
+
+        # Delete pipeline
+        path = f.path
+        r = pirus.pipelines.delete(p)
+        self.assertEqual(r, True)
+        self.assertEqual(Pipeline.from_id(p.id), None)
+        self.assertEqual(File.from_id(p.image_file_id), None)
+        self.assertEqual(os.path.isfile(path), False)
 
 
 

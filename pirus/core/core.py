@@ -151,6 +151,7 @@ class FileManager:
             Update finaly the status of the file to uploaded or checked -> file ready to be used
         """
         # Retrieve file
+        global pirus
         pfile = File.from_id(file_id)
         if pfile == None:
             raise RegovarException("Unable to retrieve the pirus file with the provided id : " + file_id)
@@ -171,7 +172,9 @@ class FileManager:
         pfile.save()
 
         # TODO : check if the file is an image of a Pipeline. if true, automatically start the install
-
+        pipeline = session().query(Pipeline).filter_by(image_file_id=pfile.id).first()
+        if pipeline:
+            pirus.pipelines.install(pipeline.id, pipeline.type)
 
 
 
@@ -295,32 +298,41 @@ class PipelineManager:
 
 
 
-    async def install(self, pipeline_id, pipeline_type):
+    def install(self, pipeline_id, pipeline_type=None):
         """
-            Install the pipeline. The initialization shall be done (image ready to be used), 
-            Except for 'github' pipeline's type which.
+            Start the installation of the pipeline. (done in another thread)
+            The initialization shall be done (image ready to be used), 
+            Except for 'github' pipeline's type which don't need image (manager.need_image_file set to False)
         """
         global pirus
-        ipdb.set_trace()
 
         pipeline = Pipeline.from_id(pipeline_id, 1)
         if not pipeline : 
-            raise RegovarException("Pipeline not found.")
+            raise RegovarException("Pipeline not found (id={}).".format(pipeline_id))
         if pipeline.status != "initializing":
-            raise RegovarException("Pipeline status is not \"initializing\". Cannot perform an installation.")
+            raise RegovarException("Pipeline status ({}) is not \"initializing\". Cannot perform an installation.".format(pipeline.status))
+        if pipeline.image_file and pipeline.image_file.status not in ["uploaded", "checked"]:
+            raise RegovarException("Pipeline image (status={}) upload is not complete.".format(pipeline.image_file.status))
 
-        if not pipeline.image_file and pipeline.image_file.status not in ["uploaded", "checked"]:
-            raise RegovarException("Pipeline image upload is not complete.")
+        if not pipeline.type: pipeline.type = pipeline_type
         if not pipeline.type :
             raise RegovarException("Pipeline type not set. Unable to know which kind of installation shall be performed.")
         if pipeline.type not in pirus.container_managers.keys():
-            raise RegovarException("Unknow pipeline's type. Installation cannot be performed.")
+            raise RegovarException("Unknow pipeline's type ({}). Installation cannot be performed.".format(pipeline.type))
+        if pirus.container_managers[pipeline.type].need_image_file and not pipeline.image_file:
+            raise RegovarException("This kind of pipeline need a valid image file to be uploaded on the server.")
 
+
+        run_async(self.__install, pipeline)
+
+
+    def __install(self, pipeline):
         try:
-            await pirus.container_managers[pipeline.type].install_pipeline(pipeline_id)
+            result = pirus.container_managers[pipeline.type].install_pipeline(pipeline)
         except Exception as err:
-            # Todo clean
-            raise RegovarException("Error occured during installation of the pipeline. Installation canceled.")
+            raise RegovarException("Error occured during installation of the pipeline. Installation aborded.", err)
+        pipeline.status = "ready" if result else "error"
+        pipeline.save()
 
 
 
@@ -328,34 +340,29 @@ class PipelineManager:
 
 
 
-
-    def delete(self, pipeline_id, delete_also_job=False):
+    def delete(self, pipeline):
+        """
+            Start the uninstallation of the pipeline. (done in another thread)
+            Remove image file if exists.
+        """
+        global pirus
         try:
-            pipe = Pipeline.from_id(pipeline_id)
-            if pipe != None:
-                # Clean filesystem
-                if pipe.root_path is not None:
-                    shutil.rmtree(pipe.root_path)
-                if os.path.exists(pipe.pipeline_file):
-                    if os.path.isdir(pipe.pipeline_file):
-                        shutil.rmtree(pipe.pipeline_file)
-                    else:
-                        os.unlink(pipe.pipeline_file)
-                # Clean LXD
-                if pipe.lxd_alias is not None:
-                    try:
-                        cmd = ["lxc", "image", "delete", pipe.lxd_alias]
-                        out_tmp = '/tmp/' + pipe.lxd_alias + '-out'
-                        err_tmp = '/tmp/' + pipe.lxd_alias + '-err'
-                        subprocess.call(cmd, stdout=open(out_tmp, "r+"), stderr=open(err_tmp, "r+"))
-                    except Exception as err:
-                        rlog.info('W: Unable to clean LXD for the pipe : ' + pipe.lxd_alias)
-                # Clean DB
-                pipe.delete()
+            if pipeline:
+                run_async(self.__delete, pipeline)                                     # Clean container
+                if pipeline.image_file_id: pirus.files.delete(pipeline.image_file_id)  # Clean filesystem
+                Pipeline.delete(pipeline.id)                                           # Clean DB
         except Exception as err:
             # TODO : manage error
-            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline_id), err)
+            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline.id), err)
+            return False
         return True
+
+
+    def __delete(self, pipeline):
+        try:
+            pirus.container_managers[pipeline.type].uninstall_pipeline(pipeline)
+        except Exception as err:
+            raise RegovarException("Error occured during uninstallation of the pipeline. Uninstallation aborded.", err)
 
 
 
