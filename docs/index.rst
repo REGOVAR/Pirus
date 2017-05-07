@@ -16,6 +16,7 @@ Contents:
    quickguide
    userguide
    devguide
+   fr/model
    
    
    restapi
