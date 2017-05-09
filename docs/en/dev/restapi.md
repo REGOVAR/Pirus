@@ -22,10 +22,10 @@ Règles générales
 CRUD
 ----
 ```
-	GET 	Read
-	POST	Create
-	PUT 	Update
-	DELETE	Delete
+POST	Create
+GET 	Read
+PUT 	Update
+DELETE	Delete
 ```
 
 
@@ -48,7 +48,7 @@ La structure de la réponse JSON est toujours la même :
 
 **En cas de succès** du traitement de la requête
 
-```javascript=
+``` js
 HTTP code = 200
 {
     "success" : True, // boolean à vrai pour indiquer le traitement avec succès
@@ -66,7 +66,7 @@ HTTP code = 200
 
 **En cas d'erreur** (gérée) lors du traitement de la requête
 
-```javascript=
+```
 HTTP code = 200
 {
     "success" : False,    // boolean à faux 
@@ -155,7 +155,7 @@ Pour les requêtes qui le supportent (par exemple `/users`), il est possible de 
 * On peut filtrer sur plusieurs valeurs pour un même champs, en les séparant avec le symble `,`. Pour le moteur de filtrage il s'agira d'appliquer un `OR` pour chacune de ces valeurs; 
 * il n'est pas possible de faire du filtrage complexe via ce systeme. Ainsi pour les recherches ou filtrages nécessitant l'usage d'expression régulière, d'opérateur type `>=`, etc, si la ressource le permet, une requete dédiée sera proposée (par exemple **`POST`**`/users/search`).
 
-```javascript=
+``` javascript=
 Exemple : 
 
 GET regovar.org/users?firstname=Toto
