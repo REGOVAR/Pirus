@@ -7,4 +7,8 @@ pages:
   - Model : dev/model.md
   - Api Rest : dev/restapi.md
 theme: readthedocs
-extra_css: [extra.css]
+extra_css: 
+ - extra.css
+markdown_extensions:
+ - nl2br
+ - sane_lists
