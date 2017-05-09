@@ -34,12 +34,12 @@ Réponses et prise en charge des erreurs
 ---------------------------------------
 Les seuls codes d'erreur HTTP retournés par le server sont :
 
-| Code | Description |
-|------| ----------- |
-|`200` | *"OK"*, le server fonctionne bien et vous a répondu (ce qui ne veut pas dire qu'il n'y a pas eu d'erreur)|
-|`404` | *"request not found"*, l'url saisie n'existe pas |
-|`403` |*"authentication required"*, l'utilisateur doit être identifié pour accéder au service, ou bien l'authentification a échoué (mauvais login/mot de passe saisis)|
-|`5XX` | *"server errors"*, une erreur non gérée côté server est survenue et a "cassé" le server... ça craint.|
+Code | Description
+---- | -----------
+`200` | *"OK"*, le server fonctionne bien et vous a répondu (ce qui ne veut pas dire qu'il n'y a pas eu d'erreur)
+`404` | *"request not found"*, l'url saisie n'existe pas
+`403` |*"authentication required"*, l'utilisateur doit être identifié pour accéder au service, ou bien l'authentification a échoué (mauvais login/mot de passe saisis)
+`5XX` | *"server errors"*, une erreur non gérée côté server est survenue et a "cassé" le server... ça craint.
     
 
 Donc en théorie, quand tout fonctionne normalement, le server doit toujours renvoyer du JSON (utf8), avec code HTTP valant `200`.
