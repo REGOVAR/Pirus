@@ -93,3 +93,4 @@ ENV/
 config.py.bak
 config.test
 config.py
+*.out

@@ -14,7 +14,6 @@ from core.model import File
 from core.core import pirus
 
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -22,7 +21,7 @@ from core.core import pirus
 
 
 
-class TestCoreFileManager(unittest.TestCase):
+class TestCoreJobManager(unittest.TestCase):
     """ Test case for pirus model File's features. """
 
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -31,8 +30,7 @@ class TestCoreFileManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
-        # Before test we check that we are doing test on a "safe" database
-        pass
+        pirus.container_managers["FakeManager4Test"].need_image_file = False
 
     @classmethod
     def tearDownClass(self):
@@ -47,63 +45,74 @@ class TestCoreFileManager(unittest.TestCase):
     # TESTS
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-    def test_CRUD_upload(self):
-        """ Check that upload's features are working as expected """
+    def test_main_workflow_without_error(self):
+        """ Check that job core's workflow, for job, is working as expected. """
 
-        # Upload init
-        f = pirus.files.upload_init("test_upload.tar.gz", 10, {'tags':'Coucou'})
-        self.assertEqual(f.name, "test_upload.tar.gz")
-        self.assertEqual(f.size, 10)
-        self.assertEqual(f.upload_offset, 0)
-        self.assertEqual(f.status, "uploading")
-        self.assertEqual(f.type, "gz")
-        self.assertEqual(f.path.startswith(TEMP_DIR), True)
-        old_path = f.path
+        # install the fake pipeline
+        p = pirus.pipelines.install_init("test_image_success", {"type" : "FakeManager4Test"})
+        pirus.pipelines.install(p.id)
 
-        # Upload chunk
-        f = pirus.files.upload_chunk(f.id, 0, 5, b'chunk')
-        self.assertEqual(f.size, 10)
-        self.assertEqual(f.upload_offset, 5)
-        self.assertEqual(f.status, "uploading")
-        self.assertEqual(os.path.isfile(f.path),True) 
-        self.assertEqual(os.path.getsize(f.path), f.upload_offset)
-
-        # Upload finish
-        f = pirus.files.upload_chunk(f.id, 5, 5, b'chunk')
-        self.assertEqual(f.size, 10)
-        self.assertEqual(f.upload_offset, f.size)
-        self.assertEqual(f.status, "uploaded")
-        self.assertEqual(f.path.startswith(FILES_DIR), True)
-        self.assertEqual(os.path.isfile(old_path), False)
-        self.assertEqual(os.path.isfile(f.path), True)
-        self.assertEqual(os.path.getsize(f.path), f.size)
-
-        # Check file content
-        with open(f.path, "r") as r:
-            c = r.readlines()
-        self.assertEqual(c, ['chunkchunk'])
-
-        # Delete file
-        pirus.files.delete(f.id)
-        f2 = File.from_id(f.id)
-        self.assertEqual(f2, None)
-        self.assertEqual(os.path.isfile(f.path), False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_init, False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_running, False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_paused, False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_stoped, False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, False)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_finalized, False)
 
 
+        # init job 
+        time.sleep(0.1) # need waiting otherwise sqlalchemy in wrong state ?... to fixe
+        job = pirus.jobs.new(p.id, {"name" : "Test job success"})
+        job_id = job.id
+        root_path =  os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_init, True)
+        self.assertEqual(job.name, "Test job success")
+        self.assertEqual(os.path.exists(root_path), True)
+        self.assertEqual(os.path.exists(os.path.join(root_path, "inputs")), True)
+        self.assertEqual(os.path.exists(os.path.join(root_path, "outputs")), True)
+        self.assertEqual(os.path.exists(os.path.join(root_path, "logs")), True)
+        self.assertEqual(os.path.isfile(os.path.join(root_path, "inputs/config.json")), True)
+
+        # call all delayed action 
+        pirus.jobs.start(job_id)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_running, True)
+
+        job = pirus.jobs.monitoring(job_id)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, True)
+
+        pirus.jobs.pause(job_id)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_paused, True)
+
+        pirus.jobs.start(job_id)
+        pirus.jobs.stop(job_id)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_stoped, True)
+
+        pirus.jobs.finalize(job_id)
+        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_finalized, True)
+
+        pirus.jobs.delete(job_id)
+        self.assertEqual(os.path.isfile(os.path.join(root_path, "inputs/config.json")), False)
+        self.assertEqual(os.path.exists(os.path.join(root_path, "inputs")), False)
+        self.assertEqual(os.path.exists(os.path.join(root_path, "outputs")), False)
+        self.assertEqual(os.path.exists(os.path.join(root_path, "logs")), False)
+        self.assertEqual(os.path.exists(root_path), False)
 
 
-    # def test_CRUD_from_url(self):
-    #     """ Check that creating file by retrieving it through url is working as expected """
-
-    #     # TODO
-    #     pass
 
 
+    def test_main_workflow_with_error(self):
 
-    # def test_CRUD_from_ids(self):
-    #     """ Check that creating file by retrieving it on a local path on the server is working as expected """
+        # init job 
 
-    #     # TODO
-    #     pass
+        # start job
+
+        # check error
+
+        # check that terminate job have been automaticaly called by the manager 
+
+        # check i/o files of the job
+        pass
+
 
 

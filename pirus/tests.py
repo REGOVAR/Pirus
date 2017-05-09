@@ -9,6 +9,7 @@ from tests.model.test_model_job import *
 from tests.model.test_model_pipeline import *
 from tests.core.test_core_filemanager import *
 from tests.core.test_core_pipelinemanager import *
+from tests.core.test_core_jobmanager import *
 
 
 
@@ -35,6 +36,9 @@ if __name__ == '__main__':
 
     for test in [m for m in TestCorePipelineManager.__dict__.keys() if str.startswith(m, "test_")]:
         suite.addTest(TestCorePipelineManager(test))
+
+    for test in [m for m in TestCoreJobManager.__dict__.keys() if str.startswith(m, "test_")]:
+        suite.addTest(TestCoreJobManager(test))
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

@@ -13,26 +13,32 @@ import subprocess
 import requests
 
 
+
 from config import *
 from core.framework import *
 from core.model import *
-from core.managers.lxd_manager import LxdManager
-from core.managers.github_manager import GithubManager
-from pirus_celery import start_job, terminate_job
+from core.container_managers.lxd_manager import LxdManager
+from core.container_managers.github_manager import GithubManager
+from core.queue_managers.sync_queue import PirusQueueManager
+
+# need it, and only used by unittests.
+from tests.core.fake_container_manager import FakeContainerManager4Test
 
 
-
-
-
-
-def notify_all_print(msg):
-    print(msg)
 
 
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # CORE OBJECT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+def notify_all_print(msg):
+    """
+        Default delegate used by the core for notification.
+    """
+    print(str(msg))
+
+
 class Core:
     def __init__(self):
         self.files = FileManager()
@@ -61,6 +67,8 @@ class Core:
         # to really do a notification. (See how api_rest override this method)
         self.notify_all = notify_all_print
 
+        # if TEST config
+        self.container_managers["FakeManager4Test"] = FakeContainerManager4Test()
 
 
  
@@ -245,6 +253,18 @@ class PipelineManager:
         pass
 
 
+    def install_init (self, name, metadata={}):
+        pipe = Pipeline.new()
+        pipe.name = name
+        pipe.status = "initializing"
+        pipe.save()
+
+        if metadata and len(metadata) > 0:
+            pipe.load(metadata)
+        rlog.info('core.PipeManager.register : New pipe registered with the id {}'.format(pipe.id))
+        return pipe
+
+
 
     def install_init_image_upload(self, filename, file_size, metadata={}):
         """ 
@@ -375,250 +395,258 @@ class PipelineManager:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # Job MANAGER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+
+class MonitoringLog:
+    """
+        Class to wrap log file and provide usefull related information and method to parse logs
+    """
+    def __init__(self, path):
+        self.path = path
+        self.name = path
+        self.size = os.path.getsize(path)
+        self.creation = datetime.datetime.fromtimestamp(os.path.getctime(path))
+        self.update = datetime.datetime.fromtimestamp(os.path.getmtime(path))
+
+
+    def tail(lines_number):
+        """
+            Return the N last lines of the log
+        """
+        try: 
+            out_tail = subprocess.check_output(["tail", path, "-n", "100"]).decode()
+        except Exception as error:
+            out_tail = "No stdout log of the run."
+
+        
+    def head(lines_number):
+        """
+            Return the N first lines of the log
+        """
+        try: 
+            err_tail = subprocess.check_output(["tail", path, "-n", "100"]).decode()
+        except Exception as error:
+            err_tail = "No stderr log of the run."
+
+
+    def snip(from_line, to_line):
+        """
+            Return a snippet of the log, from the line N to the line N2
+        """
+        # TODO
+        pass
+
+
+
+
+
+
+
 class JobManager:
     def __init__(self):
         pass
 
 
-        
-    # def public_fields(self):
-    #     return Job.public_fields
 
-
-    # def total(self):
-    #     return Job.objects.count()
-
-
-    # def get_from_id(self, job_id, sublvl=0, fields=None):
-    #     job = Job.from_id(job_id)
-    #     if job == None:
-    #         raise RegovarException("No job with id " + str(job_id))
-    #     return job.export_client_data(sublvl, fields)
-
-
-    # def get_from_ids(self, file_ids, sublvl=0, fields=None):
-    #     return [r.export_client_data(sublvl, fields) for r in Job.from_id(file_ids)]
-
-
-    # def get_io(self, job_id):
-    #     job = Job.from_id(job_id)
-    #     if job == None:
-    #         return rest_error("Unable to find the job with id " + str(job_id))
-    #     result={"inputs" : [], "outputs":[]}
-    #     # Retrieve inputs files data of the job
-    #     files = File.from_ids(job.inputs)
-    #     result["inputs"] = [a.export_client_data() for a in files]
-    #     # Retrieve outputs files data of the job
-    #     files = File.from_ids(job.outputs)
-    #     result["outputs"] = [a.export_client_data() for a in files]
-    #     return result
-
-
-    def get(self, fields=None, query=None, order=None, offset=None, limit=None, sublvl=0):
-        """
-            Generic method to get jobs metadata according to provided filtering options
-        """
-        if fields is None:
-            fields = Job.public_fields
-        if query is None:
-            query = {}
-        if order is None:
-            order = ['-create_date', "name"]
-        if offset is None:
-            offset = 0
-        if limit is None:
-            limit = offset + RANGE_MAX
-        return [r.export_client_data(sublvl, fields) for r in Job.objects(__raw__=query).order_by(*order)[offset:limit]]
-
-
-
-
-
-
-    def delete(self, job_id):
-        try:
-            # Start by doing a stop if running
-            result, job = self.stop(job_id)
-            # Remove files entries
-            root_path    = os.path.join(JOBS_DIR, job.lxd_container)
-            shutil.rmtree(root_path, True)
-            # Clean DB
-            job.delete()
-        except Exception as err:
-            raise RegovarException("core.JobManager.delete : Unable to delete the job with id " + str(job_id), "", err)
-        return True
-
-
-
-    def create(self, pipeline_id, config_data, inputs_data):
-        config_data = { "job" : config_data, "pirus" : { "notify_url" : ""}}
-        pipeline = Pipeline.from_id(pipeline_id)
-        if pipeline is None:
-            # TODO : LOG rest_error("Unknow pipeline id " + str(pipeline_id))
-            return None
-        # Create job in database.
-        lxd_container = LXD_CONTAINER_PREFIX + str(uuid.uuid4())
-        job = Job()
-        job.import_data({
-            "pipeline_id" : pipeline_id,
-            "name" : config_data["job"]["name"],
-            "lxd_container" : lxd_container,
-            "lxd_image" : pipeline.lxd_alias,
-            "start" : str(datetime.datetime.now().timestamp()),
-            "status" : "WAITING",
-            "config" : json.dumps(config_data),
-            "inputs" : inputs_data,
-            "progress" : {"value" : 0, "label" : "0%", "message" : "", "min" : 0, "max" : 0}
-        })
-        job.save()
-
-        job.url = 'http://' + HOST_P + '/dl/r/' + str(job.id)
-        job.notify_url = 'http://' + HOST_P + '/job/notify/' + str(job.id)
-        config_data = json.loads(job.config)
-        config_data["pirus"]["notify_url"] = job.notify_url
-        job.config = json.dumps(config_data)
-
-        # Update input files to indicate that they will be used by this job
-        for file_id in job.inputs:
-            f = File.from_id(file_id)
-            if f is None :
-                # This file doesn't exists, so we will ignore it
-                job.inputs.remove(file_id)
-            elif job.id not in f.jobs :
-                f.jobs.append(str(job.id))
-                f.save()
-        
-        job.save()
-
-        return job.export_client_data()
-
-
-
-
-
-
-
-    def update(self, job_id, json_data):
-        job = Job.from_id(job_id)
-        if job is not None:
-            # special management when status change
-            if "status" in json_data.keys() :
-                self.set_status(job, json_data["status"], False)
-            job.import_data(json_data)
-            job.save()
-            # send notification only when realy needed
-            if "status" in json_data.keys() or "progress" in json_data.keys():
-                msg = {"action":"job_changed", "data" : [job.export_client_data()] }
-                pirus.notify_all(json.dumps(msg))
-        return job
-
-
-    # Update the status of the job, and according to the new status will do specific action
-    # Notify also every one via websocket that job status changed
     def set_status(self, job, new_status, notify=True):
         global  pirus
         # Avoid useless notification
         # Impossible to change state of a job in error or canceled
-        if (new_status != "RUNNING" and job.status == new_status) or job.status in  ["ERROR", "CANCELED"]:
+        if (new_status != "running" and job.status == new_status) or job.status in  ["error", "canceled"]:
             return
         # Update status
         job.status = new_status
         job.save()
 
         # Need to do something according to the new status ?
-        # Nothing to do for status : "WAITING", "INITIALIZING", "RUNNING", "FINISHING"
-        if job.status in ["PAUSE", "ERROR", "DONE", "CANCELED"]:
-            next_job = Job.objects(status="WAITING").order_by('start')
-            if len(next_job) > 0:
-                if next_job[0].status == "PAUSE":
-                    start_job.delay(str(next_job[0].id))
-                else :
-                    start_job.delay(str(next_job[0].id))
-        elif job.status == "FINISHING":
-            terminate_job.delay(str(job.id))
+        # Nothing to do for status : "waiting", "initializing", "running", "finalizing"
+        if job.status in ["pause", "error", "done", "canceled"]:
+            s = session()
+            next_jobs = s.query(Job).filter_by(status="waiting").order_by("priority").all()
+            if len(next_jobs) > 0:
+                # start_run.delay(str(next_jobs[0].id))
+               PirusQueueManager.start_job(next_jobs[0].id)
+        elif job.status == "finalizing":
+            # terminate_run.delay(str(job.id))
+            PirusQueueManager.terminate_job(job.id)
         # Push notification
         if notify:
-            msg = {"action":"job_changed", "data" : [job.export_client_data()] }
-            pirus.notify_all(json.dumps(msg))
+            pirus.notify_all({"action": "job_updated", "data" : [job.to_json()]})
+
+
+
+
+
+
+    def new(self, pipeline_id, config, inputs_ids=[]):
+        """
+            Create a new job for the specified pipepline (pipeline_id), with provided config and input's files ids
+        """
+        pipeline = Pipeline.from_id(pipeline_id)
+        if not pipeline : 
+            raise RegovarException("Pipeline not found (id={}).".format(pipeline_id))
+        if pipeline.status != "ready":
+            raise RegovarException("Pipeline status ({}) is not \"ready\". Cannot create a job.".format(pipeline.status))
+        if not isinstance(config, dict) and "name" not in config.keys():
+            raise RegovarException("A name must be provided to create new job")
+        # Init model
+        job = Job.new()
+        job.status = "initializing"
+        job.inputs_ids = inputs_ids
+        job.name = config["name"]
+        job.config = json.dumps(config)
+        job.progress_value = 0
+        job.pipeline_id = pipeline_id
+        job.progress_label = "0%"
+        job.save()
+        job.init(1)
+        # Init directories entries for the container
+        root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
+        inputs_path = os.path.join(root_path, "inputs")
+        outputs_path = os.path.join(root_path, "outputs")
+        logs_path = os.path.join(root_path, "logs")
+        if not os.path.exists(inputs_path): 
+            os.makedirs(inputs_path)
+        if not os.path.exists(outputs_path):
+            os.makedirs(outputs_path)
+            os.chmod(outputs_path, 0o777)
+        if not os.path.exists(logs_path):
+            os.makedirs(logs_path)
+            os.chmod(logs_path, 0o777)
+        # Put inputs files and job's config in the inputs directory of the job
+        config_path = os.path.join(inputs_path, "config.json")
+        with open(config_path, 'w') as f:
+            f.write(json.dumps(job.config, sort_keys=True, indent=4))
+            os.chmod(config_path, 0o777)
+        for f in job.inputs:
+            link_path = os.path.join(inputs_path, f.name)
+            os.link(f.path, link_path)
+            os.chmod(link_path, 0o644)
+
+        # Call init of the container
+        PirusQueueManager.init_job(job.id)
+
+        # Return job object
+        return job
 
 
 
     def start(self, job_id):
+        """
+            Start or restart the job
+        """
         job = Job.from_id(job_id)
-        if job == None:
-            raise RegovarException("Unable to find the job with id " + str(job_id))
-        start_job.delay(job_id)
+        if not job:
+            raise RegovarException("Job not found (id={}).".format(job_id))
+        if job.status not in ["waiting", "pause"]:
+            raise RegovarException("Job status ({}) is not \"pause\" or \"waiting\". Cannot start the job.".format(job.status))
+        # Call start of the container
+        PirusQueueManager.start_job(job.id)
+
+
+    def monitoring(self, job_id):
+        """
+            Retrieve monitoring information about the job.
+            Return a Job object with a new attribute:
+             - logs : list of MonitoringLog (log file) write by the run/manager in the run's logs directory
+        """
+        job = Job.from_id(job_id)
+        if not job:
+            raise RegovarException("Job not found (id={}).".format(job_id))
+        if job.status == "initializing":
+            raise RegovarException("Job status is \"initializing\". Cannot retrieve yet monitoring informations.")
+        # Ask container manager to update data about container
+        PirusQueueManager.monitoring_job(job.id)
+        job_logs_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id), "logs")
+        job.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
+
+
 
 
     def pause(self, job_id):
+        """
+            Pause the job
+            Return False if job cannot be pause; True otherwise
+        """
         global pirus
         job = Job.from_id(job_id, 1)
-        if pirus.container_managers[job.pipeline.type].pause_job(job):
-            self.set_status(job, "pause")
-
-
-
-
+        if not job:
+            raise RegovarException("Job not found (id={}).".format(job_id))
+        if not job.pipeline:
+            raise RegovarException("No Pipeline associated to this job.")
+        if not job.pipeline.type:
+            raise RegovarException("Type of pipeline for this job is not set.")
+        if job.pipeline.type not in pirus.container_managers.keys():
+            raise RegovarException("Pipeline type of this job is not managed.")
+        if not pirus.container_managers[job.pipeline.type].supported_features["pause_job"]:
+            return False
+        # Call pause of the container
+        PirusQueueManager.pause_job(job.id)
 
 
 
     def stop(self, job_id):
+        """
+            Stop the job
+        """
         job = Job.from_id(job_id)
-        if job == None:
-            raise RegovarException("Unable to find the job with id " + str(job_id))
-        if job.status in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]:
-            subprocess.Popen(["lxc", "delete", job.lxd_container, "--force"])
-            self.set_status(job, "CANCELED")
-            return True, job
-        return False, job
+        if not job:
+            raise RegovarException("Job not found (id={}).".format(job_id))
+        if job.status in ["error", "canceled", "done"]:
+            raise RegovarException("Job status is \"{}\". Cannot stop the job.".format(job.status))
+        # Call stop of the container
+        PirusQueueManager.stop_job(job.id)
 
 
-    def monitoring(self, job_id):
+    def finalize(self, job_id):
+        """
+            Shall be called by the job itself when ending.
+            save outputs files and ask the container manager to delete container
+        """
+        global pirus
         job = Job.from_id(job_id)
-        if job == None:
-            raise RegovarException("Unable to find the job with id " + str(job_id))
+        if not job:
+            raise RegovarException("Job not found (id={}).".format(job_id))
+        # Register outputs files
+        root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
+        inputs_path = os.path.join(root_path, "inputs")
+        outputs_path = os.path.join(root_path, "outputs")
+        logs_path = os.path.join(root_path, "logs")
 
-        pipeline = Pipeline.from_id(job.pipeline_id)
-        # Result
-        result = {
-            "name" : job.name,
-            "pipeline_icon" : pipeline.icon_url,
-            "pipeline_name" : pipeline.name,
-            "id" : str(job.id),
-            "status" : job.status,
-            "vm" : {},
-            "progress" : job.progress
-        }
+        for f in os.listdir(outputs_path):
+            file_path = os.path.join(outputs_path, f)
+            if os.path.isfile(file_path):
+                # 1- Move & store file into Pirus DB/Filesystem
+                pf = pirus.files.from_local(file_path, True, {"job_source_id" : job.id})
+                # 2- create link (to help admins when browsing pirus filesystem)
+                os.link(pf.path, file_path)
+                # 3- update job's entry in db to link file to job's outputs
+                job.outputs_ids.append(pf.id)
+        job.save()
+        # Stop container and delete it
+        PirusQueueManager.finalize_job(job.id)
 
-        # Lxd monitoring data
-        try:
-            # TODO : to be reimplemented with pylxd api when this feature will be available :)
-            out = subprocess.check_output(["lxc", "info", job.lxd_container])
-            for l in out.decode().split('\n'):
-                data = l.split(': ')
-                if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
-                    result["vm"].update({data[0].strip(): data[1]})
-            result.update({"vm_info" : True})
-        except Exception as error:
-            out = "No virtual machine available for this job."
-            result.update({"vm" : out, "vm_info" : False})
 
-        # Logs tails
-        try: 
-            out_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, job.lxd_container, "logs/out.log"), "-n", "100"]).decode()
-        except Exception as error:
-            out_tail = "No stdout log of the job."
 
-        try: 
-            err_tail = subprocess.check_output(["tail", os.path.join(RUNS_DIR, job.lxd_container, "logs/err.log"), "-n", "100"]).decode()
-        except Exception as error:
-            err_tail = "No stderr log of the job."
 
-        result.update({
-            "out_tail" : out_tail, 
-            "err_tail" : err_tail
-        })
-        return result
+    def delete(self, job_id):
+        """
+            Delete a Job. Outputs that have not yet been saved in Pirus, will be deleted.
+        """
+        job = Job.from_id(job_id)
+        if not job:
+            raise RegovarException("Job not found (id={}).".format(job_id))
+        if job.status not in ["error", "canceled", "done"]:
+            raise RegovarException("Job status is \"{}\". Cannot stop the job.".format(job.status))
+        # Security, force call stop/delete the container
+        PirusQueueManager.finalize_job(job.id)
+        # Deleting file in the filesystem
+        root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
+        shutil.rmtree(root_path, True)
+
+
+
+
 
 
 
@@ -630,5 +658,8 @@ class JobManager:
 
 
 
-
+# Pirus core
 pirus = Core()
+
+# Pirus Queue Manager
+PirusQueueManager.pirus = pirus

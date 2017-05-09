@@ -237,7 +237,7 @@ class PirusContainerManager():
         """
             IMPLEMENTATION REQUIRED
             Init a job by checking its settings (stored in database) and preparing the container for this job.
-            Return True if success; False otherwise
+            Return void. Must raise exception in case of error
         """
         raise NotImplementedError("The abstract method \"init_job\" of PirusManager must be implemented.")
 
@@ -283,11 +283,10 @@ class PirusContainerManager():
             raise RegovarException("The abstract method \"monitoring_job\" of PirusManager shall be implemented.")
 
 
-    def terminate_job(self, job):
+    def finalize_job(self, job):
         """
             IMPLEMENTATION REQUIRED
-            Clean temp resources created by the container (log shall be kept), copy outputs file from the container
-            to the right place on the server, register them into the database and associates them to the job.
+            Clean temp resources created by the container (log shall be kept)
             Return True if success; False otherwise
         """
         raise NotImplementedError("The abstract method \"terminate_job\" of PirusManager must be implemented.")

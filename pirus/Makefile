@@ -27,9 +27,9 @@ install:
 
 
 app:
-	python pirus_server.py
+	python pirus_server.py > pirus.out 2>pirus_error.out  &
 
-cel:
-	celery worker -A pirus_celery --loglevel=info -Q PirusQueue
+stop:
+	ps -ef | grep pirus_server | awk '{print $$2}'  | xargs sudo kill -9
 
-.PHONY: init test app cel
+.PHONY: init test app stop clear

@@ -39,7 +39,7 @@ def init_pg(user, password, host, port, db):
         url = 'postgresql://{}:{}@{}:{}/{}'.format(user, password, host, port, db)
         con = sqlalchemy.create_engine(url, client_encoding='utf8')
     except Exception as err:
-        raise RegovarException("Unable to connect to database")
+        raise RegovarException("Unable to connect to database", err)
     return con
     
 
@@ -51,7 +51,7 @@ try:
     Base.metadata.create_all(__db_engine)
     Session = sessionmaker(bind=__db_engine)
 except Exception as err:
-    raise RegovarException("Error occured when initialising database")
+    raise RegovarException("Error occured when initialising database", err)
 
 __db_session = Session()
 __db_pool = mp.Pool()
@@ -561,6 +561,7 @@ def job_init(self, loading_depth=0):
     self.outputs_ids = []
     self.inputs = []
     self.outputs = []
+    self.pipeline = None
 
     files = __db_session.query(JobFile).filter_by(job_id=self.id).all()
     for f in files:
@@ -576,6 +577,7 @@ def job_load_depth(self, loading_depth):
         try:
             self.inputs = []
             self.outputs = []
+            self.pipeline = Pipeline.from_id(self.pipeline_id, loading_depth-1)
             if len(self.inputs_ids) > 0:
                 files = __db_session.query(File).filter(File.id.in_(self.inputs_ids)).all()
                 for f in files:

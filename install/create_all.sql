@@ -62,9 +62,9 @@ CREATE TABLE public.job
     id serial NOT NULL,
     pipeline_id int,
     name character varying(255) COLLATE pg_catalog."C",
+    priority int,
 
     config text COLLATE pg_catalog."C",
-    settings text COLLATE pg_catalog."C",
     start_date timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     update_date timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status job_status,
