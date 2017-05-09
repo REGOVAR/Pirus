@@ -1,10 +1,12 @@
 site_name: Pirus
 pages:
 - Home: index.md
+- Installation : installation_guide.md
 - About: about.md
 - Developer Guide :  dev/welcom.md
   - Model : dev/model.md
   - Api Rest : dev/restapi.md
+  - Api Cli : dev/cliapi.md
 theme: readthedocs
 extra_css: 
  - extra.css
