@@ -33,6 +33,7 @@ CRUD
 Réponses et prise en charge des erreurs
 ---------------------------------------
 Les seuls codes d'erreur HTTP retournés par le server sont :
+
 | Code | Description |
 |------| ----------- |
 |`200` | *"OK"*, le server fonctionne bien et vous a répondu (ce qui ne veut pas dire qu'il n'y a pas eu d'erreur)|
