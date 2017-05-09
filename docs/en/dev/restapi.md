@@ -10,9 +10,10 @@ Pour connaître les détails concernant les resources et fonctionnalités de Reg
 Principaux points d'entrée
 ==========================
 Les points d'entrée principaux de l'API sont les suivants :
+
 * [`/users`]() : pour la manipulation des utilisateurs de Regovar
 * [`/projects`]() : pour la manipulation des projets de Regovar
-* *... à venir ...*
+* _... à venir ..._
 
 
 Règles générales
@@ -21,10 +22,10 @@ Règles générales
 CRUD
 ----
 ```
-	GET 	Read
-	POST	Create
-	PUT 	Update
-	DELETE	Delete
+POST	Create
+GET 	Read
+PUT 	Update
+DELETE	Delete
 ```
 
 
@@ -46,7 +47,8 @@ Donc en théorie, quand tout fonctionne normalement, le server doit toujours ren
 La structure de la réponse JSON est toujours la même :
 
 **En cas de succès** du traitement de la requête
-```javascript=
+
+``` js
 HTTP code = 200
 {
     "success" : True, // boolean à vrai pour indiquer le traitement avec succès
@@ -63,7 +65,8 @@ HTTP code = 200
 
 
 **En cas d'erreur** (gérée) lors du traitement de la requête
-```javascript=
+
+``` js
 HTTP code = 200
 {
     "success" : False,    // boolean à faux 
@@ -82,7 +85,8 @@ Par défaut une requête va retourner les ressources avec un certain nombre de c
 Pour les requêtes qui supportent le lazy loading (par exemple `/users` qui retourne la liste des utilisateurs), il est possible de spécifier quels champs à retourner dans la réponse.
 
 **Query Parameter** : `?fields={fieldname}[,{fieldname2},...]`
-```javascript=
+
+``` js
 Exemple : 
 
 GET regovar.org/users
@@ -117,9 +121,10 @@ Pagination
 Pour les requêtes qui la supportent (par exemple `/users`), il est possible de spécifier la plage de résultat à retourner.
 
 **Query Parameter** : `?range={first}-{end}`
+
 * Retourne la liste des résultat allant du `{first}` au `{end}` inclus (à noter que le premier élément à pour index 0).
 
-```javascript=
+``` js
 Exemple : 
 
 GET regovar.org/alphabet
@@ -144,12 +149,13 @@ Filtrage
 Pour les requêtes qui le supportent (par exemple `/users`), il est possible de spécifier des paramètres de filtrage pour ne retourner qu'une certaine partie des résultats.
 
 **Query Parameter** : `?{fieldname}={value}[,{or_value},...][&{fieldname2...}]`
+
 * On peut filtrer en précisant en paramètre un champs de la ressource et la valeur attendue. La liste des champs filtrables est fournie par la requête principale sans aucun argument (dans notre exemple la requête `/users`). Seuls les attributs directs de la ressource peuvent être filtrés.;
 * On peut filtrer sur plusieurs champs à la fois en les séparant avec le `&`. Dans ce cas le moteur de filtrage appliquera implicement la condition `AND` entre chaque champs filtré;
 * On peut filtrer sur plusieurs valeurs pour un même champs, en les séparant avec le symble `,`. Pour le moteur de filtrage il s'agira d'appliquer un `OR` pour chacune de ces valeurs; 
 * il n'est pas possible de faire du filtrage complexe via ce systeme. Ainsi pour les recherches ou filtrages nécessitant l'usage d'expression régulière, d'opérateur type `>=`, etc, si la ressource le permet, une requete dédiée sera proposée (par exemple **`POST`**`/users/search`).
 
-```javascript=
+``` js
 Exemple : 
 
 GET regovar.org/users?firstname=Toto
@@ -189,9 +195,11 @@ Ordonner
 Pour les requêtes qui le supportent (par exemple `/users`), il est possible de spécifier des paramètres pour ordonner les résultats selon certains champs par ordre croissant ou décroissant.
 
 **Query Parameter** : `?sort={field1}[,{field2},...][&desc={fieldX}[,{fieldY}]]`
+
 * L'attribut `sort` permet de lister les champs dans l'ordre suivant lequel les résultats vont être ordonnés (par ordre croissant pour chaque champs);
 * L'attribut `desc` liste les champs (parmis ceux avec l'attributs sort qui doivent suivrent l'ordre décroissant et non croissant)
-```javascript=
+
+``` js
 Exemple : 
 
 GET regovar.org/users?sort=lastname,firstname
@@ -205,7 +213,7 @@ GET regovar.org/users?sort=lastname,firstname&desc=lastname
 
 Search
 ------
-*à définir ...*
+_... à définir ..._
 
 
 
@@ -216,5 +224,6 @@ Search
 Identification et authentification
 ==================================
 Qui dit internet, dit authentification des utilisateurs à distance, session et mot de passe. Tout cela est géré via le point d'entrée [`/users`](), grâce aux actions :
+
 * **`POST`**`/users/login` : qui permet l'authentification grâce aux paramètres `login` et `password` à fournir dans le corps de la requête. Si l'authentification échoue, une erreur 403 est retournée (Forbidden); si elle réussit, 
 * **`GET`**`/users/logout` :
