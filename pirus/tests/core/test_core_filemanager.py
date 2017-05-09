@@ -96,10 +96,29 @@ class TestCoreFileManager(unittest.TestCase):
 
 
 
-    # def test_CRUD_from_ids(self):
-    #     """ Check that creating file by retrieving it on a local path on the server is working as expected """
+    def test_CRUD_local(self):
+        """ Check that creating file by retrieving it on a local path on the server is working as expected """
 
-    #     # TODO
-    #     pass
+        # Create a file into tmp directory
+        path = "/tmp/pirus_tu_filemanager_import_from_local.test"
+        with open(path, "w") as f:
+            f.write("Test it")
+
+        # import it in Pirus
+        f = pirus.files.from_local(path)
+        self.assertEqual(os.path.isfile(path),True)
+        self.assertEqual(f.name, "pirus_tu_filemanager_import_from_local.test")
+        self.assertEqual(f.path.startswith(FILES_DIR), True)
+        self.assertEqual(os.path.isfile(f.path),True)
+        self.assertEqual(f.status, "checked")
+        self.assertEqual(f.size, os.path.getsize(path))
+
+        # Check file content
+        with open(f.path, "r") as r:
+            c = r.readlines()
+        self.assertEqual(c, ['Test it'])
+
+        # Delete file
+        pirus.files.delete(f.id)
 
 

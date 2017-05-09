@@ -39,7 +39,7 @@ def init_pg(user, password, host, port, db):
         url = 'postgresql://{}:{}@{}:{}/{}'.format(user, password, host, port, db)
         con = sqlalchemy.create_engine(url, client_encoding='utf8')
     except Exception as err:
-        raise RegovarException("Unable to connect to database", err)
+        raise RegovarException("Unable to connect to database", "", err)
     return con
     
 
@@ -51,7 +51,7 @@ try:
     Base.metadata.create_all(__db_engine)
     Session = sessionmaker(bind=__db_engine)
 except Exception as err:
-    raise RegovarException("Error occured when initialising database", err)
+    raise RegovarException("Error occured when initialising database", "", err)
 
 __db_session = Session()
 __db_pool = mp.Pool()

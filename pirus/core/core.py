@@ -81,25 +81,6 @@ class FileManager:
         pass
 
 
-    def get(self, fields=None, query=None, order=None, offset=None, limit=None, sublvl=0):
-        """
-            Generic method to get files metadata according to provided filtering options
-        """
-        if fields is None:
-            fields = File.public_fields
-        if query is None:
-            query = {}
-        if order is None:
-            order = ['-create_date', "name"]
-        if offset is None:
-            offset = 0
-        if limit is None:
-            limit = offset + RANGE_MAX
-        return [f.export_client_data(sublvl, fields) for f in File.objects(__raw__=query).order_by(*order)[offset:limit]]
-
-
-
-
     def upload_init(self, filename, file_size, metadata={}):
         """ 
             Create an entry for the file in the database and return the id of the file in pirus
@@ -179,7 +160,7 @@ class FileManager:
         pfile.path = new_path
         pfile.save()
 
-        # TODO : check if the file is an image of a Pipeline. if true, automatically start the install
+        # Check if the file is an image of a Pipeline. if true, automatically start the install
         pipeline = session().query(Pipeline).filter_by(image_file_id=pfile.id).first()
         if pipeline:
             pirus.pipelines.install(pipeline.id, pipeline.type)
@@ -212,19 +193,30 @@ class FileManager:
             Copy or move a local file on server and create a new Pirus file. Of course the source file shall have good access rights. 
             TODO : implementation have to be fixed
         """
-        name = str(uuid.uuid4())
-        filepath = os.path.join(FILES_DIR, name)
-        # get request and write file
+        if not os.path.isfile(path):
+            raise RegovarException("File \"{}\" doesn't exists.".format(path))
+        pfile = File.new()
+        pfile.name = os.path.basename(path)
+        pfile.type = os.path.splitext(pfile.name)[1][1:].strip().lower()
+        pfile.path = os.path.join(FILES_DIR, str(uuid.uuid4()))
+        pfile.size = os.path.getsize(path)
+        pfile.upload_offset = 0
+        pfile.status = "uploading"
+        pfile.create_date = datetime.datetime.now()
+        pfile.save()
         try:
+            # Move file
             if move:
-                os.rename(path, filepath)
+                os.rename(path, pfile.path)
             else:
-                shutil.copyfile(path, filepath)
+                shutil.copyfile(path, pfile.path)
+            # Update file data in database
+            pfile.upload_offset = pfile.size
+            pfile.status = "checked"
+            pfile.save()
         except Exception as err:
-            raise RegovarException("Error occured when trying to copy/move the file from the provided path : " + str(path), "", err)
-        # save file on the database
-        pirusfile = pirus.files.register(name, filepath, metadata)
-        return rest_success(pirusfile)
+            raise RegovarException("Error occured when trying to copy/move the file from the provided path : ".format(path), "", err)
+        return pfile
 
 
 
@@ -278,15 +270,9 @@ class PipelineManager:
         """
         global pirus
         pfile = pirus.files.upload_init(filename, file_size, metadata)
-        pipe = Pipeline.new()
-        pipe.name = filename
-        pipe.status = "initializing"
+        pipe = self.install_init(filename, metadata)
         pipe.image_file_id = pfile.id
         pipe.save()
-
-        if metadata and len(metadata) > 0:
-            pipe.load(metadata)
-        rlog.info('core.PipeManager.register : New pipe registered with the id {}'.format(pipe.id))
         return pipe, pfile
 
 
@@ -304,7 +290,7 @@ class PipelineManager:
 
 
 
-    def install_init_image_local(self, filepath, metadata={}):
+    def install_init_image_local(self, filepath, move=False, metadata={}):
         """ 
             Initialise a pipeline installation. 
             To use if the image have to be retrieved on the local server.
@@ -313,7 +299,12 @@ class PipelineManager:
 
             Return the Pipeline object ready to be used
         """
-        raise NotImplementedError("TODO")
+        global pirus
+        pfile = pirus.files.from_local(filepath, move, metadata)
+        pipe = self.install_init(filename, metadata)
+        pipe.image_file_id = pfile.id
+        pipe.save()
+        return pipe
 
 
 
