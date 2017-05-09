@@ -15,7 +15,7 @@ that to end users.
 
 *Each of them have different needs :*
 
-![https://raw.githubusercontent.com/REGOVAR/Pirus/master/docs/en/img/0032.1.png]
+![](https://raw.githubusercontent.com/REGOVAR/Pirus/master/docs/en/img/0032.1.png)
  
 
 | Sys administrator  | Bio informaticien | Clinician | 
@@ -27,7 +27,7 @@ that to end users.
 
 **Yes ! The solution exists ! Pirus !**
 
-![https://raw.githubusercontent.com/REGOVAR/Pirus/master/docs/en/img/0032.2.png]
+![](https://raw.githubusercontent.com/REGOVAR/Pirus/master/docs/en/img/0032.2.png)
 
 
 ## Features
