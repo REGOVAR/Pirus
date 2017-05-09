@@ -9,10 +9,10 @@ Pour connaître les détails concernant les resources et fonctionnalités de Reg
 
 Principaux points d'entrée
 ==========================
-Les points d'entrée principaux de l'API sont les suivants :
-    * [`/users`]() : pour la manipulation des utilisateurs de Regovar
-    * [`/projects`]() : pour la manipulation des projets de Regovar
-    * _... à venir ..._
+Les points d'entrée principaux de l'API sont les suivants :<br/>
+  * [`/users`]() : pour la manipulation des utilisateurs de Regovar
+  * [`/projects`]() : pour la manipulation des projets de Regovar
+  * _... à venir ..._
 
 
 Règles générales
