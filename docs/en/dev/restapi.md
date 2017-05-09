@@ -66,7 +66,7 @@ HTTP code = 200
 
 **En cas d'erreur** (gérée) lors du traitement de la requête
 
-```
+``` js
 HTTP code = 200
 {
     "success" : False,    // boolean à faux 
@@ -86,7 +86,7 @@ Pour les requêtes qui supportent le lazy loading (par exemple `/users` qui reto
 
 **Query Parameter** : `?fields={fieldname}[,{fieldname2},...]`
 
-```javascript=
+``` js
 Exemple : 
 
 GET regovar.org/users
@@ -124,7 +124,7 @@ Pour les requêtes qui la supportent (par exemple `/users`), il est possible de 
 
 * Retourne la liste des résultat allant du `{first}` au `{end}` inclus (à noter que le premier élément à pour index 0).
 
-```javascript=
+``` js
 Exemple : 
 
 GET regovar.org/alphabet
@@ -155,7 +155,7 @@ Pour les requêtes qui le supportent (par exemple `/users`), il est possible de 
 * On peut filtrer sur plusieurs valeurs pour un même champs, en les séparant avec le symble `,`. Pour le moteur de filtrage il s'agira d'appliquer un `OR` pour chacune de ces valeurs; 
 * il n'est pas possible de faire du filtrage complexe via ce systeme. Ainsi pour les recherches ou filtrages nécessitant l'usage d'expression régulière, d'opérateur type `>=`, etc, si la ressource le permet, une requete dédiée sera proposée (par exemple **`POST`**`/users/search`).
 
-``` javascript=
+``` js
 Exemple : 
 
 GET regovar.org/users?firstname=Toto
@@ -199,7 +199,7 @@ Pour les requêtes qui le supportent (par exemple `/users`), il est possible de 
 * L'attribut `sort` permet de lister les champs dans l'ordre suivant lequel les résultats vont être ordonnés (par ordre croissant pour chaque champs);
 * L'attribut `desc` liste les champs (parmis ceux avec l'attributs sort qui doivent suivrent l'ordre décroissant et non croissant)
 
-```javascript=
+``` js
 Exemple : 
 
 GET regovar.org/users?sort=lastname,firstname
