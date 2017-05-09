@@ -20,9 +20,9 @@ that to end users.
 
 | Sys administrator  | Bio informaticien | Clinician | 
 | ------------------ | ----------------- | --------- |
-| * No way they install anything on the server | * I want to do all I want | * I don't want to see any command line | 
-| * I don't want to struggle with theirs weirds dependancies | * I want to use all softwares I wants (and I choose the version) | * I just want to click a button to get my results | 
-| * Deployement shall be easy | * No time to spent on a endusers graphical interface | * I'm interruptable, I do many things at the same time, I don't want to be stuck when waiting my results | 
+| No way they install anything on the server | I want to do all I want | I don't want to see any command line | 
+| I don't want to struggle with theirs weirds dependancies | I want to use all softwares I wants (and I choose the version) | I just want to click a button to get my results | 
+| Deployement shall be easy | No time to spent on a endusers graphical interface | I'm interruptable, I do many things at the same time, I don't want to be stuck when waiting my results | 
 
 
 **Yes ! The solution exists ! Pirus !**
@@ -32,7 +32,7 @@ that to end users.
 
 ## Features
 
-* Deployement with `pip install` [TODO]
+* Deployement with `pip install` [TODO (actually : make install)]
 * All in one product (server application, client web interface)
 * One simple config file
 * No exotics depencies, no weird customizations
