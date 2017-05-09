@@ -25,7 +25,9 @@ class LxdManager(PirusContainerManager):
         }
 
 
-    async def install_pipeline(pipeline):
+
+
+    def install_pipeline(self, pipeline):
         """
             Perform the installation of a pipeline that use LXD container
         """
@@ -38,7 +40,7 @@ class LxdManager(PirusContainerManager):
         pipeline.image_file.path = os.path.join(root_path, pipeline.name)
 
         # 1- Copy file into final folder
-        plog.info('I: Installation of the pipeline package : ' + root_path)
+        plog.info('Installation of the pipeline package : ' + root_path)
         os.makedirs(root_path)
         os.rename(old_file_path, pipeline.image_file.path)
         os.chmod(pipeline.image_file.path, 0o777)
@@ -59,9 +61,9 @@ class LxdManager(PirusContainerManager):
             metadata = metadata["pirus"]
         except:
             # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of ' + pipeline.image_file.path)
+            plog.err('FAILLED Extraction of ' + pipeline.image_file.path)
             raise RegovarException("XXXX", "Unable to extract package. Corrupted file or wrong format")
-        plog.info('I:    [OK     ] Extraction of metadata from ' + pipeline.image_file.path)
+        plog.info('Extraction of metadata from ' + pipeline.image_file.path)
 
         # 2- Check that mandatory fields exists
         missing = ""
@@ -70,9 +72,9 @@ class LxdManager(PirusContainerManager):
                 missing += k + ", "                
         if missing != "":
             missing = missing[:-2]
-            plog.info('E:    [FAILLED] Checking validity of metadata (missing : ' + missing + ")")
+            plog.err('FAILLED Checking validity of metadata (missing : ' + missing + ")")
             raise RegovarException("XXXX", "Bad pirus pipeline format. Mandory fields missing in the metadata : " + missing)
-        plog.info('I:    [OK     ] Checking validity of metadata')
+        plog.info('Checking validity of metadata')
 
         # 3- Default value for optional fields in mandatory file
         for k in MANIFEST["default"].keys():
@@ -108,9 +110,9 @@ class LxdManager(PirusContainerManager):
                 shutil.copyfile(source, icon_file)
         except:
             # TODO : manage error + remove package file
-            plog.info('E:    [FAILLED] Extraction of ' + pipeline.image_file.path)
+            plog.err('FAILLED Extraction of ' + pipeline.image_file.path)
             raise RegovarException("XXXX", "Error occure during extraction of pipeline technical files (form.json / icon)")
-        plog.info('I:    [OK     ] Extraction of pipeline technical files (form.json / icon)')
+        plog.info('Extraction of pipeline technical files (form.json / icon)')
 
 
         # 5- Save pipeline into database
@@ -136,9 +138,9 @@ class LxdManager(PirusContainerManager):
         except Exception as err:
             # TODO : manage error
             print(err)
-            plog.info('E:    [FAILLED] Save pipeline information in database.')
+            plog.err('FAILLED Save pipeline information in database.')
             raise RegovarException("XXXX", "Failed to save pipeling info into the database.")
-        plog.info('I:    [OK     ] Save pipeline information in database with id='+ str(pipeline.id))
+        plog.info('Save pipeline information in database with id='+ str(pipeline.id))
 
         # 6- Install lxd container
         cmd = ["lxc", "image", "import", pipeline.image_file.path, "--alias", lxd_alias]
@@ -150,14 +152,14 @@ class LxdManager(PirusContainerManager):
         except Exception as err:
             # TODO : manage error
             print(err)
-            plog.info('E:    [FAILLED] Installation of the lxd image. ($: ' + " ".join(cmd) + ")")
+            plog.err('FAILLED Installation of the lxd image. ($: ' + " ".join(cmd) + ")")
             raise RegovarException("XXXX", "Failed to install pipeline lxd image.")
 
 
         err = open(err_tmp, "r").read()
         if err != "":
             # TODO : manage error
-            plog.info('E:    [FAILLED] Lxd image. ($: ' + " ".join(cmd) + ")")
+            plog.err('FAILLED Lxd image. ($: ' + " ".join(cmd) + ")")
             plog.info('--------------------------')
             plog.info(err)
             plog.info('--------------------------')
@@ -165,7 +167,7 @@ class LxdManager(PirusContainerManager):
             shutil.rmtree(root_path)
             raise RegovarException("XXXX", "Failed to install pipeline lxd image (" + err + ")")
         else:
-            plog.info('I:    [OK     ] Installation of the lxd image.')
+            plog.info('Installation of the lxd image.')
 
         # 7- Clean directory
         try:
@@ -180,9 +182,9 @@ class LxdManager(PirusContainerManager):
         except Exception as err:
             # TODO : manage error, notify only admins
             print(err)
-            plog.info('E:    [FAILLED] Cleaning repository.')
-        plog.info('I:    [OK     ] Cleaning repository.')
-        plog.info('I:    All fine. Pipeline is ready !')
+            plog.err('FAILLED Cleaning repository.')
+        plog.info('Cleaning repository.')
+        plog.info('All fine. Pipeline is ready !')
 
         pipeline.status = "READY"
         pipeline.save()
