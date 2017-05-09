@@ -1,0 +1,8 @@
+site_name: Pirus
+pages:
+- Home: index.md
+- About: about.md
+- Developer Guide :
+  - Welcom guide : dev/welcom.md
+  - Model : dev/model.md
+theme: readthedocs

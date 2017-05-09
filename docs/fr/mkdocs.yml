@@ -1,0 +1,6 @@
+site_name: Pirus
+pages:
+- Home: index.md
+  - fr
+- About: about.md
+theme: readthedocs
