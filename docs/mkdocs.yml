@@ -9,8 +9,7 @@ pages:
   - Api Cli : dev/cliapi.md
 - About: about.md
 theme: readthedocs
-extra_css: 
- - extra.css
+extra_css: [extra.css]
 markdown_extensions:
  - extra
  - nl2br
