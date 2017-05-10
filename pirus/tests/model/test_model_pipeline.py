@@ -17,7 +17,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-TU_PIRUS_PIPELINE_PUBLIC_FIELDS = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "jobs_ids", "jobs"]
+TU_PIRUS_PIPELINE_PUBLIC_FIELDS = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "root_path", "jobs_ids", "jobs"]
 
 
 

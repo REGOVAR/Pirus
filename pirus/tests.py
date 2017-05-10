@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import unittest
+import os
 
 
 from tests.model.test_model_file import *
@@ -10,6 +11,7 @@ from tests.model.test_model_pipeline import *
 from tests.core.test_core_filemanager import *
 from tests.core.test_core_pipelinemanager import *
 from tests.core.test_core_jobmanager import *
+from tests.core.test_core_lxdmanager import *
 
 
 
@@ -20,6 +22,10 @@ from tests.core.test_core_jobmanager import *
 # Run tests
 if __name__ == '__main__':
     suite = unittest.TestSuite()
+
+
+    print("=====\nLoading tests :")
+
 
     # Load test to execute
     for test in [m for m in TestModelFile.__dict__.keys() if str.startswith(m, "test_")]:
@@ -39,6 +45,15 @@ if __name__ == '__main__':
 
     for test in [m for m in TestCoreJobManager.__dict__.keys() if str.startswith(m, "test_")]:
         suite.addTest(TestCoreJobManager(test))
+
+    # Need Lxd image on the server to work.
+    if os.path.exists(TestCoreLxdManager.IMAGE_FILE_PATH):
+        for test in [m for m in TestCoreLxdManager.__dict__.keys() if str.startswith(m, "test_")]:
+            suite.addTest(TestCoreLxdManager(test))
+    else:
+        print("WARNING : LXD Manager TU disabled. (because lxd image \"{}\" not available)".format(TestCoreLxdManager.IMAGE_FILE_PATH))
+
+    print("Done\n=====\nRunning tests :")
 
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

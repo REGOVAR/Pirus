@@ -99,7 +99,7 @@ class FileManager:
 
         if metadata and len(metadata) > 0:
             pfile.load(metadata)
-        rlog.info('PirusCore.FileManager.upload_init : New file registered with the id ' + str(pfile.id) + ' (available at ' + pfile.path + ')')
+        log('PirusCore.FileManager.upload_init : New file registered with the id ' + str(pfile.id) + ' (available at ' + pfile.path + ')')
         return pfile
 
 
@@ -253,12 +253,12 @@ class PipelineManager:
 
         if metadata and len(metadata) > 0:
             pipe.load(metadata)
-        rlog.info('core.PipeManager.register : New pipe registered with the id {}'.format(pipe.id))
+        log('core.PipeManager.register : New pipe registered with the id {}'.format(pipe.id))
         return pipe
 
 
 
-    def install_init_image_upload(self, filename, file_size, metadata={}):
+    def install_init_image_upload(self, filepath, file_size, metadata={}):
         """ 
             Initialise a pipeline installation. 
             To use if the image have to be uploaded on the server.
@@ -269,8 +269,8 @@ class PipelineManager:
             (the pipeline/image are not yet installed and available, but we need to manipulate them)
         """
         global pirus
-        pfile = pirus.files.upload_init(filename, file_size, metadata)
-        pipe = self.install_init(filename, metadata)
+        pfile = pirus.files.upload_init(filepath, file_size, metadata)
+        pipe = self.install_init(filepath, metadata)
         pipe.image_file_id = pfile.id
         pipe.save()
         return pipe, pfile
@@ -301,7 +301,13 @@ class PipelineManager:
         """
         global pirus
         pfile = pirus.files.from_local(filepath, move, metadata)
-        pipe = self.install_init(filename, metadata)
+        pipe = self.install_init(filepath, metadata)
+
+        # FIXME : Getting error 'is not bound to a Session' 
+        #         why it occure here ... need to check that
+        check_session(pfile)
+        check_session(pipe)
+
         pipe.image_file_id = pfile.id
         pipe.save()
         return pipe
@@ -333,15 +339,15 @@ class PipelineManager:
         if pirus.container_managers[pipeline.type].need_image_file and not pipeline.image_file:
             raise RegovarException("This kind of pipeline need a valid image file to be uploaded on the server.")
 
-
         run_async(self.__install, pipeline)
+
 
 
     def __install(self, pipeline):
         try:
             result = pirus.container_managers[pipeline.type].install_pipeline(pipeline)
         except Exception as err:
-            raise RegovarException("Error occured during installation of the pipeline. Installation aborded.", err)
+            raise RegovarException("Error occured during installation of the pipeline. Installation aborded.", "", err)
         pipeline.status = "ready" if result else "error"
         pipeline.save()
 

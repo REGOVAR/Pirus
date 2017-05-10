@@ -136,6 +136,12 @@ def get_or_create(session, model, defaults=None, **kwargs):
         raise e
 
 
+def check_session(obj):
+    s = Session.object_session(obj)
+    if not s :
+        __db_session.add(obj)
+
+
 def generic_save(obj):
     """
         generic method to save SQLalchemy object into database
@@ -143,9 +149,8 @@ def generic_save(obj):
     try:
         s = Session.object_session(obj)
         if not s :
-            s = Session()
+            s = __db_session
             s.add(obj)
-
         obj.update_date = datetime.datetime.now()
         s.commit()
     except Exception as err:
@@ -157,8 +162,7 @@ def generic_count(obj):
         generic method to count how many object in the table
     """
     try:
-        s = __db_session
-        return s.query(obj).count()
+        return __db_session.query(obj).count()
 
     except Exception as err:
         raise RegovarException("Unable to count how many object in the table", "", err)
@@ -248,14 +252,14 @@ def file_init(self, loading_depth=0):
     """
     self.loading_depth = min(2, loading_depth)
     self.jobs_ids = JobFile.get_jobs_ids(self.id)
-    self.jobs = []
-    self.job_source = None
     self.load_depth(loading_depth)
             
 
 def file_load_depth(self, loading_depth):
     if loading_depth > 0:
         try:
+            self.jobs = []
+            self.job_source = None
             self.job_source = Job.from_id(self.job_source_id, self.loading_depth-1)
             self.jobs = JobFile.get_jobs(self.id, self.loading_depth-1)
         except Exception as err:
@@ -329,9 +333,7 @@ def file_load(self, data):
         if "job_source_id" in data.keys(): self.job_source_id  = int(data["job_source_id"])
         # check to reload dynamics properties
         if self.loading_depth > 0:
-            self.jobs = []
-            self.job_source = None
-            self.load_depth(loading_depth)
+            self.load_depth(self.loading_depth)
         self.save()
     except Exception as err:
         raise RegovarException('Invalid input data to load.', "", err)
@@ -398,8 +400,6 @@ def pipeline_init(self, loading_depth=0):
     """
     self.loading_depth = min(2, loading_depth)
     self.jobs_ids = []
-    self.jobs = []
-    self.image_file = None
     jobs = __db_session.query(Job).filter_by(pipeline_id=self.id).all()
     for j in jobs:
         self.jobs_ids.append(j.id)
@@ -409,6 +409,7 @@ def pipeline_init(self, loading_depth=0):
 def pipeline_load_depth(self, loading_depth):
     if loading_depth > 0:
         try:
+            self.image_file = None
             self.image_file = File.from_id(self.image_file_id, self.loading_depth-1)
             self.jobs = []
             if len(self.jobs_ids) > 0:
@@ -482,11 +483,10 @@ def pipeline_load(self, data):
         if "ui_icon" in data.keys(): self.ui_icon = data['ui_icon']
         if "vm_settings" in data.keys(): self.vm_settings = data['vm_settings']
         if "ui_form" in data.keys(): self.ui_form = data['ui_form']
+        if "root_path" in data.keys(): self.root_path = data['root_path']
         # check to reload dynamics properties
         if self.loading_depth > 0:
-            self.jobs = []
-            self.image_file = None
-            self.load_depth(loading_depth)
+            self.load_depth(self.loading_depth)
         self.save()
     except KeyError as e:
         raise RegovarException('Invalid input pipeline: missing ' + e.args[0])
@@ -518,7 +518,7 @@ def pipeline_count():
 
 
 Pipeline = Base.classes.pipeline
-Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "jobs_ids", "jobs"]
+Pipeline.public_fields = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "root_path", "jobs_ids", "jobs"]
 Pipeline.init = pipeline_init
 Pipeline.load_depth = pipeline_load_depth
 Pipeline.from_id = pipeline_from_id
@@ -559,9 +559,6 @@ def job_init(self, loading_depth=0):
     self.loading_depth = min(2, loading_depth)
     self.inputs_ids = []
     self.outputs_ids = []
-    self.inputs = []
-    self.outputs = []
-    self.pipeline = None
 
     files = __db_session.query(JobFile).filter_by(job_id=self.id).all()
     for f in files:
@@ -577,6 +574,7 @@ def job_load_depth(self, loading_depth):
         try:
             self.inputs = []
             self.outputs = []
+            self.pipeline = None
             self.pipeline = Pipeline.from_id(self.pipeline_id, loading_depth-1)
             if len(self.inputs_ids) > 0:
                 files = __db_session.query(File).filter(File.id.in_(self.inputs_ids)).all()
@@ -667,9 +665,7 @@ def job_load(self, data):
 
         # check to reload dynamics properties
         if self.loading_depth > 0:
-            self.inputs = []
-            self.outputs = []
-            self.load_depth(loading_depth)
+            self.load_depth(self.loading_depth)
     except KeyError as e:
         raise RegovarException('Invalid input job: missing ' + e.args[0])
     return self
