@@ -1,10 +1,16 @@
-# Welcom to Pirus's documentation
+<p align="center">
+
+![](en/img/resume.jpg)
+
+<h1>Pirus</h1>
+<h2>PIpeline RUnning Service</h2>
+</p>
 
 Select your langage :
 
-* [English](en/index.md)
-* [Français](fr/index.md) 
+	![](en/img/en.png) [English](en/index.md)
+	![](en/img/fr.png) [Français](fr/index.md) 
 
 
 
-![](en/img/logo.png)
+
