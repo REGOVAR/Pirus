@@ -1,15 +1,29 @@
+docs_dir : en
 site_name: Pirus
 pages:
 - Home: index.md
-- Installation : installation_guide.md
-- About: about.md
+- User guide : user/welcom.md
+  - Installation : user/installation_guide.md
 - Developer Guide :  dev/welcom.md
+  - Architecture : dev/archi.md
   - Model : dev/model.md
+    - File : dev/model/file.md
+    - Pipeline : dev/model/pipeline.md
+    - Job : dev/model/job.md
+  - Core : dev/core.md
+    - File Manager : dev/core/filemanager.md
+    - Pipeline Manager : dev/core/pipelinemanager.md
+    - Job Manager : dev/core/jobmanager.md
+  - Container managers : dev/core/containers.md
+    - LXD : dev/core/containers/lxd.md
   - Api Rest : dev/restapi.md
+    - TUS : dev/rest_api/tus.md
+    - File : dev/rest_api/file.md
+    - Pipeline : dev/rest_api/pipeline.md
+    - Job : dev/rest_api/job.md
   - Api Cli : dev/cliapi.md
+- About: about.md
 theme: readthedocs
-extra_css: 
- - extra.css
 markdown_extensions:
  - extra
  - nl2br

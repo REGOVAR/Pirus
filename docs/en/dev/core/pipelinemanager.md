@@ -1,0 +1,3 @@
+# Core - PipelineManager
+
+Features
