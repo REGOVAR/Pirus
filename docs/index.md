@@ -3,8 +3,11 @@
 <img src="en/img/resume.jpg"/>
 
 <h1>Pirus</h1>
-<h3><i>PIpeline RUnning Service</i></h3>
+<b>PI</b>peline <b>RU</b>nning <b>S</b>ervice
+
 </p>
+<br/>
+<br/>
 
 
 ## Select your langage :
