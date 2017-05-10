@@ -1,0 +1,21 @@
+docs_dir : en
+site_name: Pirus
+pages:
+- Home: index.md
+- Installation : installation_guide.md
+- Developer Guide :  dev/welcom.md
+  - Model : dev/model.md
+  - Api Rest : dev/restapi.md
+  - Api Cli : dev/cliapi.md
+- About: about.md
+theme: readthedocs
+extra_css: 
+ - extra.css
+markdown_extensions:
+ - extra
+ - nl2br
+ - sane_lists
+ - abbr
+ - attr_list
+ - def_list
+ - tables
