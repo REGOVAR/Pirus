@@ -2,8 +2,8 @@
 
 <img src="en/img/resume.jpg"/>
 
-<h1>Pirus - <br/><i>PIpeline RUnning Service</i></h1>
-
+<h1>Pirus</h1>
+<h3><i>PIpeline RUnning Service</i></h3>
 </p>
 
 
