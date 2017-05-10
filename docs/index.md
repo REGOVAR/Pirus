@@ -2,14 +2,13 @@
 
 <img src="en/img/resume.jpg"/>
 
-<h1>Pirus</h1>
-<h2>PIpeline RUnning Service</h2>
+<h1>Pirus - <br/><i>PIpeline RUnning Service</i></h1>
+
 </p>
 
 
-![](en/img/resume.jpg)
+## Select your langage :
 
-Select your langage :
 * ![](en/img/en.png) [English](en/index.md)
 * ![](en/img/fr.png) [Français](fr/index.md) 
 
