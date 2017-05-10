@@ -136,16 +136,15 @@ class LxdManager(PirusContainerManager):
             out_tmp = '/tmp/' + lxd_alias + '-out'
             err_tmp = '/tmp/' + lxd_alias + '-err'
             subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
-
         except Exception as err:
-            raise RegovarException("FAILLED Installation of the lxd image. ($: {}) : \n{}".format(" ".join(cmd), err))
+            raise RegovarException("FAILLED Installation of the lxd image. ($: {})\nPlease, check logs {}".format(" ".join(cmd), err_tmp), "", err)
 
 
         err = open(err_tmp, "r").read()
         if err != "":
             pipeline.delete()
             shutil.rmtree(root_path)
-            raise RegovarException("FAILLED Lxd image. ($: {}) : \n{}".format(" ".join(cmd), err))
+            raise RegovarException("FAILLED Lxd image. ($: {})".format(" ".join(cmd)), "", err)
         else:
             log('Installation of the lxd image.')
 
@@ -171,16 +170,34 @@ class LxdManager(PirusContainerManager):
 
 
 
-    async def uninstall_pipeline(pipeline_id):
+    def uninstall_pipeline(self, pipeline):
         """
-            IMPLEMENTATION REQUIRED
-            Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
+            Uninstall the pipeline lxd image.
+            Database & filesystem clean is done by the core
         """
-        raise RegovarException("The abstract method \"uninstall_pipeline\" of PirusManager must be implemented.")
+        if not pipeline or not isinstance(pipeline, Pipeline) :
+            raise RegovarException("Pipeline's data error.")
+
+        # Retrieve container settings
+        settings = yaml.load(pipeline.vm_settings)
+        lxd_alias = settings["lxd_alias"]
+        # Install lxd container
+        cmd = ["lxc", "image", "delete", lxd_alias]
+        try:
+            out_tmp = '/tmp/' + lxd_alias + '-out'
+            err_tmp = '/tmp/' + lxd_alias + '-err'
+            subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
+        except Exception as err:
+            raise RegovarException("FAILLED Removing the lxd image {}. ($: {})\nPlease, check logs {}".format(lxd_alias, " ".join(cmd), err_tmp), "", err)
 
 
 
-    def init_job(job_id):
+
+
+
+
+
+    def init_job(self, job_id):
         j = Job.from_id
         return j
 
@@ -192,9 +209,9 @@ class LxdManager(PirusContainerManager):
         if not isinstance(job, Job): raise RegovarException("Wrong job provided")
 
         if job.status in ["waiting", "pause"]:
-            return self.start_next_time(job)
+            return self.__start_next_time(job)
         elif job.status == "initializing":
-            return self.start_first_time(job)
+            return self.__start_first_time(job)
 
 
     def pause_job(self, job):
@@ -290,7 +307,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def start_next_time(self, job):
+    def __start_next_time(self, job):
         try:
             settings = json.loads(job.settings)
             subprocess.Popen(["lxc", "start", settings["lxd_container"]])
@@ -301,7 +318,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def start_first_time():
+    def __start_first_time(self, job):
         print("INITIALIZING !")
         self.notify_status("INITIALIZING")
 

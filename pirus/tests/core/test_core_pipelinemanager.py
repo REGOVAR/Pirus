@@ -94,7 +94,7 @@ class TestCorePipelineManager(unittest.TestCase):
 
         # Delete pipeline
         path = f.path
-        r = pirus.pipelines.delete(p)
+        r = pirus.pipelines.delete(p.id)
         self.assertEqual(r, True)
         self.assertEqual(Pipeline.from_id(p.id), None)
         self.assertEqual(File.from_id(p.image_file_id), None)

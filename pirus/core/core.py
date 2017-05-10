@@ -223,8 +223,9 @@ class FileManager:
 
     def delete(self, file_id):
         pfile = File.from_id(file_id)
-        if pfile and os.path.isfile(pfile.path):
-            os.remove(pfile.path)
+        if pfile:
+            if os.path.isfile(pfile.path):
+                os.remove(pfile.path)
             File.delete(file_id)
 
 
@@ -301,10 +302,10 @@ class PipelineManager:
         """
         global pirus
         pfile = pirus.files.from_local(filepath, move, metadata)
-        pipe = self.install_init(filepath, metadata)
+        pipe = self.install_init(os.path.basename(filepath), metadata)
 
-        # FIXME : Getting error 'is not bound to a Session' 
-        #         why it occure here ... need to check that
+        # FIXME : Sometime getting sqlalchemy error 'is not bound to a Session' 
+        #         why it occure here ... why sometime :/ 
         check_session(pfile)
         check_session(pipe)
 
@@ -315,7 +316,7 @@ class PipelineManager:
 
 
 
-    def install(self, pipeline_id, pipeline_type=None):
+    def install(self, pipeline_id, pipeline_type=None, asynch=True):
         """
             Start the installation of the pipeline. (done in another thread)
             The initialization shall be done (image ready to be used), 
@@ -339,7 +340,10 @@ class PipelineManager:
         if pirus.container_managers[pipeline.type].need_image_file and not pipeline.image_file:
             raise RegovarException("This kind of pipeline need a valid image file to be uploaded on the server.")
 
-        run_async(self.__install, pipeline)
+        if asynch:
+            run_async(self.__install, pipeline)
+        else:
+            self.__install(pipeline)
 
 
 
@@ -357,19 +361,26 @@ class PipelineManager:
 
 
 
-    def delete(self, pipeline):
+    def delete(self, pipeline_id, asynch=True):
         """
             Start the uninstallation of the pipeline. (done in another thread)
             Remove image file if exists.
         """
         global pirus
         try:
+            pipeline = Pipeline.from_id(pipeline_id, 1)
             if pipeline:
-                run_async(self.__delete, pipeline)                                     # Clean container
-                if pipeline.image_file_id: pirus.files.delete(pipeline.image_file_id)  # Clean filesystem
-                Pipeline.delete(pipeline.id)                                           # Clean DB
+                # Clean container
+                if asynch: 
+                    run_async(self.__delete, pipeline) 
+                else: 
+                    self.__delete(pipeline)  
+                # Clean filesystem
+                shutil.rmtree(pipeline.root_path, True)
+                # Clean DB
+                pirus.files.delete(pipeline.image_file_id)
+                Pipeline.delete(pipeline.id)
         except Exception as err:
-            # TODO : manage error
             raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline.id), err)
             return False
         return True

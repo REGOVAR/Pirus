@@ -1,16 +1,18 @@
 #!python
 # coding: utf-8
 
+import ipdb
 
 import os
 import sys
 import shutil
 import unittest
-import json
+import subprocess
+import yaml
 import time
 
 from config import *
-from core.model import Pipeline
+from core.model import File, Pipeline
 from core.core import pirus
 
 
@@ -48,91 +50,82 @@ class TestCoreLxdManager(unittest.TestCase):
     # TESTS
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-    def test_pipeline_image_installation(self):
+    def test_000_pipeline_image_installation(self):
         """ Check that installation of the PirusSimpleContainer from local image file is working. """
 
         # install the fake pipeline
-        p = pirus.pipelines.install_init_image_local(self.IMAGE_FILE_PATH, metadata={"type" : "lxd"})
-        pirus.pipelines.install(p.id)
-        self.pid = p.id
+        p = pirus.pipelines.install_init_image_local(self.IMAGE_FILE_PATH, move=False, metadata={"type" : "lxd"})
+        pirus.pipelines.install(p.id, asynch=False)
+        TestCoreLxdManager.pid = p.id
 
-        waiting = self.MAX_WAITING_4_INSTALL
-        success = False
-        while waiting > 0:
-            time.sleep(1)
-            waiting -= 1
-            if Pipeline.from_id(self.pid).status == "ready":
-                break;
+        # waiting = self.MAX_WAITING_4_INSTALL
+        # success = False
+        # while waiting > 0:
+        #     time.sleep(1)
+        #     waiting -= 1
+        #     if Pipeline.from_id(TestCoreLxdManager.pid).status == "ready":
+        #         break;
 
-
-        p = Pipeline.from_id(self.pid)
+        p = Pipeline.from_id(TestCoreLxdManager.pid, 1)
         self.assertEqual(p.status, "ready")
-
-
-        # uninstall the fake pipeline
-        # pirus.pipelines.delete(p.id)
-
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_init, False)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_running, False)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, False)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_paused, False)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_stoped, False)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, False)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_finalized, False)
-
-
-        # # init job 
-        # time.sleep(0.1) # need waiting otherwise sqlalchemy in wrong state ?... to fixe
-        # job = pirus.jobs.new(p.id, {"name" : "Test job success"})
-        # job_id = job.id
-        # root_path =  os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_init, True)
-        # self.assertEqual(job.name, "Test job success")
-        # self.assertEqual(os.path.exists(root_path), True)
-        # self.assertEqual(os.path.exists(os.path.join(root_path, "inputs")), True)
-        # self.assertEqual(os.path.exists(os.path.join(root_path, "outputs")), True)
-        # self.assertEqual(os.path.exists(os.path.join(root_path, "logs")), True)
-        # self.assertEqual(os.path.isfile(os.path.join(root_path, "inputs/config.json")), True)
-
-        # # call all delayed action 
-        # pirus.jobs.start(job_id)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_running, True)
-
-        # job = pirus.jobs.monitoring(job_id)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, True)
-
-        # pirus.jobs.pause(job_id)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_paused, True)
-
-        # pirus.jobs.start(job_id)
-        # pirus.jobs.stop(job_id)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_stoped, True)
-
-        # pirus.jobs.finalize(job_id)
-        # self.assertEqual(pirus.container_managers["FakeManager4Test"].is_finalized, True)
-
-        # pirus.jobs.delete(job_id)
-        # self.assertEqual(os.path.isfile(os.path.join(root_path, "inputs/config.json")), False)
-        # self.assertEqual(os.path.exists(os.path.join(root_path, "inputs")), False)
-        # self.assertEqual(os.path.exists(os.path.join(root_path, "outputs")), False)
-        # self.assertEqual(os.path.exists(os.path.join(root_path, "logs")), False)
-        # self.assertEqual(os.path.exists(root_path), False)
+        self.assertEqual(os.path.isfile(self.IMAGE_FILE_PATH), True)
+        self.assertNotEqual(self.IMAGE_FILE_PATH, p.image_file.path)
 
 
 
+    def test_100_job_CRUD_normal_workflow(self):
+        """ Check lxd job's normal worklow (without errors) """
 
-    def test_job_container_creation (self):
+        # job creation
 
-        # init job 
 
-        # start job
+        # job start
 
-        # check error
 
-        # check that terminate job have been automaticaly called by the manager 
+        # job monotoring
 
-        # check i/o files of the job
+
+        # job pause
+
+
+        # job monotoring
+
+
+
+        # job start
+
+
+        # job stop
+
         pass
+
+
+
+
+
+
+
+    def test_900_pipeline_image_deletion(self):
+        # uninstall the pipeline
+        p0 = Pipeline.from_id(TestCoreLxdManager.pid)
+        pirus.pipelines.delete(p0.id, False)  # delete it synchronously to be able to test correctly
+
+        # check that image file no more exists
+        self.assertEqual(os.path.isfile(p0.image_file.path), False)
+        f = File.from_id(p0.image_file_id)
+        self.assertEqual(f, None)
+
+        # check that pipeline no more exists
+        self.assertEqual(os.path.exists(p0.root_path), False)
+        p1 = Pipeline.from_id(p0.id)
+        self.assertEqual(p1, None)
+
+        # check that lxd image no more exists
+        lxd_alias = yaml.load(p0.vm_settings)["lxd_alias"]
+        out_tmp = '/tmp/test_out'
+        self.assertEqual(subprocess.call(["lxc", "image", "list"], stdout=open(out_tmp, "w")), 0)
+        out = open(out_tmp, "r").read()
+        self.assertEqual(lxd_alias in out, False)
 
 
 
