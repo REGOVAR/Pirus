@@ -19,7 +19,7 @@ from core.framework import *
 from core.model import *
 from core.container_managers.lxd_manager import LxdManager
 from core.container_managers.github_manager import GithubManager
-from core.queue_managers.sync_queue import PirusQueueManager
+
 
 # need it, and only used by unittests.
 from tests.core.fake_container_manager import FakeContainerManager4Test
@@ -456,37 +456,7 @@ class JobManager:
 
 
 
-    def set_status(self, job, new_status, notify=True):
-        global  pirus
-        # Avoid useless notification
-        # Impossible to change state of a job in error or canceled
-        if (new_status != "running" and job.status == new_status) or job.status in  ["error", "canceled"]:
-            return
-        # Update status
-        job.status = new_status
-        job.save()
-
-        # Need to do something according to the new status ?
-        # Nothing to do for status : "waiting", "initializing", "running", "finalizing"
-        if job.status in ["pause", "error", "done", "canceled"]:
-            s = session()
-            next_jobs = s.query(Job).filter_by(status="waiting").order_by("priority").all()
-            if len(next_jobs) > 0:
-                # start_run.delay(str(next_jobs[0].id))
-               PirusQueueManager.start_job(next_jobs[0].id)
-        elif job.status == "finalizing":
-            # terminate_run.delay(str(job.id))
-            PirusQueueManager.terminate_job(job.id)
-        # Push notification
-        if notify:
-            pirus.notify_all({"action": "job_updated", "data" : [job.to_json()]})
-
-
-
-
-
-
-    def new(self, pipeline_id, config, inputs_ids=[]):
+    def new(self, pipeline_id, config, inputs_ids=[], asynch=True):
         """
             Create a new job for the specified pipepline (pipeline_id), with provided config and input's files ids
         """
@@ -532,14 +502,19 @@ class JobManager:
             os.chmod(link_path, 0o644)
 
         # Call init of the container
-        PirusQueueManager.init_job(job.id)
+        if asynch: 
+            run_async(self.__init_job, (job.id, asynch,))
+        else:
+            self.__init_job(job.id, asynch)
 
         # Return job object
         return job
 
 
 
-    def start(self, job_id):
+
+
+    def start(self, job_id, asynch=True):
         """
             Start or restart the job
         """
@@ -549,10 +524,13 @@ class JobManager:
         if job.status not in ["waiting", "pause"]:
             raise RegovarException("Job status ({}) is not \"pause\" or \"waiting\". Cannot start the job.".format(job.status))
         # Call start of the container
-        PirusQueueManager.start_job(job.id)
+        if asynch: 
+            run_async(self.__start_job, (job.id, asynch,))
+        else:
+            self.__start_job(job.id, asynch)
 
 
-    def monitoring(self, job_id):
+    def monitoring(self, job_id, asynch=True):
         """
             Retrieve monitoring information about the job.
             Return a Job object with a new attribute:
@@ -564,14 +542,14 @@ class JobManager:
         if job.status == "initializing":
             raise RegovarException("Job status is \"initializing\". Cannot retrieve yet monitoring informations.")
         # Ask container manager to update data about container
-        PirusQueueManager.monitoring_job(job.id)
+        self.__monitoring_job(job.id, asynch)
         job_logs_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id), "logs")
         job.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
 
 
 
 
-    def pause(self, job_id):
+    def pause(self, job_id, asynch=True):
         """
             Pause the job
             Return False if job cannot be pause; True otherwise
@@ -589,11 +567,15 @@ class JobManager:
         if not pirus.container_managers[job.pipeline.type].supported_features["pause_job"]:
             return False
         # Call pause of the container
-        PirusQueueManager.pause_job(job.id)
+        if asynch: 
+            run_async(self.__pause_job, (job.id, asynch,))
+        else:
+            self.__pause_job(job.id, asynch)
 
 
 
-    def stop(self, job_id):
+
+    def stop(self, job_id, asynch=True):
         """
             Stop the job
         """
@@ -603,10 +585,14 @@ class JobManager:
         if job.status in ["error", "canceled", "done"]:
             raise RegovarException("Job status is \"{}\". Cannot stop the job.".format(job.status))
         # Call stop of the container
-        PirusQueueManager.stop_job(job.id)
+        if asynch: 
+            run_async(self.__stop_job, (job.id, asynch,))
+        else:
+            self.__stop_job(job.id, asynch)
 
 
-    def finalize(self, job_id):
+
+    def finalize(self, job_id, asynch=True):
         """
             Shall be called by the job itself when ending.
             save outputs files and ask the container manager to delete container
@@ -632,12 +618,14 @@ class JobManager:
                 job.outputs_ids.append(pf.id)
         job.save()
         # Stop container and delete it
-        PirusQueueManager.finalize_job(job.id)
+        if asynch: 
+            run_async(self.__finalize_job, (job.id, asynch,))
+        else:
+            self.__finalize_job(job.id, asynch)
 
 
 
-
-    def delete(self, job_id):
+    def delete(self, job_id, asynch=True):
         """
             Delete a Job. Outputs that have not yet been saved in Pirus, will be deleted.
         """
@@ -647,13 +635,191 @@ class JobManager:
         if job.status not in ["error", "canceled", "done"]:
             raise RegovarException("Job status is \"{}\". Cannot stop the job.".format(job.status))
         # Security, force call stop/delete the container
-        PirusQueueManager.finalize_job(job.id)
+        if asynch: 
+            run_async(self.__finalize_job, (job.id, asynch,))
+        else:
+            self.__finalize_job(job.id, asynch)
         # Deleting file in the filesystem
         root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
         shutil.rmtree(root_path, True)
 
 
 
+
+    def __set_status(self, job, new_status, notify=True, asynch=True):
+        global  pirus
+        # Avoid useless notification
+        # Impossible to change state of a job in error or canceled
+        if (new_status != "running" and job.status == new_status) or job.status in  ["error", "canceled"]:
+            return
+        # Update status
+        job.status = new_status
+        job.save()
+
+        # Need to do something according to the new status ?
+        # Nothing to do for status : "waiting", "initializing", "running", "finalizing"
+        if job.status in ["pause", "error", "done", "canceled"]:
+            s = session()
+            next_jobs = s.query(Job).filter_by(status="waiting").order_by("priority").all()
+            if len(next_jobs) > 0:
+                if asynch: 
+                    run_async(self.start_job, (next_jobs[0].id, asynch,))
+                else:
+                    self.start_job(next_jobs[0].id, asynch)
+        elif job.status == "finalizing":
+            if asynch: 
+                run_async(self.terminate_job, (job.id, asynch,))
+            else:
+                self.terminate_job(job.id, asynch)
+        # Push notification
+        if notify:
+            pirus.notify_all({"action": "job_updated", "data" : [job.to_json()]})
+
+
+    def __init_job(self, job_id, asynch):
+        """
+            Call manager to prepare the container for the job.
+        """
+        global pirus
+        job = Job.from_id(job_id, 1)
+        if job and job.status == "initializing":
+            try:
+                success = pirus.container_managers[job.pipeline.type].init_job(job)
+            except Exception as err:
+                # Log error
+                self.__set_status(job, "error", asynch)
+                return
+            self.__set_status(job, "waiting" if success else "error", asynch) 
+
+
+    def __start_job(self, job_id, asynch):
+        """
+            Call the container manager to start or restart the execution of the job.
+        """
+        global pirus
+        # Check that job exists
+        job = Job.from_id(job_id, 1)
+        if not job :
+            # TODO : log error
+            return 1
+
+        # Ok, job is now waiting
+        self.__set_status(job, "waiting")
+
+        # Check that all inputs files are ready to be used
+        for file in job.inputs:
+            if file is None :
+                print('Inputs file deleted before the start of the run. Run aborded.')
+            if file.status not in ["checked", "uploaded"]:
+                # inputs not ready, we keep the run in the waiting status
+                print("INPUTS of the run not ready. waiting")
+                return 1
+            
+        # TODO : check that enough reszources to run the job
+        # Inputs files ready to use, looking for lxd resources now
+        # count = 0
+        # for lxd_container in lxd_client.containers.all():
+        #     if lxd_container.name.startswith(LXD_CONTAINER_PREFIX) and lxd_container.status == 'Running':
+        #         count += 1
+        # count = len(Run.objects(status="RUNNING")) + len(Run.objects(status="INITIALIZING")) + len(Run.objects(status="FINISHING"))
+        # if len(Run.objects(status="RUNNING")) >= LXD_MAX:
+        #     # too many run in progress, we keep the run in the waiting status
+        #     print("To many run in progress, we keep the run in the waiting status")
+        #     return 1
+
+        #Try to run the job
+        if pirus.container_managers[job.pipeline.type].start_job(job):
+            self.__set_status(job, "running", asynch)
+            return 0
+        else:
+            return 1
+
+
+    def __monitoring_job(self, job_id, asynch):
+        """
+            Call manager to retrieve monitoring informations.
+        """
+        global pirus
+        job = Job.from_id(job_id, 1)
+        if job:
+            try:
+                pirus.container_managers[job.pipeline.type].monitoring_job(job)
+            except Exception as err:
+                # Log error
+                self.__set_status(job, "error", asynch)
+                return
+            self.__set_status(job, "waiting", asynch)
+
+
+
+    def __pause_job(self, job_id, asynch):
+        """
+            Call manager to suspend the execution of the job.
+        """
+        global pirus
+        job = Job.from_id(job_id, 1)
+        if job:
+            try:
+                pirus.container_managers[job.pipeline.type].pause_job(job)
+            except Exception as err:
+                # Log error
+                self.__set_status(job, "error", asynch)
+                return
+            self.__set_status(job, "waiting", asynch)
+
+
+
+    def __stop_job(self, job_id, asynch):
+        """
+            Call manager to stop execution of the job.
+        """
+        global pirus
+        job = Job.from_id(job_id, 1)
+        if job:
+            try:
+                pirus.container_managers[job.pipeline.type].stop_job(job)
+            except Exception as err:
+                # Log error
+                self.__set_status(job, "error", asynch)
+                return
+            self.__set_status(job, "waiting", asynch)
+
+
+
+    def __finalize_job(self, job_id, asynch):
+        """
+            Ask the manager to clear the container
+        """
+        global pirus
+        job = Job.from_id(job_id, 1)
+        if not job :
+            # TODO : log error
+            return 1
+
+        if pirus.container_managers[job.pipeline.type].finalize_job(job):
+            self.__set_status(job, "done", asynch)
+            return 0
+        else:
+            self.__set_status(job, "error", asynch)
+            return 1
+
+
+
+    def __delete_job(self, job_id, asynch):
+        """
+            Delete a job
+            Call manager to prepare the container for the job.
+        """
+        global pirus
+        job = Job.from_id(job_id, 1)
+        if job:
+            try:
+                pirus.container_managers[job.pipeline.type].delete_job(job)
+            except Exception as err:
+                # Log error
+                self.__set_status(job, "error", asynch)
+                return
+            self.__set_status(job, "waiting", asynch)
 
 
 
@@ -668,6 +834,3 @@ class JobManager:
 
 # Pirus core
 pirus = Core()
-
-# Pirus Queue Manager
-PirusQueueManager.pirus = pirus

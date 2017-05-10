@@ -50,7 +50,7 @@ class TestCoreJobManager(unittest.TestCase):
 
         # install the fake pipeline
         p = pirus.pipelines.install_init("test_image_success", {"type" : "FakeManager4Test"})
-        pirus.pipelines.install(p.id)
+        pirus.pipelines.install(p.id, asynch=False)
 
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_init, False)
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_running, False)
@@ -62,8 +62,8 @@ class TestCoreJobManager(unittest.TestCase):
 
 
         # init job 
-        time.sleep(0.1) # need waiting otherwise sqlalchemy in wrong state ?... to fixe
-        job = pirus.jobs.new(p.id, {"name" : "Test job success"})
+        #time.sleep(0.1) # need waiting otherwise sqlalchemy in wrong state ?... to fixe
+        job = pirus.jobs.new(p.id, {"name" : "Test job success"}, asynch=False)
         job_id = job.id
         root_path =  os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_init, True)
@@ -75,23 +75,23 @@ class TestCoreJobManager(unittest.TestCase):
         self.assertEqual(os.path.isfile(os.path.join(root_path, "inputs/config.json")), True)
 
         # call all delayed action 
-        pirus.jobs.start(job_id)
+        pirus.jobs.start(job_id, asynch=False)
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_running, True)
 
-        job = pirus.jobs.monitoring(job_id)
+        job = pirus.jobs.monitoring(job_id, asynch=False)
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_monitoring, True)
 
-        pirus.jobs.pause(job_id)
+        pirus.jobs.pause(job_id, asynch=False)
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_paused, True)
 
-        pirus.jobs.start(job_id)
-        pirus.jobs.stop(job_id)
+        pirus.jobs.start(job_id, asynch=False)
+        pirus.jobs.stop(job_id, asynch=False)
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_stoped, True)
 
-        pirus.jobs.finalize(job_id)
+        pirus.jobs.finalize(job_id, asynch=False)
         self.assertEqual(pirus.container_managers["FakeManager4Test"].is_finalized, True)
 
-        pirus.jobs.delete(job_id)
+        pirus.jobs.delete(job_id, asynch=False)
         self.assertEqual(os.path.isfile(os.path.join(root_path, "inputs/config.json")), False)
         self.assertEqual(os.path.exists(os.path.join(root_path, "inputs")), False)
         self.assertEqual(os.path.exists(os.path.join(root_path, "outputs")), False)

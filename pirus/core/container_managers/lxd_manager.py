@@ -170,6 +170,7 @@ class LxdManager(PirusContainerManager):
 
 
 
+
     def uninstall_pipeline(self, pipeline):
         """
             Uninstall the pipeline lxd image.

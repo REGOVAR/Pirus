@@ -55,7 +55,7 @@ class TestCoreLxdManager(unittest.TestCase):
 
         # install the fake pipeline
         p = pirus.pipelines.install_init_image_local(self.IMAGE_FILE_PATH, move=False, metadata={"type" : "lxd"})
-        pirus.pipelines.install(p.id, asynch=False)
+        pirus.pipelines.install(p.id, asynch=False)  # install it synchronously to be able to test correctly
         TestCoreLxdManager.pid = p.id
 
         # waiting = self.MAX_WAITING_4_INSTALL
@@ -76,7 +76,9 @@ class TestCoreLxdManager(unittest.TestCase):
     def test_100_job_CRUD_normal_workflow(self):
         """ Check lxd job's normal worklow (without errors) """
 
-        # job creation
+        # Create a new job
+        # pirus.jobs.new(TestCoreLxdManager.pid, {"name" : "job4test"})
+
 
 
         # job start
