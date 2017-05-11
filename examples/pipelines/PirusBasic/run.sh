@@ -6,13 +6,13 @@ DB="/pipeline/db/"
 OUT="/pipeline/outputs/"
 IN="/pipeline/inputs/"
 LOG="/pipeline/logs/"
-RUN="/pipeline/run/"
+RUN="/pipeline/job/"
 
 # Dynamic parameters loaded from config.json
-FILE1=`cat ${IN}config.json | jq ".run.file1"`
-DURATION=`cat ${IN}config.json | jq ".run.duration"`
-CRASH=`cat ${IN}config.json | jq ".run.crash"`
-OUTPUT=`cat ${IN}config.json | jq ".run.outfilename"`
+FILE1=`cat ${IN}config.json | jq ".job.file1"`
+DURATION=`cat ${IN}config.json | jq ".job.duration"`
+CRASH=`cat ${IN}config.json | jq ".job.crash"`
+OUTPUT=`cat ${IN}config.json | jq ".job.outfilename"`
 NOTIFY_URL=`cat ${IN}config.json | jq ".pirus.notify_url"`
 
 FILE1=`sed -e 's/^"//' -e 's/"$//' <<<"$FILE1"`
@@ -58,7 +58,7 @@ done
 echo "Create output file"
 echo "=================="
 echo "Gene in refGene that have more than 50 exons:" >  ${OUT}${OUTPUT}
-zcat ${DB}refGene.txt.gz | awk '$9 > 50{print $13}' >>  ${OUT}${OUTPUT}
+zcat ${DB}/hg19/refGene.txt.zip | awk '$9 > 50{print $13}' >>  ${OUT}${OUTPUT}
 
 echo "Done"
 echo "===="
