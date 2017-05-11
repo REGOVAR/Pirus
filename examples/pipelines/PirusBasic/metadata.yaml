@@ -61,7 +61,7 @@
         "pirus_api": "1.0.0",
         "license" : "AGPL",
         "developers" : ["Olivier GUEUDELOT"],
-        "run" : "/pipeline/run/run.sh",
+        "run" : "/pipeline/job/run.sh",
         "inputs" : "/pipeline/inputs",
         "outputs" : "/pipeline/outputs",
         "databases" : "/pipeline/db",
