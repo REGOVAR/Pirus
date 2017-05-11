@@ -47,7 +47,7 @@ CREATE TABLE public.pipeline
     pirus_api character varying(50) COLLATE pg_catalog."C",
 
     image_file_id int,
-    root_path character varying(255) COLLATE pg_catalog."C",
+    root_path character varying(500) COLLATE pg_catalog."C",
     vm_settings text COLLATE pg_catalog."C",
     ui_form text COLLATE pg_catalog."C",
     ui_icon character varying(255) COLLATE pg_catalog."C",
@@ -70,6 +70,7 @@ CREATE TABLE public.job
     update_date timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
     status job_status,
 
+    root_path character varying(500) COLLATE pg_catalog."C",
     progress_value real,
     progress_label character varying(255) COLLATE pg_catalog."C",
 

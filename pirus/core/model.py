@@ -569,6 +569,10 @@ def job_init(self, loading_depth=0):
     self.load_depth(loading_depth)
             
 
+
+def job_container_name(self):
+    "{}{}-{}".format(LXD_CONTAINER_PREFIX, job.pipeline_id, job.id)
+
 def job_load_depth(self, loading_depth):
     if loading_depth > 0:
         try:

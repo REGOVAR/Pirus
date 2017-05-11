@@ -6,7 +6,9 @@ import logging
 import uuid
 import time
 import asyncio
+import subprocess
 import config as C
+
 
 from config import LOG_DIR
 
@@ -41,6 +43,17 @@ def run_async(future, *args):
 # TOOLS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
+def exec_cmd(cmd):
+    """
+        execute a system command and return the stdout result
+    """
+    out_tmp = '/tmp/test_out'
+    err_tmp = '/tmp/test_err'
+    res = subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
+    out = open(out_tmp, "r").read()
+    err = open(err_tmp, "r").read()
+    return res, out, err
+    
 
 def get_pipeline_forlder_name(name:str):
     """
@@ -227,6 +240,8 @@ class PirusContainerManager():
         """
             IMPLEMENTATION REQUIRED
             Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
+            Note that Database and filesystem clean is done by the core. 
+
             Return True if success; False otherwise
         """
         raise NotImplementedError("The abstract method \"uninstall_pipeline\" of PirusManager must be implemented.")
@@ -275,9 +290,9 @@ class PirusContainerManager():
     def monitoring_job(self, job):
         """
             IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Provide monitoring information about the execution of the job (log stdout/stderr) and container
-            settings (CPU/RAM used, etc)
-            Return True if success; False otherwise
+            Provide monitoring information about the container (CPU/RAM used, etc)
+            This method is always called synchronously, so take care to not take to much time to retrieve informations
+            Return monitoring information as json.
         """
         if self.supported_features["monitoring_job"]:
             raise RegovarException("The abstract method \"monitoring_job\" of PirusManager shall be implemented.")

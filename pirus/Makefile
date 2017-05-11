@@ -6,6 +6,10 @@ clear:
 	sudo -u postgres psql -c "DROP DATABASE pirus"
 	sudo -u postgres psql -c "CREATE DATABASE pirus OWNER pirus"
 	psql -U pirus -d pirus -f ../install/create_all.sql
+	rm -rf /var/regovar/pirus/files/*
+	rm -rf /var/regovar/pirus/downloads/*
+	rm -rf /var/regovar/pirus/pipelines/*
+	rm -rf /var/regovar/pirus/jobs/*
 
 
 test:

@@ -29,6 +29,9 @@ class LxdManager(PirusContainerManager):
             "monitoring_job" : True
         }
 
+        if not CONTAINERS_CONFIG or "lxd" not in CONTAINERS_CONFIG.keys() or not CONTAINERS_CONFIG["lxd"]:
+            raise RegovarException("No configuration settings found for lxd")
+        self.config = CONTAINERS_CONFIG["lxd"]
 
 
 
@@ -42,11 +45,15 @@ class LxdManager(PirusContainerManager):
         if not pipeline.image_file or not pipeline.image_file.path:
             raise RegovarException("Pipeline image file's data error.")
 
+        # 0- retrieve conf related to LXD
+        if not CONTAINERS_CONFIG or "lxd" not in CONTAINERS_CONFIG.keys() or not CONTAINERS_CONFIG["lxd"]:
+            raise RegovarException("No configuration settings found for lxd")
+        conf = CONTAINERS_CONFIG["lxd"]
         lxd_alias = str(uuid.uuid4())
         root_path = os.path.join(PIPELINES_DIR, lxd_alias)
         old_file_path = pipeline.image_file.path
         pipeline.image_file.path = os.path.join(root_path, pipeline.name)
-
+        
         # 1- Copy file into final folder
         log('Installation of the pipeline package : ' + root_path)
         os.makedirs(root_path)
@@ -54,7 +61,6 @@ class LxdManager(PirusContainerManager):
         os.chmod(pipeline.image_file.path, 0o777)
 
         # 2- Extract pipeline metadata
-        # TODO : instead of testing import json then yaml, loading only yaml should be enough. to be tested
         try:
             tar = tarfile.open(pipeline.image_file.path)
             tar_data = [info for info in tar.getmembers() if info.name == "metadata.yaml"]
@@ -70,7 +76,7 @@ class LxdManager(PirusContainerManager):
 
         # 2- Check that mandatory fields exists
         missing = ""
-        for k in MANIFEST["mandatory"].keys():
+        for k in conf["manifest"]["mandatory"].keys():
             if k not in metadata.keys():
                 missing += k + ", "                
         if missing != "":
@@ -79,20 +85,19 @@ class LxdManager(PirusContainerManager):
         log('Validity of metadata checked')
 
         # 3- Default value for optional fields in mandatory file
-        for k in MANIFEST["default"].keys():
+        for k in conf["manifest"]["default"].keys():
             if k not in metadata.keys():
-                metadata[k] = MANIFEST["default"][k]
+                metadata[k] = conf["manifest"]["default"][k]
 
         # 4- Extract pirus technicals files from the tar file
         try:
             if metadata["form"] is not None:
-                source     = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
-                tar_data   = [info for info in tar.getmembers() if info.name == source]
-                file       = tar.extractfile(member=tar_data[0])
-                source     = os.path.join(root_path, source)
-                form_file  = os.path.join(root_path, "form.json")
-                ui_form    = file.read()
-                # TODO : check json validity of the ui_form
+                source = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
+                tar_data = [info for info in tar.getmembers() if info.name == source]
+                file = tar.extractfile(member=tar_data[0])
+                source = os.path.join(root_path, source)
+                form_file = os.path.join(root_path, "form.json")
+                ui_form = file.read()
                 with open(form_file, 'bw+') as f:
                     f.write(ui_form)
             else :
@@ -113,13 +118,12 @@ class LxdManager(PirusContainerManager):
                     f.write(file.read())
             else:
                 shutil.copyfile(source, icon_file)
-        except Exception as err:
-            raise RegovarException("Error occure during extraction of pipeline technical files (form.json / icon) from image file : {}".format(pipeline.image_file.path), "", err)
+        except Exception as ex:
+            raise RegovarException("Error occure during extraction of pipeline technical files (form.json / icon) from image file : {}".format(pipeline.image_file.path), "", ex)
         log('Extraction of pipeline technical files (form.json / icon)')
 
-
         # 5- Save pipeline into database
-        lxd_alias = LXD_IMAGE_PREFIX + lxd_alias
+        lxd_alias = conf["image_name"].format(lxd_alias)
         metadata["lxd_alias"] = lxd_alias
         pipeline.load(metadata)
         pipeline.vm_settings = yaml.dump(metadata)
@@ -136,15 +140,13 @@ class LxdManager(PirusContainerManager):
             out_tmp = '/tmp/' + lxd_alias + '-out'
             err_tmp = '/tmp/' + lxd_alias + '-err'
             subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
-        except Exception as err:
-            raise RegovarException("FAILLED Installation of the lxd image. ($: {})\nPlease, check logs {}".format(" ".join(cmd), err_tmp), "", err)
-
-
-        err = open(err_tmp, "r").read()
-        if err != "":
+        except Exception as ex:
+            raise RegovarException("FAILLED Installation of the lxd image. ($: {})\nPlease, check logs {}".format(" ".join(cmd), err_tmp), "", ex)
+        error = open(err_tmp, "r").read()
+        if error != "":
             pipeline.delete()
             shutil.rmtree(root_path)
-            raise RegovarException("FAILLED Lxd image. ($: {})".format(" ".join(cmd)), "", err)
+            raise RegovarException("FAILLED Lxd image. ($: {}) : \n{}".format(" ".join(cmd), error))
         else:
             log('Installation of the lxd image.')
 
@@ -158,9 +160,9 @@ class LxdManager(PirusContainerManager):
                         os.remove(fullpath)
                     else:
                         shutil.rmtree(fullpath)
-        except Exception as err:
+        except Exception as ex:
             # Notify only admins
-            err('FAILLED to clean repository : {}'.format(err))
+            err('FAILLED to clean repository : {}'.format(ex))
         log('Cleaning repository.')
         log('Pipeline is ready !')
 
@@ -178,7 +180,6 @@ class LxdManager(PirusContainerManager):
         """
         if not pipeline or not isinstance(pipeline, Pipeline) :
             raise RegovarException("Pipeline's data error.")
-
         # Retrieve container settings
         settings = yaml.load(pipeline.vm_settings)
         lxd_alias = settings["lxd_alias"]
@@ -188,8 +189,8 @@ class LxdManager(PirusContainerManager):
             out_tmp = '/tmp/' + lxd_alias + '-out'
             err_tmp = '/tmp/' + lxd_alias + '-err'
             subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
-        except Exception as err:
-            raise RegovarException("FAILLED Removing the lxd image {}. ($: {})\nPlease, check logs {}".format(lxd_alias, " ".join(cmd), err_tmp), "", err)
+        except Exception as ex:
+            raise RegovarException("FAILLED Removing the lxd image {}. ($: {})\nPlease, check logs {}".format(lxd_alias, " ".join(cmd), err_tmp), "", ex)
 
 
 
@@ -198,199 +199,148 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def init_job(self, job_id):
-        j = Job.from_id
-        return j
+    def init_job(self, job):
+        """
+            Init a job :
+            - check settings (stored in database) 
+            - create the lxd container from pipeline image
+            - configure container and mount I/O directories to the filesystem
+        """
+        # Setting up the lxc container for the job
+        lxd_container = os.path.basename(job.root_path)
+        vm_settings = yaml.load(job.pipeline.vm_settings)
+        lxd_job_cmd = vm_settings["run"]
+        lxd_logs_path = vm_settings["logs"]
+        lxd_inputs_path = vm_settings["inputs"]
+        lxd_outputs_path = vm_settings["outputs"]
+        lxd_db_path = vm_settings["databases"]
+        lxd_image = vm_settings["lxd_alias"]
+        notify_url = NOTIFY_URL.format(job.id)
+        inputs_path = os.path.join(job.root_path, "inputs")
+        outputs_path = os.path.join(job.root_path, "outputs")
+        logs_path = os.path.join(job.root_path, "logs")
+        try:
+            # create job's start command file
+            job_file = os.path.join(job.root_path, "start_" + lxd_container + ".sh")
+            log(job_file)
+            with open(job_file, 'w') as f:
+                f.write("#!/bin/bash\n")
+                # TODO : catch if execution return error and notify pirus with error status
+                f.write("{} 1> {} 2> {}".format(lxd_job_cmd, os.path.join(lxd_logs_path, 'out.log'), os.path.join(lxd_logs_path, "err.log\n"))) #  || curl -X POST -d '{\"status\" : \"error\"}' " + notify_url + "
+                f.write("chown -Rf {}:{} {}\n".format(self.config["pirus_uid"], self.config["pirus_gid"], lxd_outputs_path))
+                f.write("curl -X POST -d '{{\"status\" : \"finalizing\"}}' {}\n".format(notify_url))
+                os.chmod(job_file, 0o777)
+            # create container
+            exec_cmd(["lxc", "init", lxd_image, lxd_container])
+            # set up env
+            exec_cmd(["lxc", "config", "set", lxd_container, "environment.PIRUS_NOTIFY_URL", notify_url ])
+            exec_cmd(["lxc", "config", "set", lxd_container, "environment.PIRUS_CONFIG_FILE", os.path.join(lxd_inputs_path, "config.json") ])
+            # set up devices
+            exec_cmd(["lxc", "config", "device", "add", lxd_container, "pirus_inputs",  "disk", "source=" + inputs_path,   "path=" + lxd_inputs_path[1:], "readonly=True"])
+            exec_cmd(["lxc", "config", "device", "add", lxd_container, "pirus_outputs", "disk", "source=" + outputs_path,  "path=" + lxd_outputs_path[1:]])
+            exec_cmd(["lxc", "config", "device", "add", lxd_container, "pirus_logs",    "disk", "source=" + logs_path,     "path=" + lxd_logs_path[1:]])
+            exec_cmd(["lxc", "config", "device", "add", lxd_container, "pirus_db",      "disk", "source=" + DATABASES_DIR, "path=" + lxd_db_path[1:], "readonly=True"])
+        except Exception as ex:
+            raise RegovarException("Unexpected error.", "", ex)
+
+        # Execute the "run" command to start the pipe
+        try:
+            exec_cmd(["lxc", "start", lxd_container])
+            lxd_job_file = os.path.join("/", os.path.basename(job_file))
+            exec_cmd(["lxc", "file", "push", job_file, lxd_container + lxd_job_file])
+            exec_cmd(["lxc", "exec", lxd_container, "--",  "chmod", "+x", lxd_job_file])
+            subprocess.Popen(["lxc", "exec", lxd_container, lxd_job_file])
+        except Exception as ex:
+            raise RegovarException("Unexpected error.", "", ex)
+
+        return True
+
+        
+
+
+
 
 
     def start_job(self, job):
         """
-            (Re)Start the job execution. by unfreezing the 
+            (Re)Start the job execution. By unfreezing the 
         """
-        if not isinstance(job, Job): raise RegovarException("Wrong job provided")
+        # Setting up the lxc container for the job
+        lxd_container = os.path.basename(job.root_path)
+        r, o, e = exec_cmd(["lxc", "start", lxd_container])
+        if r != 0:
+            err("Error occured when trying to start the job {} (id={})".format(lxd_container, job.id), "$ lxc start\nstdout ====\n{}\nstderr ====\n{}".format(o, e))
+        return r == 0
 
-        if job.status in ["waiting", "pause"]:
-            return self.__start_next_time(job)
-        elif job.status == "initializing":
-            return self.__start_first_time(job)
+
+
+
 
 
     def pause_job(self, job):
         """
-            IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Pause the execution of the job to save server resources by example
+            Pause the execution of the job.
         """
-        if not isinstance(job, Job): raise RegovarException("Wrong job provided")
-
-        if job.status in ["waiting", "running"]:
-            settings = json.loads(job.settings)
-            subprocess.Popen(["lxc", "pause", settings["lxd_container"]])
-            return True
-        return False
+        lxd_container = os.path.basename(job.root_path)
+        r, o, e = exec_cmd(["lxc", "pause", lxd_container])
+        if r != 0:
+            err("Error occured when trying to pause the job {} (id={})".format(lxd_container, job.id), "$ lxc pause\nstdout ====\n{}\nstderr ====\n{}".format(o, e))
+        return r == 0
 
 
-    def stop_job(jself, ob_id):
+
+
+    def stop_job(self, job):
         """
-            IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Stop the job. The job is canceled and the container shall be destroyed
+            Stop the job. The job is canceled and the container is destroyed.
         """
-        raise RegovarException("The abstract method \"stop_job\" of PirusManager must be implemented.")
+        lxd_container = os.path.basename(job.root_path)
+        r, o, e = exec_cmd(["lxc", "delete", lxd_container, "--force"])
+        if r != 0:
+            err("Error occured when trying to stop the job {} (id={})".format(lxd_container, job.id), "$ lxc delete --force\nstdout ====\n{}\nstderr ====\n{}".format(o, e))
+        return r == 0
 
 
-    def monitoring_job(self, job_id):
+
+    def monitoring_job(self, job):
         """
-            IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Provide monitoring information about the execution of the job (log stdout/stderr) and container
-            settings (CPU/RAM used, etc)
+            Provide monitoring information about the container (CPU/RAM used, etc)
         """
-        raise RegovarException("The abstract method \"monitoring_job\" of PirusManager must be implemented.")
+        lxd_container = os.path.basename(job.root_path)
+        # Result
+        result = {}
+        # Lxd monitoring data
+        try:
+            # TODO : to be reimplemented with pylxd api when this feature will be available :)
+            out = subprocess.check_output(["lxc", "info", lxd_container])
+            for l in out.decode().split('\n'):
+                data = l.split(': ')
+                if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
+                    result.update({data[0].strip(): data[1]})
+        except Exception as ex:
+            err("Error occured when trying to finalize the job {} (id={})".format(lxd_container, job.id), ex)
+        return result
 
 
-    def terminate_job(self, job_id):
+
+    def finalize_job(self, job):
         """
             IMPLEMENTATION REQUIRED
             Clean temp resources created by the container (log shall be kept), copy outputs file from the container
             to the right place on the server, register them into the database and associates them to the job.
         """
-        # Register outputs files
-        root_path    = os.path.join(RUNS_DIR, run.lxd_container)
-        outputs_path = os.path.join(root_path, "outputs")
-        logs_path    = os.path.join(root_path, "logs")
-
-        run.end = str(datetime.datetime.now().timestamp())
-
-        print("Analyse", outputs_path)
-        run.outputs = []
-        for f in os.listdir(outputs_path):
-            if os.path.isfile(os.path.join(outputs_path, f)):
-                file_name = str(uuid.uuid4())
-                file_path = os.path.join(FILES_DIR, file_name)
-                print (" - Move : ", f, " ==> ", file_path)
-                # 1- move file to FILE directory
-                shutil.copyfile(os.path.join(outputs_path, f), file_path)
-                # 2- create link
-                # os.link(file_path, os.path.join(outputs_path, f))
-
-                # 3- register in db
-                pirusfile = PirusFile()
-                pirusfile.import_data({
-                        "name"         : f,
-                        "type"         : os.path.splitext(f)[1][1:].strip().lower(),
-                        "path"         : file_path,
-                        "size"         : os.path.getsize(file_path),
-                        "upload_offset": os.path.getsize(file_path),
-                        "status"       : "CHECKED",
-                        "create_date"  : str(datetime.datetime.now().timestamp()),
-                        "md5sum"       : self.hashfile(open(file_path, 'rb'), hashlib.md5()).hex(),
-                        "runs"         : [ str(run.id) ],
-                        "source"       : {"type" : "output", "run_id" : str(run.id), "run_name" : run.name}
-                    })
-                pirusfile.save()
-                run.outputs.append(str(pirusfile.id))
-
+        lxd_container = os.path.basename(job.root_path)
         # Stop container and clear resource
         try:
             # Clean outputs
-            subprocess.call(["lxc", "exec", run.lxd_container, "--", "rm", ""])
-            subprocess.call(["lxc", "delete", run.lxd_container, "--force"])
-        except:
-            return self.error('Unexpected error ' + str(sys.exc_info()[0]))
-            raise
-
-
-
-
-
-
-
-
-
-
-
-
-    def __start_next_time(self, job):
-        try:
-            settings = json.loads(job.settings)
-            subprocess.Popen(["lxc", "start", settings["lxd_container"]])
-            return True
-        except Exception as err:
-            # TODO manage error
+            exec_cmd(["lxc", "exec", lxd_container, "--", "rm", ""])
+            exec_cmd(["lxc", "delete", lxd_container, "--force"])
+        except Exception as ex:
+            err("Error occured when trying to finalize the job {} (id={})".format(lxd_container, job.id), ex)
             return False
+        return True 
 
 
 
-    def __start_first_time(self, job):
-        print("INITIALIZING !")
-        self.notify_status("INITIALIZING")
 
-        #LXD ready ! Prepare filesystem of the server to host lxc container files
-        root_path    = os.path.join(RUNS_DIR, run.lxd_container)
-        inputs_path  = os.path.join(root_path, "inputs")
-        outputs_path = os.path.join(root_path, "outputs")
-        logs_path    = os.path.join(root_path, "logs")
 
-        # Init directories
-        if not os.path.exists(inputs_path):
-            os.makedirs(inputs_path)
-        if not os.path.exists(outputs_path):
-            os.makedirs(outputs_path)
-            os.chmod(outputs_path, 0o777)
-        if not os.path.exists(logs_path):
-            os.makedirs(logs_path)
-            os.chmod(logs_path, 0o777)
-
-        # Put inputs files in the inputs directory of the run
-        conf_file = os.path.join(inputs_path, "config.json")
-        data = json.loads(run.config)
-        with open(conf_file, 'w') as f:
-            f.write(json.dumps(data, sort_keys=True, indent=4))
-            os.chmod(conf_file, 0o777)
-
-        for file_id in run.inputs:
-            f = PirusFile.from_id(file_id)
-            link_path = os.path.join(inputs_path, f.name)
-            os.link(f.path, link_path)
-            os.chmod(link_path, 0o644)
-
-        # Setting up the lxc container for the run
-        try:
-            pipeline = Pipeline.from_id(run.pipeline_id)
-            # create run file
-            run_file = os.path.join(root_path, "start_" + run.lxd_container + ".sh")
-            print(run_file)
-            with open(run_file, 'w') as f:
-                f.write("#!/bin/bash\n")
-                f.write(pipeline.lxd_run_cmd + " 1> " + os.path.join(pipeline.lxd_logs_path, 'out.log') + " 2> " + os.path.join(pipeline.lxd_logs_path, "err.log\n")) #  || curl -X POST -d '{\"status\" : \"ERROR\"}' " + run.notify_url + "
-                f.write("chown -Rf " + str(PIRUS_UID) + ":" + str(PIRUS_GID) + " " + pipeline.lxd_outputs_path + "\n")
-                f.write("curl -X POST -d '{\"status\" : \"FINISHING\"}' " + run.notify_url + "\n")
-                os.chmod(run_file, 0o777)
-
-            # create container
-            subprocess.call(["lxc", "init", run.lxd_image, run.lxd_container])
-            # set up env
-            subprocess.call(["lxc", "config", "set", run.lxd_container, "environment.PIRUS_NOTIFY_URL", self.notify_url ])
-            subprocess.call(["lxc", "config", "set", run.lxd_container, "environment.PIRUS_CONFIG_FILE", os.path.join(pipeline.lxd_inputs_path, "config.json") ])
-            # set up devices
-            subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_inputs",  "disk", "source="+inputs_path,   "path=" + pipeline.lxd_inputs_path[1:], "readonly=True"])
-            subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_outputs", "disk", "source="+outputs_path,  "path=" + pipeline.lxd_outputs_path[1:]])
-            subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_logs",    "disk", "source="+logs_path,     "path=" + pipeline.lxd_logs_path[1:]])
-            subprocess.call(["lxc", "config", "device", "add", run.lxd_container, "pirus_db",      "disk", "source="+DATABASES_DIR, "path=" + pipeline.lxd_db_path[1:], "readonly=True"])
-        except:
-            return self.error('Unexpected error ' + str(sys.exc_info()[0]))
-            raise 
-
-        # Run the pipe !
-        try:
-            subprocess.call(["lxc", "start", run.lxd_container])
-            lxd_run_file = os.path.join("/", os.path.basename(run_file))
-            subprocess.call(["lxc", "file", "push", run_file, run.lxd_container + lxd_run_file])
-            # for file_id in run.inputs:
-            #     f = PirusFile.from_id(file_id)
-            #     print ("push " + f.path + " to " + run.lxd_container + os.path.join(pipeline.lxd_inputs_path, f.name))
-            #     subprocess.call(["lxc", "file", "push", f.path, run.lxd_container + os.path.join(pipeline.lxd_inputs_path, f.name)])
-            subprocess.call(["lxc", "exec", run.lxd_container, "--",  "chmod", "+x", lxd_run_file])
-            subprocess.Popen(["lxc", "exec", run.lxd_container, lxd_run_file])
-            self.notify_status("RUNNING")
-        except:
-            return self.error('Unexpected error ' + str(sys.exc_info()[0])) 
-            raise

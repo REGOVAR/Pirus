@@ -411,36 +411,44 @@ class MonitoringLog:
     """
     def __init__(self, path):
         self.path = path
-        self.name = path
+        self.name = os.path.basename(path)
         self.size = os.path.getsize(path)
         self.creation = datetime.datetime.fromtimestamp(os.path.getctime(path))
         self.update = datetime.datetime.fromtimestamp(os.path.getmtime(path))
 
 
-    def tail(lines_number):
+    def tail(self, lines_number=100):
         """
             Return the N last lines of the log
         """
         try: 
-            out_tail = subprocess.check_output(["tail", path, "-n", "100"]).decode()
-        except Exception as error:
-            out_tail = "No stdout log of the run."
+            log_tail = subprocess.check_output(["tail", self.path, "-n", str(lines_number)]).decode()
+        except Exception as ex:
+            err("Error occured when getting tail of log {}".format(self.path), ex)
+            log_tail = "No stdout log of the run."
+        return log_tail
 
         
-    def head(lines_number):
+    def head(self, lines_number=100):
         """
             Return the N first lines of the log
         """
         try: 
-            err_tail = subprocess.check_output(["tail", path, "-n", "100"]).decode()
-        except Exception as error:
-            err_tail = "No stderr log of the run."
+            log_head = subprocess.check_output(["head", self.path, "-n", str(lines_number)]).decode()
+        except Exception as ex:
+            err("Error occured when getting head of log {}".format(self.path), ex)
+            log_head = "No stderr log of the run."
+        return log_head
 
 
-    def snip(from_line, to_line):
+    def snip(self, from_line, to_line):
         """
             Return a snippet of the log, from the line N to the line N2
         """
+        # TODO
+        pass
+
+    def lines_count(self):
         # TODO
         pass
 
@@ -472,17 +480,18 @@ class JobManager:
         job.status = "initializing"
         job.inputs_ids = inputs_ids
         job.name = config["name"]
-        job.config = json.dumps(config)
+        job.config = json.dumps(config, sort_keys=True, indent=4)
         job.progress_value = 0
         job.pipeline_id = pipeline_id
         job.progress_label = "0%"
         job.save()
         job.init(1)
         # Init directories entries for the container
-        root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
-        inputs_path = os.path.join(root_path, "inputs")
-        outputs_path = os.path.join(root_path, "outputs")
-        logs_path = os.path.join(root_path, "logs")
+        job.root_path = os.path.join(JOBS_DIR, CONTAINERS_CONFIG[job.pipeline.type]["job_name"].format("{}-{}".format(job.pipeline_id, job.id)))
+        job.save()
+        inputs_path = os.path.join(job.root_path, "inputs")
+        outputs_path = os.path.join(job.root_path, "outputs")
+        logs_path = os.path.join(job.root_path, "logs")
         if not os.path.exists(inputs_path): 
             os.makedirs(inputs_path)
         if not os.path.exists(outputs_path):
@@ -491,10 +500,24 @@ class JobManager:
         if not os.path.exists(logs_path):
             os.makedirs(logs_path)
             os.chmod(logs_path, 0o777)
+        # Check that all inputs files are ready to be used
+        for file_id in job.inputs:
+            f = PirusFile.from_id(file_id)
+            if f is None :
+                return self.error('Inputs file deleted before the start of the run. Run aborded.')
+            if f.status not in ["CHECKED", "UPLOADED"]:
+                # inputs not ready, we keep the run in the waiting status
+                print("INPUTS of the run not ready. waiting")
+                return 1
+
         # Put inputs files and job's config in the inputs directory of the job
         config_path = os.path.join(inputs_path, "config.json")
+        job_config = {
+            "pirus" : { "pirus" : {"notify_url" : ""}},
+            "job" : config
+        }
         with open(config_path, 'w') as f:
-            f.write(json.dumps(job.config, sort_keys=True, indent=4))
+            f.write(json.dumps(job_config, sort_keys=True, indent=4))
             os.chmod(config_path, 0o777)
         for f in job.inputs:
             link_path = os.path.join(inputs_path, f.name)
@@ -530,22 +553,27 @@ class JobManager:
             self.__start_job(job.id, asynch)
 
 
-    def monitoring(self, job_id, asynch=True):
+    def monitoring(self, job_id):
         """
             Retrieve monitoring information about the job.
             Return a Job object with a new attribute:
              - logs : list of MonitoringLog (log file) write by the run/manager in the run's logs directory
         """
-        job = Job.from_id(job_id)
+        job = Job.from_id(job_id, 1)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
         if job.status == "initializing":
             raise RegovarException("Job status is \"initializing\". Cannot retrieve yet monitoring informations.")
         # Ask container manager to update data about container
-        self.__monitoring_job(job.id, asynch)
-        job_logs_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id), "logs")
-        job.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
+        try:
+            job.logs_moninitoring = pirus.container_managers[job.pipeline.type].monitoring_job(job)
+        except Exception as ex:
+            err("Error occured when retrieving monitoring information for the job {} (id={})".format(os.path.basename(job.root_path), job.id), ex)
+            return None
 
+        job_logs_path = os.path.join(job.root_path, "logs")
+        job.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
+        return job
 
 
 
@@ -602,10 +630,8 @@ class JobManager:
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
         # Register outputs files
-        root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
-        inputs_path = os.path.join(root_path, "inputs")
-        outputs_path = os.path.join(root_path, "outputs")
-        logs_path = os.path.join(root_path, "logs")
+        outputs_path = os.path.join(job.root_path, "outputs")
+        logs_path = os.path.join(job.root_path, "logs")
 
         for f in os.listdir(outputs_path):
             file_path = os.path.join(outputs_path, f)
@@ -632,16 +658,14 @@ class JobManager:
         job = Job.from_id(job_id)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
-        if job.status not in ["error", "canceled", "done"]:
-            raise RegovarException("Job status is \"{}\". Cannot stop the job.".format(job.status))
         # Security, force call stop/delete the container
         if asynch: 
             run_async(self.__finalize_job, (job.id, asynch,))
         else:
             self.__finalize_job(job.id, asynch)
         # Deleting file in the filesystem
-        root_path = os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
-        shutil.rmtree(root_path, True)
+        shutil.rmtree(job.root_path, True)
+
 
 
 
@@ -663,14 +687,14 @@ class JobManager:
             next_jobs = s.query(Job).filter_by(status="waiting").order_by("priority").all()
             if len(next_jobs) > 0:
                 if asynch: 
-                    run_async(self.start_job, (next_jobs[0].id, asynch,))
+                    run_async(self.start, (next_jobs[0].id, asynch,))
                 else:
-                    self.start_job(next_jobs[0].id, asynch)
+                    self.start(next_jobs[0].id, asynch)
         elif job.status == "finalizing":
             if asynch: 
-                run_async(self.terminate_job, (job.id, asynch,))
+                run_async(self.finalize, (job.id, asynch,))
             else:
-                self.terminate_job(job.id, asynch)
+                self.finalize(job.id, asynch)
         # Push notification
         if notify:
             pirus.notify_all({"action": "job_updated", "data" : [job.to_json()]})
@@ -686,10 +710,11 @@ class JobManager:
             try:
                 success = pirus.container_managers[job.pipeline.type].init_job(job)
             except Exception as err:
-                # Log error
+                # TODO : Manage error
                 self.__set_status(job, "error", asynch)
                 return
-            self.__set_status(job, "waiting" if success else "error", asynch) 
+            self.__set_status(job, "running" if success else "error", asynch) 
+
 
 
     def __start_job(self, job_id, asynch):
@@ -709,7 +734,8 @@ class JobManager:
         # Check that all inputs files are ready to be used
         for file in job.inputs:
             if file is None :
-                print('Inputs file deleted before the start of the run. Run aborded.')
+                log('Inputs file deleted before the start of the run. Run aborded.')
+                # TODO self.__set_status(job, "error", asynch)
             if file.status not in ["checked", "uploaded"]:
                 # inputs not ready, we keep the run in the waiting status
                 print("INPUTS of the run not ready. waiting")
@@ -735,21 +761,6 @@ class JobManager:
             return 1
 
 
-    def __monitoring_job(self, job_id, asynch):
-        """
-            Call manager to retrieve monitoring informations.
-        """
-        global pirus
-        job = Job.from_id(job_id, 1)
-        if job:
-            try:
-                pirus.container_managers[job.pipeline.type].monitoring_job(job)
-            except Exception as err:
-                # Log error
-                self.__set_status(job, "error", asynch)
-                return
-            self.__set_status(job, "waiting", asynch)
-
 
 
     def __pause_job(self, job_id, asynch):
@@ -765,7 +776,7 @@ class JobManager:
                 # Log error
                 self.__set_status(job, "error", asynch)
                 return
-            self.__set_status(job, "waiting", asynch)
+            self.__set_status(job, "pause", asynch)
 
 
 
@@ -805,21 +816,7 @@ class JobManager:
 
 
 
-    def __delete_job(self, job_id, asynch):
-        """
-            Delete a job
-            Call manager to prepare the container for the job.
-        """
-        global pirus
-        job = Job.from_id(job_id, 1)
-        if job:
-            try:
-                pirus.container_managers[job.pipeline.type].delete_job(job)
-            except Exception as err:
-                # Log error
-                self.__set_status(job, "error", asynch)
-                return
-            self.__set_status(job, "waiting", asynch)
+
 
 
 

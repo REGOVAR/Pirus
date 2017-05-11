@@ -62,7 +62,6 @@ class TestCoreJobManager(unittest.TestCase):
 
 
         # init job 
-        #time.sleep(0.1) # need waiting otherwise sqlalchemy in wrong state ?... to fixe
         job = pirus.jobs.new(p.id, {"name" : "Test job success"}, asynch=False)
         job_id = job.id
         root_path =  os.path.join(JOBS_DIR, "{}_{}".format(job.pipeline_id, job.id))
