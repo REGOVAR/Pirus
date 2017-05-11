@@ -14,20 +14,15 @@ This document explain you how to build a simple pipeline image for Pirus.
     lxc exec pirus -- /bin/bash
 
     # following directories are mandatory
-    mkdir /pipeline/
-    mkdir /pipeline/run
-    mkdir /pipeline/inputs
-    mkdir /pipeline/outputs
-    mkdir /pipeline/logs
-    mkdir /pipeline/db
+    mkdir -p /pipeline/{job,inputs,outputs,logs,db}
 
     # need curl if you want to notify server with the progress of your run
     apt install curl jq nano --fix-missing
 
     # Create the script run.sh. this will be the "entry point" of your run
     # An example can be found on github (https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/run.sh)
-    nano /pipeline/run/run.sh
-    chmod +x /pipeline/run/run.sh
+    nano /pipeline/job/run.sh
+    chmod +x /pipeline/job/run.sh
 
     # To allow users to configure your pipeline, you shall put in your container a form.json file
     # that will describe a form to set parameter for your pipe.
@@ -65,7 +60,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         "pirus_api": "1.0.0",                  # optional : the pirus api version
         "license" : "AGPLv3",                  # optional : the license of your pipe
         "developers" : ["Olivier GUEUDELOT"],  # optional : a list of name
-        "run" : "/pipeline/run/run.sh",        # required : the command command that shall be execute to run your pipe (use absolute path)
+        "run" : "/pipeline/job/run.sh",        # required : the command command that shall be execute to run your pipe (use absolute path)
         "inputs" : "/pipeline/inputs",         # optional : absolute path to the folder (in the container) where inputs files for the pipe shall be put
         "outputs" : "/pipeline/outputs",       # optional : absolute path to the folder (in the container) where ouputs files of the pipe will be put
         "databases" : "/pipeline/db",          # optional : absolute path to the folder (in the container) where tierce databases (hg19 by example) shall be put
@@ -81,7 +76,7 @@ This document explain you how to build a simple pipeline image for Pirus.
         pirus_api: "1.0.0"
         license: "AGPLv3"
         developers: ["Olivier GUEUDELOT"]
-        run: "/pipeline/run/run.sh"  # required
+        run: "/pipeline/job/run.sh"  # required
         logs: "/pipeline/logs"
         inputs: "/pipeline/inputs"
         outputs: "/pipeline/outputs"
