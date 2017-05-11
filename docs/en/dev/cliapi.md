@@ -1,7 +1,7 @@
 # CLI Api
 
 
-'''
+```
 pirus version : return version
 pirus help  : return help
 pirus pipelines help : return pipeline help
@@ -19,4 +19,4 @@ pirus [runs] outputs <id> : show files output
 pirus [runs] logs <id> : show run log
 pirus [runs] cd <id> : Change directory to the current run
 pirus config : set pirus configuration
-'''
+```
