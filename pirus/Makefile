@@ -13,15 +13,17 @@ clear:
 
 
 test:
-	sudo -u postgres psql -c "DROP DATABASE IF EXISTS pirus_test"
-	sudo -u postgres psql -c "CREATE DATABASE pirus_test OWNER pirus"
-	psql -U pirus -d pirus_test -f ../install/create_all.sql
-	psql -U pirus -d pirus_test -f tests/init_fake_data.sql
-	sed -i.bak s/DATABASE_NAME\ =\ \"pirus\"/DATABASE_NAME\ =\ \"pirus_test\"/g config.py
-	python tests.py
-	mv config.py config.test
-	mv config.py.bak config.py
-	sudo -u postgres psql -c "DROP DATABASE IF EXISTS pirus_test"
+	database_name=$$(sed -n 's/^\s*DATABASE_NAME\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
+	test -n "$${database_name}" && \
+	sudo -u postgres psql -c "DROP DATABASE IF EXISTS $${database_name}_test" && \
+	sudo -u postgres psql -c "CREATE DATABASE $${database_name}_test OWNER pirus" && \
+	psql -U pirus -d $${database_name}_test -f ../install/create_all.sql && \
+	psql -U pirus -d $${database_name}_test -f tests/init_fake_data.sql && \
+	sed -i.bak 's/^\(\s*DATABASE_NAME\s*=\s*"[^"]\+\)\(".*\)/\1_test\2/' config.py && \
+	python tests.py && \
+	mv config.py config.test && \
+	mv config.py.bak config.py && \
+	sudo -u postgres psql -c "DROP DATABASE IF EXISTS $${database_name}_test"
 
 
 install:
