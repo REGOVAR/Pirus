@@ -47,13 +47,13 @@ if __name__ == '__main__':
         suite.addTest(TestCoreJobManager(test))
 
     # Need Lxd image on the server to work.
-    if os.path.exists(TestCoreLxdManager.IMAGE_FILE_PATH):
-        tests = [m for m in TestCoreLxdManager.__dict__.keys() if str.startswith(m, "test_")]
-        tests.sort()
-        for test in tests: 
-            suite.addTest(TestCoreLxdManager(test))
-    else:
-        print("WARNING : LXD Manager TU disabled. (because lxd image \"{}\" not available)".format(TestCoreLxdManager.IMAGE_FILE_PATH))
+    # if os.path.exists(TestCoreLxdManager.IMAGE_FILE_PATH):
+    #     tests = [m for m in TestCoreLxdManager.__dict__.keys() if str.startswith(m, "test_")]
+    #     tests.sort()
+    #     for test in tests: 
+    #         suite.addTest(TestCoreLxdManager(test))
+    # else:
+    #     print("WARNING : LXD Manager TU disabled. (because lxd image \"{}\" not available)".format(TestCoreLxdManager.IMAGE_FILE_PATH))
 
     print("Done\n=====\nRunning tests :")
 

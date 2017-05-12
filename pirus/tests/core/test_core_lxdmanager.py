@@ -92,9 +92,9 @@ class TestCoreLxdManager(unittest.TestCase):
         lxd_name = os.path.basename(job.root_path)
         self.assertEqual(job.status, "running")
         self.assertEqual(os.path.exists(job.root_path), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "inputs", "config.json"), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "out.log"), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "err.log"), True)
+        self.assertEqual(os.path.exists(os.path.join(job.root_path, "inputs", "config.json")), True)
+        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "out.log")), True)
+        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "err.log")), True)
         self.assertEqual(lxd_name in exec_cmd(["lxc", "list"])[1], True)
         self.assertEqual("Status: Running" in exec_cmd(["lxc", "info", lxd_name])[1], True)
         # TODO check config.json : retrieve fake_config with the "job" key and a notification url in "pirus" key

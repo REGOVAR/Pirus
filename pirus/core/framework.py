@@ -38,21 +38,22 @@ def run_async(future, *args):
     asyncio_main_loop.run_in_executor(None, future, *args)
 
 
+def exec_cmd(cmd):
+    """
+        execute a system command and return the stdout result
+    """
+    out_tmp = '/tmp/pirus_exec_cmd_out'
+    err_tmp = '/tmp/pirus_exec_cmd_err'
+    res = subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
+    out = open(out_tmp, "r").read()
+    err = open(err_tmp, "r").read()
+    return res, out, err
+
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TOOLS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-def exec_cmd(cmd):
-    """
-        execute a system command and return the stdout result
-    """
-    out_tmp = '/tmp/test_out'
-    err_tmp = '/tmp/test_err'
-    res = subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
-    out = open(out_tmp, "r").read()
-    err = open(err_tmp, "r").read()
-    return res, out, err
     
 
 def get_pipeline_forlder_name(name:str):

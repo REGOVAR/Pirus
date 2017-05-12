@@ -34,6 +34,11 @@ class TestCorePipelineManager(unittest.TestCase):
 
     @classmethod
     def setUpClass(self):
+        CONTAINERS_CONFIG["FakeManager4Test"] = {
+            "job_name" : "TU-fake-job-{}",
+            "image_name" : "TU-fake-pipe-{}",
+        }
+
         pass
 
 

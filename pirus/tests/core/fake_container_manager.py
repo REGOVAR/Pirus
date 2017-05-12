@@ -67,7 +67,7 @@ class FakeContainerManager4Test(PirusContainerManager):
     def monitoring_job(self, job):
         """ Fake stop job : success if job's name contains "success"; failed otherwise """
         self.is_monitoring = True
-        return "success" in job.name
+        return {"monitoring_field" : True}
 
 
     def finalize_job(self, job):

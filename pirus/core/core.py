@@ -178,8 +178,8 @@ class FileManager:
         with open(filepath, "bw+") as file:
             try :
                 response = await requests.get(url)
-            except Exception as err:
-                raise RegovarException("Error occured when trying to download a file from the provided url : " + str(url), "", err)
+            except Exception as ex:
+                raise RegovarException("Error occured when trying to download a file from the provided url : " + str(url), "", ex)
             file.write(response.content)
         # save file on the database
         pirusfile = pirus.files.register(name, filepath, metadata)
@@ -214,8 +214,8 @@ class FileManager:
             pfile.upload_offset = pfile.size
             pfile.status = "checked"
             pfile.save()
-        except Exception as err:
-            raise RegovarException("Error occured when trying to copy/move the file from the provided path : ".format(path), "", err)
+        except Exception as ex:
+            raise RegovarException("Error occured when trying to copy/move the file from the provided path : ".format(path), "", ex)
         return pfile
 
 
@@ -350,8 +350,8 @@ class PipelineManager:
     def __install(self, pipeline):
         try:
             result = pirus.container_managers[pipeline.type].install_pipeline(pipeline)
-        except Exception as err:
-            raise RegovarException("Error occured during installation of the pipeline. Installation aborded.", "", err)
+        except Exception as ex:
+            raise RegovarException("Error occured during installation of the pipeline. Installation aborded.", "", ex)
         pipeline.status = "ready" if result else "error"
         pipeline.save()
 
@@ -380,8 +380,8 @@ class PipelineManager:
                 # Clean DB
                 pirus.files.delete(pipeline.image_file_id)
                 Pipeline.delete(pipeline.id)
-        except Exception as err:
-            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline.id), err)
+        except Exception as ex:
+            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline.id), ex)
             return False
         return True
 
@@ -389,8 +389,8 @@ class PipelineManager:
     def __delete(self, pipeline):
         try:
             pirus.container_managers[pipeline.type].uninstall_pipeline(pipeline)
-        except Exception as err:
-            raise RegovarException("Error occured during uninstallation of the pipeline. Uninstallation aborded.", err)
+        except Exception as ex:
+            raise RegovarException("Error occured during uninstallation of the pipeline. Uninstallation aborded.", ex)
 
 
 
@@ -485,6 +485,7 @@ class JobManager:
         job.pipeline_id = pipeline_id
         job.progress_label = "0%"
         job.save()
+        # TODO : check if enough free resources to start the new job. otherwise, set status to waiting and return
         job.init(1)
         # Init directories entries for the container
         job.root_path = os.path.join(JOBS_DIR, CONTAINERS_CONFIG[job.pipeline.type]["job_name"].format("{}-{}".format(job.pipeline_id, job.id)))
@@ -504,11 +505,14 @@ class JobManager:
         for file_id in job.inputs:
             f = PirusFile.from_id(file_id)
             if f is None :
-                return self.error('Inputs file deleted before the start of the run. Run aborded.')
+                err("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
+                self.__set_status(job, "error", asynch=asynch)
+                return job
             if f.status not in ["CHECKED", "UPLOADED"]:
                 # inputs not ready, we keep the run in the waiting status
-                print("INPUTS of the run not ready. waiting")
-                return 1
+                war("INPUTS of the run not ready. waiting")
+                self.__set_status(job, "waiting", asynch=asynch)
+                return job
 
         # Put inputs files and job's config in the inputs directory of the job
         config_path = os.path.join(inputs_path, "config.json")
@@ -709,7 +713,7 @@ class JobManager:
         if job and job.status == "initializing":
             try:
                 success = pirus.container_managers[job.pipeline.type].init_job(job)
-            except Exception as err:
+            except Exception as ex:
                 # TODO : Manage error
                 self.__set_status(job, "error", asynch)
                 return
@@ -726,7 +730,7 @@ class JobManager:
         job = Job.from_id(job_id, 1)
         if not job :
             # TODO : log error
-            return 1
+            return 
 
         # Ok, job is now waiting
         self.__set_status(job, "waiting")
@@ -734,12 +738,14 @@ class JobManager:
         # Check that all inputs files are ready to be used
         for file in job.inputs:
             if file is None :
-                log('Inputs file deleted before the start of the run. Run aborded.')
-                # TODO self.__set_status(job, "error", asynch)
+                err("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
+                self.__set_status(job, "error", asynch=asynch)
+                return
             if file.status not in ["checked", "uploaded"]:
                 # inputs not ready, we keep the run in the waiting status
-                print("INPUTS of the run not ready. waiting")
-                return 1
+                war("INPUTS of the run not ready. waiting")
+                self.__set_status(job, "waiting", asynch=asynch)
+                return
             
         # TODO : check that enough reszources to run the job
         # Inputs files ready to use, looking for lxd resources now
@@ -756,9 +762,7 @@ class JobManager:
         #Try to run the job
         if pirus.container_managers[job.pipeline.type].start_job(job):
             self.__set_status(job, "running", asynch)
-            return 0
-        else:
-            return 1
+
 
 
 
@@ -772,8 +776,8 @@ class JobManager:
         if job:
             try:
                 pirus.container_managers[job.pipeline.type].pause_job(job)
-            except Exception as err:
-                # Log error
+            except Exception as ex:
+                # TODO : Log error
                 self.__set_status(job, "error", asynch)
                 return
             self.__set_status(job, "pause", asynch)
@@ -789,7 +793,7 @@ class JobManager:
         if job:
             try:
                 pirus.container_managers[job.pipeline.type].stop_job(job)
-            except Exception as err:
+            except Exception as ex:
                 # Log error
                 self.__set_status(job, "error", asynch)
                 return
@@ -805,14 +809,12 @@ class JobManager:
         job = Job.from_id(job_id, 1)
         if not job :
             # TODO : log error
-            return 1
+            return 
 
         if pirus.container_managers[job.pipeline.type].finalize_job(job):
             self.__set_status(job, "done", asynch)
-            return 0
         else:
             self.__set_status(job, "error", asynch)
-            return 1
 
 
 
