@@ -1,10 +1,10 @@
 {
     "architecture": "x86_64",
-    "creation_date": 1475725740,
+    "creation_date": 1488426540,
     "properties": {
         "architecture": "x86_64",
-        "description": "ubuntu xenial x86_64 (default) (20161006_03:49)",
-        "name": "ubuntu-xenial-x86_64-default-20161006_03:49",
+        "description": "ubuntu xenial x86_64 (default) (20170302_03:49)",
+        "name": "ubuntu-xenial-x86_64-default-20170302_03:49",
         "os": "ubuntu",
         "release": "xenial",
         "variant": "default"
@@ -13,13 +13,15 @@
         "/etc/hostname": {
             "template": "hostname.tpl",
             "when": [
-                "create"
+                "create",
+                "copy"
             ]
         },
         "/etc/hosts": {
             "template": "hosts.tpl",
             "when": [
-                "create"
+                "create",
+                "copy"
             ]
         },
         "/etc/init/console.override": {
@@ -55,13 +57,13 @@
     },
     "pirus":
     {
-        "name" : "Pirus Simple",
+        "name" : "Pirus Test",
         "description" : "Test pipeline for pirus",
         "version": "1.0.0",
         "pirus_api": "1.0.0",
         "license" : "AGPL",
         "developers" : ["Olivier GUEUDELOT"],
-        "run" : "/pipeline/job/run.sh",
+        "job" : "/pipeline/job/run.sh",
         "inputs" : "/pipeline/inputs",
         "outputs" : "/pipeline/outputs",
         "databases" : "/pipeline/db",
@@ -69,4 +71,3 @@
         "form" : "/pipeline/form.json"
     }
 }
-
