@@ -1,6 +1,6 @@
-# PirusBasic Pipeline
+# PirusTest Pipeline
 
-This document explain you how to build a simple pipeline image for Pirus.
+This document explain you how to build a simple test pipeline image for Pirus.
 
 ## Requirement
  * You need LXD on your computer to create it
@@ -36,14 +36,14 @@ This document explain you how to build a simple pipeline image for Pirus.
 
     # stop it and create an image
     lxc stop pirus
-    lxc publish pirus --alias=PirusSimple
+    lxc publish pirus --alias=PirusTest
 
     # Your Pipeline is ready to use on your server
 
 
 ## Export image as file and edit image conf to create a piruse package installable on any pirus server
 
-    lxc image export PirusSimple
+    lxc image export PirusTest
     # following command shall be done as root to avoid image corruption
     # (as it will try to create symlink to computer resource in /dev folder by example)
     sudo tar xf <the_name_of_lxc_export_something_like_a8d44d24fcs...8fzef54e5>.tar.gz
@@ -54,7 +54,7 @@ This document explain you how to build a simple pipeline image for Pirus.
     # if json
     "pirus":
     {
-        "name" : "Pirus Simple",               # required : the name of your pipe
+        "name" : "Pirus Test",               # required : the name of your pipe
         "description" : "Test pipeline",       # optional : the purpose of your pipe
         "version": "1.0.0",                    # optional : the version of your pipe
         "pirus_api": "1.0.0",                  # optional : the pirus api version
@@ -70,7 +70,7 @@ This document explain you how to build a simple pipeline image for Pirus.
     }
     # if yaml
     pirus:
-        name: "Pirus Simple"  # required
+        name: "Pirus Test"  # required
         description: "Test pipeline for pirus"
         version : "1.0.0"
         pirus_api: "1.0.0"
@@ -86,6 +86,6 @@ This document explain you how to build a simple pipeline image for Pirus.
 
 
     # You can repackage the image in tar.xz, to save space
-    sudo tar cfJ PirusSimple.tar.xz metadata.yaml rootfs templates
+    sudo tar cfJ PirusTest.tar.xz metadata.yaml rootfs templates
     sudo rm -fr metadata.yaml rootfs templates
-    sudo chown olivier:olivier PirusSimple.tar.xz
+    sudo chown olivier:olivier PirusTest.tar.xz
