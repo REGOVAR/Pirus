@@ -209,7 +209,7 @@ class LxdManager(PirusContainerManager):
         # Setting up the lxc container for the job
         lxd_container = os.path.basename(job.root_path)
         vm_settings = yaml.load(job.pipeline.vm_settings)
-        lxd_job_cmd = vm_settings["run"]
+        lxd_job_cmd = vm_settings["job"]
         lxd_logs_path = vm_settings["logs"]
         lxd_inputs_path = vm_settings["inputs"]
         lxd_outputs_path = vm_settings["outputs"]
@@ -243,7 +243,7 @@ class LxdManager(PirusContainerManager):
         except Exception as ex:
             raise RegovarException("Unexpected error.", "", ex)
 
-        # Execute the "run" command to start the pipe
+        # Execute the "job" command to start the pipe
         try:
             exec_cmd(["lxc", "start", lxd_container])
             lxd_job_file = os.path.join("/", os.path.basename(job_file))

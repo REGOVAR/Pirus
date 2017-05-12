@@ -81,6 +81,28 @@ class FileManager:
         pass
 
 
+    def get(self, fields=None, query=None, order=None, offset=None, limit=None, depth=0):
+        """
+            Generic method to get files according provided filtering options
+        """
+        if not isinstance(fields, dict):
+            fields = None
+        if query is None:
+            query = {}
+        if order is None:
+            order = "name, create_date desc"
+        if offset is None:
+            offset = 0
+        if limit is None:
+            limit = RANGE_MAX
+        s = session()
+        files = s.query(File).filter_by(**query).order_by(order).limit(limit).offset(offset).all()
+        for f in files: f.init(depth)
+        return files
+
+
+
+
     def upload_init(self, filename, file_size, metadata={}):
         """ 
             Create an entry for the file in the database and return the id of the file in pirus
@@ -227,6 +249,7 @@ class FileManager:
             if os.path.isfile(pfile.path):
                 os.remove(pfile.path)
             File.delete(file_id)
+        return pfile
 
 
         
@@ -244,6 +267,26 @@ class FileManager:
 class PipelineManager:
     def __init__(self):
         pass
+
+    def get(self, fields=None, query=None, order=None, offset=None, limit=None, depth=0):
+        """
+            Generic method to get pipelines according provided filtering options
+        """
+        if not isinstance(fields, dict):
+            fields = None
+        if query is None:
+            query = {}
+        if order is None:
+            order = "name, installation_date desc"
+        if offset is None:
+            offset = 0
+        if limit is None:
+            limit = RANGE_MAX
+        s = session()
+        pipes = s.query(Pipeline).filter_by(**query).order_by(order).limit(limit).offset(offset).all()
+        for p in pipes: p.init(depth)
+        return pipes
+
 
 
     def install_init (self, name, metadata={}):
@@ -383,7 +426,7 @@ class PipelineManager:
         except Exception as ex:
             raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline.id), ex)
             return False
-        return True
+        return pipeline
 
 
     def __delete(self, pipeline):
@@ -405,52 +448,6 @@ class PipelineManager:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
 
-class MonitoringLog:
-    """
-        Class to wrap log file and provide usefull related information and method to parse logs
-    """
-    def __init__(self, path):
-        self.path = path
-        self.name = os.path.basename(path)
-        self.size = os.path.getsize(path)
-        self.creation = datetime.datetime.fromtimestamp(os.path.getctime(path))
-        self.update = datetime.datetime.fromtimestamp(os.path.getmtime(path))
-
-
-    def tail(self, lines_number=100):
-        """
-            Return the N last lines of the log
-        """
-        try: 
-            log_tail = subprocess.check_output(["tail", self.path, "-n", str(lines_number)]).decode()
-        except Exception as ex:
-            err("Error occured when getting tail of log {}".format(self.path), ex)
-            log_tail = "No stdout log of the run."
-        return log_tail
-
-        
-    def head(self, lines_number=100):
-        """
-            Return the N first lines of the log
-        """
-        try: 
-            log_head = subprocess.check_output(["head", self.path, "-n", str(lines_number)]).decode()
-        except Exception as ex:
-            err("Error occured when getting head of log {}".format(self.path), ex)
-            log_head = "No stderr log of the run."
-        return log_head
-
-
-    def snip(self, from_line, to_line):
-        """
-            Return a snippet of the log, from the line N to the line N2
-        """
-        # TODO
-        pass
-
-    def lines_count(self):
-        # TODO
-        pass
 
 
 
@@ -461,6 +458,27 @@ class MonitoringLog:
 class JobManager:
     def __init__(self):
         pass
+
+
+
+    def get(self, fields=None, query=None, order=None, offset=None, limit=None, depth=0):
+        """
+            Generic method to get jobs according provided filtering options
+        """
+        if not isinstance(fields, dict):
+            fields = None
+        if query is None:
+            query = {}
+        if order is None:
+            order = "name, start_date desc"
+        if offset is None:
+            offset = 0
+        if limit is None:
+            limit = RANGE_MAX
+        s = session()
+        jobs = s.query(Job).filter_by(**query).order_by(order).limit(limit).offset(offset).all()
+        for j in jobs: j.init(depth)
+        return jobs
 
 
 
@@ -478,12 +496,12 @@ class JobManager:
         # Init model
         job = Job.new()
         job.status = "initializing"
-        job.inputs_ids = inputs_ids
         job.name = config["name"]
         job.config = json.dumps(config, sort_keys=True, indent=4)
         job.progress_value = 0
         job.pipeline_id = pipeline_id
         job.progress_label = "0%"
+        for fid in inputs_ids: JobFile.new(job.id, int(fid), True)
         job.save()
         # TODO : check if enough free resources to start the new job. otherwise, set status to waiting and return
         job.init(1)
@@ -502,17 +520,15 @@ class JobManager:
             os.makedirs(logs_path)
             os.chmod(logs_path, 0o777)
         # Check that all inputs files are ready to be used
-        for file_id in job.inputs:
-            f = PirusFile.from_id(file_id)
+        for f in job.inputs:
             if f is None :
-                err("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
                 self.__set_status(job, "error", asynch=asynch)
-                return job
-            if f.status not in ["CHECKED", "UPLOADED"]:
+                raise RegovarException("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
+            if f.status not in ["checked", "uploaded"]:
                 # inputs not ready, we keep the run in the waiting status
                 war("INPUTS of the run not ready. waiting")
                 self.__set_status(job, "waiting", asynch=asynch)
-                return job
+                return Job.from_id(job.id)
 
         # Put inputs files and job's config in the inputs directory of the job
         config_path = os.path.join(inputs_path, "config.json")
@@ -535,7 +551,7 @@ class JobManager:
             self.__init_job(job.id, asynch)
 
         # Return job object
-        return job
+        return Job.from_id(job.id)
 
 
 
@@ -574,9 +590,6 @@ class JobManager:
         except Exception as ex:
             err("Error occured when retrieving monitoring information for the job {} (id={})".format(os.path.basename(job.root_path), job.id), ex)
             return None
-
-        job_logs_path = os.path.join(job.root_path, "logs")
-        job.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
         return job
 
 
@@ -659,7 +672,7 @@ class JobManager:
         """
             Delete a Job. Outputs that have not yet been saved in Pirus, will be deleted.
         """
-        job = Job.from_id(job_id)
+        job = Job.from_id(job_id, 1)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
         # Security, force call stop/delete the container
@@ -669,6 +682,7 @@ class JobManager:
             self.__finalize_job(job.id, asynch)
         # Deleting file in the filesystem
         shutil.rmtree(job.root_path, True)
+        return job
 
 
 
@@ -709,6 +723,7 @@ class JobManager:
             Call manager to prepare the container for the job.
         """
         global pirus
+        ipdb.set_trace()
         job = Job.from_id(job_id, 1)
         if job and job.status == "initializing":
             try:

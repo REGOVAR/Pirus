@@ -250,7 +250,11 @@ def file_init(self, loading_depth=0):
             - jobs       : the list of jobs in which the file is used or created
         If loading_depth == 0, children objects are not loaded
     """
-    self.loading_depth = min(2, loading_depth)
+    # With depth loading, sqlalchemy may return several time the same object. Take care to not erase the good depth level)
+    if hasattr(self, "loading_depth"):
+        self.loading_depth = max(self.loading_depth, min(2, loading_depth))
+    else:
+        self.loading_depth = min(2, loading_depth)
     self.jobs_ids = JobFile.get_jobs_ids(self.id)
     self.load_depth(loading_depth)
             
@@ -398,8 +402,13 @@ def pipeline_init(self, loading_depth=0):
 
         If loading_depth == 0, child object are not loaded, so jobs will be set with the  list of job's id
     """
-    self.loading_depth = min(2, loading_depth)
     self.jobs_ids = []
+    # With depth loading, sqlalchemy may return several time the same object. Take care to not erase the good depth level)
+    if hasattr(self, "loading_depth"):
+        self.loading_depth = max(self.loading_depth, min(2, loading_depth))
+    else:
+        self.loading_depth = min(2, loading_depth)
+
     jobs = __db_session.query(Job).filter_by(pipeline_id=self.id).all()
     for j in jobs:
         self.jobs_ids.append(j.id)
@@ -458,10 +467,12 @@ def pipeline_to_json(self, fields=None):
                 result.update({"jobs" : [j.to_json() for j in self.jobs]})
             else:
                 result.update({"jobs" : self.jobs})
-        elif f == "ui_form" and self.ui_form:
+        elif f == "ui_form" and isinstance(self.ui_form, dict):
             result.update({"ui_form" : json.loads(self.ui_form)})
-        elif f == "vm_settings" and self.vm_settings:
+        elif f == "vm_settings" and isinstance(self.vm_settings, dict):
             result.update({"vm_settings" : json.loads(self.vm_settings)})
+        elif f == "image_file" and self.image_file:
+            result.update({f: self.image_file.to_json()})
         else:
             result.update({f: eval("self." + f)})
     return result
@@ -547,6 +558,58 @@ Pipeline.count = pipeline_count
 # =====================================================================================================================
 # JOB
 # =====================================================================================================================
+class MonitoringLog:
+    """
+        Class to wrap log file and provide usefull related information and method to parse logs
+    """
+    def __init__(self, path):
+        self.path = path
+        self.name = os.path.basename(path)
+        self.size = os.path.getsize(path)
+        self.creation = datetime.datetime.fromtimestamp(os.path.getctime(path))
+        self.update = datetime.datetime.fromtimestamp(os.path.getmtime(path))
+
+
+    def tail(self, lines_number=100):
+        """
+            Return the N last lines of the log
+        """
+        try: 
+            log_tail = subprocess.check_output(["tail", self.path, "-n", str(lines_number)]).decode()
+        except Exception as ex:
+            err("Error occured when getting tail of log {}".format(self.path), ex)
+            log_tail = "No stdout log of the run."
+        return log_tail
+
+        
+    def head(self, lines_number=100):
+        """
+            Return the N first lines of the log
+        """
+        try: 
+            log_head = subprocess.check_output(["head", self.path, "-n", str(lines_number)]).decode()
+        except Exception as ex:
+            err("Error occured when getting head of log {}".format(self.path), ex)
+            log_head = "No stderr log of the run."
+        return log_head
+
+
+    def snip(self, from_line, to_line):
+        """
+            Return a snippet of the log, from the line N to the line N2
+        """
+        # TODO
+        pass
+
+    def lines_count(self):
+        # TODO
+        pass
+
+
+
+
+
+
 def job_init(self, loading_depth=0):
     """
         If loading_depth is > 0, children objects will be loaded. Max depth level is 2.
@@ -556,11 +619,19 @@ def job_init(self, loading_depth=0):
 
         If loading_depth == 0, children objects are not loaded, so source will be set with the id of the job if exists
     """
-    self.loading_depth = min(2, loading_depth)
     self.inputs_ids = []
     self.outputs_ids = []
+    self.logs = []
+    # With depth loading, sqlalchemy may return several time the same object. Take care to not erase the good depth level)
+    if hasattr(self, "loading_depth"):
+        self.loading_depth = max(self.loading_depth, min(2, loading_depth))
+    else:
+        self.loading_depth = min(2, loading_depth)
 
     files = __db_session.query(JobFile).filter_by(job_id=self.id).all()
+    job_logs_path = os.path.join(str(self.root_path), "logs")
+    if os.path.exists(job_logs_path) :
+        self.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
     for f in files:
         if f.as_input:
             self.inputs_ids.append(f.file_id)

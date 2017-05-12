@@ -27,7 +27,7 @@ from core.core import pirus
 class TestCoreLxdManager(unittest.TestCase):
     """ Test case for lxd container management. """
 
-    IMAGE_FILE_PATH = "/var/regovar/pirus/_pipes/PirusSimple.tar.xz"
+    IMAGE_FILE_PATH = "/var/regovar/pirus/_pipes/PirusTest.tar.xz"
     MAX_WAITING_4_INSTALL = 60 # 60s (actually, installing PirusSimple need ~45s)
 
 

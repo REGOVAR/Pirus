@@ -148,7 +148,7 @@
                                         {% else %}
                                         <ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">
                                             {% for p in pipes %}
-                                            {% if p["status"] not in ["UPLOADING", "PAUSE"] %}
+                                            {% if p["status"] not in ["uploading", "pause"] %}
                                             <li><a href="#modal_new_run" onclick="javascript:init_run('{{p["id"]}}');" title="New run with Hugodims" data-toggle="modal">
                                                 <img src="{{ p["icon_url"] }}" style="height:20px; width:20px; vertical-align:middle;"/> &nbsp; {{ p["name"] }} <i>({{ p["version"] }})</i>
                                             </a></li>
@@ -214,15 +214,15 @@
                                         {% for f in files_inprogress %}
                                         <li id="browser_navpanel_inprogress_file_{{f["id"]}}">
                                             <a onclick="javascript:show_tab('browser_file','{{f["id"]}}')" href="#">
-                                                <i class="fa fa-file {% if f["status"] in ["PAUSE"] %}text-warning{% elif f["status"] in ["UPLOADING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
+                                                <i class="fa fa-file {% if f["status"] in ["pause"] %}text-warning{% elif f["status"] in ["uploading"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
                                                 {{f["name"]}} <span>{{ f["progress"] }}%</span></a>
                                         </li>
                                         {% endfor %}
-                                        {% for r in runs_inprogress %}
+                                        {% for r in jobs_inprogress %}
                                         <li id="browser_navpanel_inprogress_run_{{r["id"]}}">
                                             <a onclick="javascript:show_tab('browser_run','{{r["id"]}}')" href="#">
-                                                <i class="fa fa-tasks {% if r["status"] in ["PAUSE", "WAITING"] %}text-warning{% elif r["status"] in ["RUNNING", "INITIALIZING", "FINISHING"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
-                                                {{r["name"]}} <span>{{ r["%"] }}%</span></a>
+                                                <i class="fa fa-tasks {% if r["status"] in ["pause", "waiting"] %}text-warning{% elif r["status"] in ["running", "initializing", "finalizing"] %}text-primary{% else %}text-danger{% endif %}" aria-hidden="true"></i>
+                                                {{r["name"]}} <span>{{ r["progress_value"] }}%</span></a>
                                         </li>
                                         {% endfor %}
                                     </ul>
@@ -276,8 +276,8 @@
                                                         value="{{ f["id"] }}" 
                                                         name="{{ f["id"] }}"/>
                                                 </td>
-                                                <td>{% if f["source"]["type"] == "output" %}
-                                                    {{ f["source"]["run_name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
+                                                <td>{% if f["job_source"] %}
+                                                    {{ f["job_source"]["name"] }} <i class="fa fa-chevron-right" aria-hidden="true"></i> 
                                                     {% endif %}
                                                     {{ f["name"] }} 
                                                     {% if f["comments"] %}
@@ -287,9 +287,9 @@
                                                 <td>
                                                     {% if f["status"] == "ERROR" %}
                                                     <i class="fa fa-times text-danger" aria-hidden="true" style="font-weight:bold;"></i> 
-                                                    {% elif f["status"] == "PAUSE" %}
+                                                    {% elif f["status"] == "pause" %}
                                                     <i class="fa fa-pause-circle-o text-warning" aria-hidden="true" style="font-weight:bold;"></i> 
-                                                    {% elif f["status"] in ["UPLOADING"] %}
+                                                    {% elif f["status"] in ["uploading"] %}
                                                     <i class="fa fa-arrow-circle-o-down text-primary" aria-hidden="true" style="font-weight:bold;"></i> 
                                                     {% else %}
                                                     <i class="fa fa-check text-success" aria-hidden="true" style="font-weight:bold;"></i> 
@@ -298,7 +298,7 @@
                                                 </td>
                                                 <td>{{ f["create_date"] }}</td>
                                                 <td class="collapse">{{ f["comments"] }}</td>
-                                                <td class="collapse">{% for t in f["tags"] %}{{t}}{% endfor %}</td>
+                                                <td class="collapse">{% if f["tags"] %}{% for t in f["tags"] %}{{t}}{% endfor %}{% endif %}</td>
                                                 <td class="collapse">{{ f["id"]}}</td>
                                                 <td class="collapse">{{ f["status"]}}</td>
                                             </tr>

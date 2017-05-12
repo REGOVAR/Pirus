@@ -19,7 +19,9 @@ from aiohttp import web, MultiDict
 from urllib.parse import parse_qsl
 
 
-from core import *
+from core.framework import *
+from core.model import *
+from core.core import *
 from api_rest.tus import tus_manager
 
 
@@ -56,23 +58,23 @@ def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
                                 This code will allow admins to find in logs where exactly this error occure
     """
     results = {
-        "success":              False, 
-        "msg":                  message, 
+        "success":      False, 
+        "msg":          message, 
         "error_code":   code, 
-        "error_url":    ERROR_ROOT_URL + code,
-        "error_id":             error_id
+        "error_url":    code,
+        "error_id":     error_id
     }
     return web.json_response(results)
 
 
 
-def notify_all(src, msg):
+def rest_notify_all(src, msg):
     for ws in WebsocketHandler.socket_list:
         if src != ws[1]:
             ws[0].send_str(msg)
 
 # Give to the core the delegate to call to notify all via websockets
-pirus.set_notify_all(notify_all)
+pirus.notify_all = rest_notify_all
 
 
 
@@ -106,19 +108,19 @@ def process_generic_get(query_string, allowed_fields):
                 query["$or"].append({k : {'$regex': r_filter}})
 
         # 4- Order
-        order = ['-create_date', "name"]
-        if r_sort is not None and r_order is not None:
-            r_sort = r_sort.split(',')
-            r_order = r_order.split(',')
-            if len(r_sort) == len(r_order):
-                order = []
-                for i in range(0, len(r_sort)):
-                    f = r_sort[i].strip().lower()
-                    if f in allowed_fields:
-                        if r_order[i] == "desc":
-                            f = "-" + f
-                        order.append(f)
-        order = tuple(order)
+        order = "name"
+        # if r_sort is not None and r_order is not None:
+        #     r_sort = r_sort.split(',')
+        #     r_order = r_order.split(',')
+        #     if len(r_sort) == len(r_order):
+        #         order = []
+        #         for i in range(0, len(r_sort)):
+        #             f = r_sort[i].strip().lower()
+        #             if f in allowed_fields:
+        #                 if r_order[i] == "desc":
+        #                     f = "-" + f
+        #                 order.append(f)
+        # order = tuple(order)
 
         # 5- limit
         r_range = r_range.split("-")
@@ -152,12 +154,12 @@ class WebsiteHandler:
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
         data = {
-            "pipes_inprogress" : [p for p in pirus.pipelines.get(None, None, ['-name']) if p["status"] in ["UPLOADING", "PAUSE", "INSTALLING"]],
-            "files_all"        :  pirus.files.get(None, None, ['-create_date']),
-            "files_inprogress" : [f for f in pirus.files.get(None, None, ['-create_date']) if f["status"] in ["UPLOADING", "PAUSE"]],
-            "pipes"            : pirus.pipelines.get(None, None, ['-name'], None, None, 2),
-            "runs_done"        : [r for r in pirus.runs.get(None, None, ['-start']) if r["status"] in ["ERROR", "DONE", "CANCELED"]],
-            "runs_inprogress"  : [r for r in pirus.runs.get(None, None, ['-start']) if r["status"] in ["WAITING", "PAUSE", "INITIALIZING", "RUNNING", "FINISHING"]], 
+            "pipes_inprogress" : [p.to_json() for p in pirus.pipelines.get(order='name', depth=1) if p.status in ["uploading", "pause", "installing"]],
+            "files_all"        : [f.to_json() for f in pirus.files.get(order='create_date desc', depth=1)],
+            "files_inprogress" : [f.to_json() for f in pirus.files.get(order='create_date desc', depth=1) if f.status in ["uploading", "pause"]],
+            "pipes"            : [p.to_json() for p in pirus.pipelines.get(query={"status" : "ready"}, order='name', depth=1)],
+            "jobs_done"        : [j.to_json() for j in pirus.jobs.get(order='start_date desc', depth=1) if j.status in ["error", "done", "canceled"]],
+            "jobs_inprogress"  : [j.to_json() for j in pirus.jobs.get(order='start_date desc', depth=1) if j.status in ["waiting", "pause", "initializing", "running", "finalizing"]], 
             "hostname"         : HOST_P
         }
         for f in data["files_all"]: 
@@ -166,15 +168,13 @@ class WebsiteHandler:
         for f in data["files_inprogress"]: 
             f.update({"size" : humansize(f["size"]), "upload_offset": humansize(f["upload_offset"]) , "progress" : round(int(f["upload_offset"]) / int(f["size"]) * 100)})
 
-        for r in data["runs_done"]:
-            p = round(int(r["progress"]["value"]) / max(1, (int(r["progress"]["max"]) - int(r["progress"]["min"]))) * 100)
-            r.update({"%" : p})
+        for r in data["jobs_done"]:
+            r.update({"progress_value" : r["progress_value"] * 100})
 
-        for r in data["runs_inprogress"]:
-            p = round(int(r["progress"]["value"]) / max(1, (int(r["progress"]["max"]) - int(r["progress"]["min"]))) * 100)
-            r.update({"%" : p})
+        for r in data["jobs_inprogress"]:
+            r.update({"progress_value" : r["progress_value"] * 100})
 
-        data.update({"total_inprogress" : len(data["files_inprogress"]) + len(data["pipes_inprogress"]) + len(data["runs_inprogress"])})
+        data.update({"total_inprogress" : len(data["files_inprogress"]) + len(data["pipes_inprogress"]) + len(data["jobs_inprogress"])})
         return data
 
 
@@ -185,8 +185,8 @@ class WebsiteHandler:
             "port" : PORT,
             "version" : VERSION,
             "base_url" : "http://" + HOST_P,
-            "max_parallel_run " : LXD_MAX,
-            "run_config " : LXD_HDW_CONF
+            "max_parallel_job " : LXD_MAX,
+            "job_config " : LXD_HDW_CONF
         })
 
 
@@ -212,17 +212,18 @@ class FileHandler:
 
     def get(self, request):
         # Generic processing of the get query
-        fields, query, order, offset, limit = process_generic_get(request.query_string, pirus.files.public_fields())
-        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        fields, query, order, offset, limit = process_generic_get(request.query_string, File.public_fields)
+        depth = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Get range meta data
         range_data = {
             "range_offset" : offset,
             "range_limit"  : limit,
-            "range_total"  : pirus.files.total(),
+            "range_total"  : File.count(),
             "range_max"    : RANGE_MAX,
         }
         # Return result of the query for PirusFile 
-        return rest_success(pirus.files.get(fields, query, order, offset, limit, sub_level_loading), range_data)
+        files = pirus.files.get(fields, query, order, offset, limit, depth)
+        return rest_success([f.to_json() for f in files], range_data)
 
 
 
@@ -275,20 +276,18 @@ class FileHandler:
     def delete(self, request):
         file_id = request.match_info.get('file_id', "")
         try:
-            return rest_success(pirus.files.delete(file_id))
-        except Exception as err:
-            return rest_error("Error occured : " + err)
+            return rest_success(pirus.files.delete(file_id).to_json())
+        except Exception as ex:
+            return rest_error("Error occured : " + ex.msg)
 
 
 
     def get_details(self, request):
         file_id = request.match_info.get('file_id', -1)
-        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        try:
-            return rest_success(pirus.files.get_from_id(file_id))
-        except PirusException as err:
-            return rest_error("Error occured : " + err)
-
+        file = File.from_id(file_id, 2)
+        if not file:
+            return rest_error("Unable to find the file (id={})".format(file_id))
+        return rest_success(file.to_json(File.public_fields))
 
 
 
@@ -317,29 +316,30 @@ class FileHandler:
 
     async def dl_file(self, request):        
         # 1- Retrieve request parameters
-        id = request.match_info.get('file_id', -1)
-        pirus_file = pirus.files.get_from_id(id, 0, ["name", "path", "id"])
-        if pirus_file == None:
-            return rest_error("File with id " + str(id) + "doesn't exits.")
+        file_id = request.match_info.get('file_id', -1)
+        pfile = File.from_id(file_id)
+        if not pfile:
+            return rest_error("File with id {} doesn't exits.".format(file_id))
         file = None
-        if os.path.isfile(pirus_file["path"]):
-            with open(pirus_file["path"], 'br') as content_file:
+        if os.path.isfile(pfile.path):
+            with open(pfile.path, 'br') as content_file:
                 file = content_file.read()
         return web.Response(
-            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pirus_file["name"]}),
+            headers=MultiDict({'Content-Disposition': 'Attachment; filename='+pfile.name}),
             body=file
         )
+
 
     async def dl_pipe_file(self, request):
         # 1- Retrieve request parameters
         pipe_id = request.match_info.get('pipe_id', -1)
         filename = request.match_info.get('filename', None)
-        pipeline = pirus.pipelines.get_from_id(pipe_id, 0, ["root_path"])
+        pipeline = Pipeline.from_id(pipe_id, 1)
         if pipeline == None:
-            return rest_error("No pipeline with id " + str(pipe_id))
+            return rest_error("No pipeline with id {}".format(pipe_id))
         if filename == None:
             return rest_error("No filename provided")
-        path = os.path.join(pipeline["root_path"], filename)
+        path = os.path.join(pipeline.root_path, filename)
         file = None
         if os.path.isfile(path):
             with open(path, 'br') as content_file:
@@ -360,8 +360,6 @@ class FileHandler:
 
 
 
-
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # REST PIPELINE API HANDLER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -370,16 +368,17 @@ class PipelineHandler:
         pass
 
     def get(self, request):
-        fields, query, order, offset, limit = process_generic_get(request.query_string, pirus.pipelines.public_fields())
-        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        fields, query, order, offset, limit = process_generic_get(request.query_string, Pipeline.public_fields)
+        depth = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Get range meta data
         range_data = {
             "range_offset" : offset,
             "range_limit"  : limit,
-            "range_total"  : pirus.pipelines.total(),
+            "range_total"  : Pipeline.count(),
             "range_max"    : RANGE_MAX,
         }
-        return rest_success(pirus.pipelines.get(fields, query, order, offset, limit, sub_level_loading), range_data)
+        pipes = pirus.pipelines.get(fields, query, order, offset, limit, depth)
+        return rest_success([p.to_json() for p in pipes], range_data)
 
 
 
@@ -387,21 +386,19 @@ class PipelineHandler:
     def delete(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         try:
-            pirus.pipelines.delete(pipe_id)
-        except Exception as error:
+            pipe = pirus.pipelines.delete(pipe_id)
+        except Exception as ex:
             # TODO : manage error
-            return rest_error("Unable to delete the pipeline with id " + str(pipe_id) + ". " + error.msg)
-        return rest_success("Pipeline " + str(pipe_id) + " deleted.")
+            return rest_error("Unable to delete the pipeline with id {} : {}".format(pipe_id, ex.msg))
+        return rest_success(p.to_json())
 
 
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
-        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        pipe = pirus.pipelines.get_from_id(pipe_id)
-        if pipe == None:
-            return rest_error("No pipeline with id " + str(pipe_id))
-        print ("PipelineHandler.get_details('" + str(pipe_id) + "', sublvl=" + str(sub_level_loading) + ")")
-        return rest_success(pipe.export_client_data(sub_level_loading))
+        pipe = Pipeline.from_id(pipe_id, 2)
+        if not pipe:
+            return rest_error("No pipeline with id ".format(pipe_id))
+        return rest_success(pipe.to_json(Pipeline.public_fields))
 
 
     # Resumable download implement the TUS.IO protocol.
@@ -430,53 +427,51 @@ class PipelineHandler:
 
 
 
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-# REST RUN API HANDLER
+# REST JOB API HANDLER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-class RunHandler:
+class JobHandler:
     def __init__(self):
         pass
 
     def get(self, request):
-        fields, query, order, offset, limit = process_generic_get(request.query_string, pirus.runs.public_fields())
-        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
+        fields, query, order, offset, limit = process_generic_get(request.query_string, Job.public_fields)
+        depth = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
         # Get range meta data
         range_data = {
             "range_offset" : offset,
             "range_limit"  : limit,
-            "range_total"  : pirus.runs.total(),
+            "range_total"  : Job.count(),
             "range_max"    : RANGE_MAX,
         }
-        return rest_success(pirus.runs.get(fields, query, order, offset, limit, sub_level_loading), range_data)
+        jobs = pirus.jobs.get(fields, query, order, offset, limit, depth)
+        return rest_success([j.to_json() for j in jobs], range_data)
 
 
     def delete(self, request):
-        run_id = request.match_info.get('run_id', "")
+        job_id = request.match_info.get('job_id', "")
         try:
-            return rest_success(pirus.runs.delete(pipe_id))
+            return rest_success(pirus.jobs.delete(job_id).to_json())
         except Exception as error:
-            # TODO : manage error
-            return rest_error("Unable to delete the runs with id " + str(pipe_id) + ". " + error.msg)
+            return rest_error("Unable to delete the job (id={}) : {}".format(job_id, error.msg))
 
 
     def get_details(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        sub_level_loading = int(MultiDict(parse_qsl(request.query_string)).get('sublvl', 0))
-        run = pirus.runs.get_from_id(run_id)
-        if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
-        return rest_success(run.export_client_data(sub_level_loading))
+        job_id = request.match_info.get('job_id', -1)
+        job = Job.from_id(job_id, 2)
+        if not job:
+            return rest_error("Unable to find the job (id={})".format(job_id))
+        return rest_success(job.to_json(Job.public_fields))
 
 
-    def download_file(self, run_id, filename, location=RUNS_DIR):
-        run = pirus.runs.get_from_id(run_id)
-        if run == None:
-            return rest_error("No run with id " + str(run_id))
-        path = os.path.join(location, run.lxd_container, filename)
+    def download_file(self, job_id, filename, location=JOBS_DIR):
+        job = Job.from_id(job_id, 1)
+        if job == None:
+            return rest_error("Unable to find the job (id={})".format(job_id))
+        path = os.path.join(job.root_path, filename)
 
         if not os.path.exists(path):
-            return rest_error("File not found. " + filename + " doesn't exists for the run " + str(run_id))
+            return rest_error("File not found. {} doesn't exists for the job (id={})".format(filename, job_id))
         content = ""
         if os.path.isfile(path):
             with open(path, 'br') as content_file:
@@ -487,60 +482,61 @@ class RunHandler:
         )
 
     def get_olog(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        return self.download_file(run_id, "logs/out.log")
+        job_id = request.match_info.get('job_id', -1)
+        return self.download_file(job_id, "logs/out.log")
 
     def get_elog(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        return self.download_file(run_id, "logs/err.log")
+        job_id = request.match_info.get('job_id', -1)
+        return self.download_file(job_id, "logs/err.log")
 
     def get_plog(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        return self.download_file(run_id, "logs/pirus.log")
+        job_id = request.match_info.get('job_id', -1)
+        return self.download_file(job_id, "logs/pirus.log")
 
     def get_olog_tail(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        return self.download_file(run_id, "logs/out.log")
+        job_id = request.match_info.get('job_id', -1)
+        return self.download_file(job_id, "logs/out.log")
 
     def get_elog_tail(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        return self.download_file(run_id, "logs/err.log")
+        job_id = request.match_info.get('job_id', -1)
+        return self.download_file(job_id, "logs/err.log")
 
     def get_plog_tail(self, request):
-        run_id = request.match_info.get('run_id', -1)
-        return self.download_file(run_id, "logs/pirus.log")
+        job_id = request.match_info.get('job_id', -1)
+        return self.download_file(job_id, "logs/pirus.log")
 
     def get_io(self, request):
-        run_id  = request.match_info.get('run_id',  -1)
-        if run_id == -1:
+        job_id  = request.match_info.get('job_id',  -1)
+        if job_id == -1:
             return rest_error("Id not found")
-        run = pirus.runs.get_from_id(run_id)
-        if run == None:
-            return rest_error("Unable to find the run with id " + str(run_id))
+        job = Job.from_id(job_id, 1)
+        if job == None:
+            return rest_error("Unable to find the job with id {}".format(job_id))
         result={
-            "inputs" : pirus.files.get_from_ids([f["id"] for f in run["inputs"]]),
-            "outputs": pirus.files.get_from_ids([f["id"] for f in run["outputs"]])
+            "inputs" : [f.to_json() for f in job.inputs],
+            "outputs": [f.to_json() for f in job.outputs],
         }
         return rest_success(result)
 
     def get_file(self, request):
-        run_id  = request.match_info.get('run_id',  -1)
+        job_id  = request.match_info.get('job_id',  -1)
         filename = request.match_info.get('filename', "")
-        return self.download_file(run_id, filename)
+        return self.download_file(job_id, filename)
 
 
     async def update_status(self, request):
         # 1- Retrieve data from request
         print("Handler.update_status", end="")
         data = await request.json()
-        run_id = request.match_info.get('run_id', -1)
+        job_id = request.match_info.get('job_id', -1)
         try:
-            print(" => pirus.runs.edit : ", data)
-            run = pirus.runs.edit(run_id, data)
-        except Exception as error:
-            return rest_error("Unable to update information for the runs with id " + str(run_id) + ". " + error.msg)
+            print(" => pirus.jobs.edit : ", data)
+            job = Job.from_id(job_id)
+            job.load(data)
+        except Exception as ex:
+            return rest_error("Unable to update information for the jobs with id {}. {}".format(job_id, ex.msg))
 
-        return rest_success(run.export_client_data())
+        return rest_success(job.to_json())
 
 
 
@@ -551,52 +547,51 @@ class RunHandler:
         pipe_id = data["pipeline_id"]
         config = data["config"]
         inputs = data["inputs"]
-        # Create the run 
-        run = pirus.runs.create(pipe_id, config, inputs)
-        if run is None:
-            return error
-        # start run
-        pirus.runs.start(run["id"])
-        return rest_success(run)
+        ipdb.set_trace()
+        # Create the job 
+        try:
+            job = pirus.jobs.new(pipe_id, config, inputs, asynch=False)
+        except Exception as ex:
+            rest_error("Unable to create a new job. {}".format(ex.msg))
+        if job is None:
+            return rest_error("Unable to create a new job.")
+        return rest_success(job.to_json())
 
 
     def get_pause(self, request):
-        run_id  = request.match_info.get('run_id',  -1)
-        if run_id == -1:
-            return rest_error("Id not found")
-        result, run = pirus.runs.pause(run_id)
-        if result:
-            return rest_success(run.export_client_data())
-        return rest_error("Unable to pause the run {}".format(run.id))
+        job_id  = request.match_info.get('job_id',  -1)
+        try:
+            pirus.jobs.pause(job_id)
+        except Exception as ex:
+            return rest_error("Unable to pause the job {}. {}".format(job.id, ex.msg))
+        return rest_success()
 
 
     def get_play(self, request):
-        run_id  = request.match_info.get('run_id', -1)
-        if run_id == -1:
-            return rest_error("Id not found")
-        result, run = pirus.runs.play(run_id)
-        if result:
-            return rest_success(run.export_client_data())
-        return rest_error("Unable to restart the run {}".format(run.id))
+        job_id  = request.match_info.get('job_id', -1)
+        try:
+            pirus.jobs.play(job_id)
+        except Exception as ex:
+            return rest_error("Unable to start the job {}. {}".format(job.id, ex.msg))
+        return rest_success()
 
 
     def get_stop(self, request):
-        run_id  = request.match_info.get('run_id',  -1)
-        if run_id == -1:
-            return rest_error("Id not found")
-        result, run = pirus.runs.stop(run_id)
-        if result:
-            return rest_success(run.export_client_data())
-        return rest_error("Unable to stop the run {}".format(run.id))
+        job_id  = request.match_info.get('job_id',  -1)
+        try:
+            pirus.jobs.stop(job_id)
+        except Exception as ex:
+            return rest_error("Unable to stop the job {}. {}".format(job.id, ex.msg))
+        return rest_success()
 
 
     def get_monitoring(self, request):
-        run_id  = request.match_info.get('run_id',  -1)
+        job_id  = request.match_info.get('job_id',  -1)
         try:
-            result = pirus.runs.monitoring(run_id)
+            job = pirus.jobs.monitoring(job_id)
         except Exception as error:
-            return rest_error("Unable to retrieve monitoring info for the runs with id " + str(run_id) + ". " + error.msg)
-        return rest_success(result)
+            return rest_error("Unable to retrieve monitoring info for the jobs with id " + str(job_id) + ". " + error.msg)
+        return rest_success(job.to_json())
 
 
 
@@ -627,7 +622,7 @@ class WebsocketHandler:
         print('WS connection open by', ws_id)
         WebsocketHandler.socket_list.append((ws, ws_id))
         msg = '{"action":"online_user", "data" : [' + ','.join(['"' + _ws[1] + '"' for _ws in WebsocketHandler.socket_list]) + ']}'
-        notify_all(None, msg)
+        rest_notify_all(None, msg)
 
         try:
             async for msg in ws:
