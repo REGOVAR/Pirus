@@ -60,7 +60,7 @@ This document explain you how to build a simple test pipeline image for Pirus.
         "pirus_api": "1.0.0",                  # optional : the pirus api version
         "license" : "AGPLv3",                  # optional : the license of your pipe
         "developers" : ["Olivier GUEUDELOT"],  # optional : a list of name
-        "run" : "/pipeline/job/run.sh",        # required : the command command that shall be execute to run your pipe (use absolute path)
+        "job" : "/pipeline/job/run.sh",        # required : the command command that shall be execute to run your pipe (use absolute path)
         "inputs" : "/pipeline/inputs",         # optional : absolute path to the folder (in the container) where inputs files for the pipe shall be put
         "outputs" : "/pipeline/outputs",       # optional : absolute path to the folder (in the container) where ouputs files of the pipe will be put
         "databases" : "/pipeline/db",          # optional : absolute path to the folder (in the container) where tierce databases (hg19 by example) shall be put
@@ -76,7 +76,7 @@ This document explain you how to build a simple test pipeline image for Pirus.
         pirus_api: "1.0.0"
         license: "AGPLv3"
         developers: ["Olivier GUEUDELOT"]
-        run: "/pipeline/job/run.sh"  # required
+        job: "/pipeline/job/run.sh"  # required
         logs: "/pipeline/logs"
         inputs: "/pipeline/inputs"
         outputs: "/pipeline/outputs"
