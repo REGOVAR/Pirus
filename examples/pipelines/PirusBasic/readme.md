@@ -20,7 +20,7 @@ This document explain you how to build a simple test pipeline image for Pirus.
     apt install curl jq nano --fix-missing
 
     # Create the script run.sh. this will be the "entry point" of your run
-    # An example can be found on github [run.sh](https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/run.sh)
+    # An example can be found on github (https://github.com/REGOVAR/Pirus/blob/master/examples/pipelines/PirusBasic/run.sh)
     nano /pipeline/job/run.sh
     chmod +x /pipeline/job/run.sh
 
