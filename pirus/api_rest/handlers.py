@@ -22,7 +22,7 @@ from urllib.parse import parse_qsl
 from core.framework import *
 from core.model import *
 from core.core import *
-from api_rest.tus import tus_manager
+from api_rest.tus import *
 
 
 
@@ -144,6 +144,76 @@ def process_generic_get(query_string, allowed_fields):
 
 
 
+
+
+
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# Customization of the TUS protocol for the download of pirus files
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+# File TUS wrapper
+class FileWrapper (TusFileWrapper):
+    def __init__(self, id):
+        self.file = File.from_id(id)
+        if self.file is not None:
+            self.id = id
+            self.name = self.file.name
+            self.upload_offset = self.file.upload_offset
+            self.path = self.file.path
+            self.size = self.file.size
+            self.upload_url = "file/upload/" + str(id)
+        else:
+            return TusManager.build_response(code=500, body="Unknow id: {}".format(id))
+
+
+    def save(self):
+        try:
+            f = File.from_id(self.id)
+            f.upload_offset=self.upload_offset
+            f.save()
+        except Exception as ex:
+            return TusManager.build_response(code=500, body="Unexpected error occured: {}".format(ex))
+
+
+    def complete(self, checksum=None, checksum_type="md5"):
+        try:
+            log ('Upload of the file (id={0}) is complete.'.format(self.id))
+            pirus.files.upload_finish(self.id, checksum, checksum_type)
+        except Exception as ex:
+            return TusManager.build_response(code=500, body="Unexpected error occured: {}".format(ex))
+
+
+    @staticmethod
+    def new_upload(request, filename, file_size):
+        """ 
+            Create and return the wrapper to manipulate the uploading file
+        """
+        pfile = pirus.files.upload_init(filename, file_size)
+        return FileWrapper(pfile.id)
+
+
+
+# set mapping
+tus_manager.route_maping["/file/upload"] = FileWrapper
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # MISC HANDLER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
@@ -208,6 +278,10 @@ class WebsiteHandler:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # REST FILE API HANDLER
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+
+
+
+
 class FileHandler:
 
     def get(self, request):

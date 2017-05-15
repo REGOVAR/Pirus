@@ -11,7 +11,7 @@ import uuid
 
 
 from aiohttp import web, MultiDict
-from core import *
+# from core import *
 
 
 
@@ -33,13 +33,17 @@ class TusFileWrapper:
     path = "<path where the file is saved on the server>"
     upload_url = "<url that the client shall used to upload the file>"
     
+    def start(self):
+        # Do something to start an upload (creating index in db by example)
+        pass
+
     def save(self):
         # Do something when the upload of a chunk of the file is done. Basicaly : save new offset position in a database
-        pass;
+        pass
 
     def complete(self):
         # Do something when the upload of the file is finished
-        pass;
+        pass
 
     @staticmethod
     def from_request(request):
@@ -50,23 +54,21 @@ class TusFileWrapper:
         if id == -1:
             return TusManager.build_response(code=404)
 
-        # We can upload file or pipeline, we check model according to url
-        if "/file/upload" in request.raw_path and pirus.files.get_from_id(id) is not None:
-            return PirusFileWrapper(id)
-        if "pipeline/upload" in request.raw_path and pirus.pipelines.get_from_id(id) is not None :
-            return PirusPipelineWrapper(id)
+        # We can upload file or custom annotation db, we check model according to url
+        for k in TusManager.route_maping.keys():
+            if k in request.raw_path:
+                return TusManager.route_maping[k](id)
         return TusManager.build_response(code=404)
 
     @staticmethod
     def new_upload(request, filename, file_size):
         # Create and return the wrapper to manipulate the uploading file
-        if "/file/upload" in request.raw_path :
-            pfile   = pirus.files.upload_init(filename, file_size)
-            return PirusFileWrapper(pfile["id"])
+        if request == None:
+            return TusManager.build_response(code=404)
 
-        if "/pipeline/upload" in request.raw_path :
-            pipe = pirus.pipelines.register(filename, file_size)
-            return PirusPipelineWrapper(pipe["id"])
+        for k in TusManager.route_maping.keys():
+            if k in request.raw_path:
+                return TusManager.route_maping[k].new_upload(request, filename, file_size)
 
 
 
@@ -82,6 +84,9 @@ class TusFileWrapper:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 class TusManager:
 
+    route_maping = {}
+
+
     @staticmethod
     def build_response(code, headers={}, body=""):
         h = {'Tus-Resumable' : TUS_API_VERSION,  'Tus-Version' : TUS_API_VERSION_SUPPORTED}
@@ -94,6 +99,7 @@ class TusManager:
     def resume(self, request):
         fw = TusFileWrapper.from_request(request)
         return TusManager.build_response(code=200, headers={ 'Upload-Offset' : str(fw.upload_offset), 'Cache-Control' : 'no-store' })
+
 
 
     # PATCH request done by client to upload a chunk a of file.
@@ -111,7 +117,6 @@ class TusManager:
             with open(fw.path, "br+") as f:
                 f.seek( file_offset )
                 f.write(data)
-
         except IOError:
             return TusManager.build_response(code=500, body="Unable to write file chunk on the the server :(")
 
@@ -119,9 +124,10 @@ class TusManager:
         fw.save()
         # file transfer complete
         if fw.size == fw.upload_offset: 
-            fw.complete()
+            await fw.complete()
         headers = { 'Upload-Offset' : str(fw.upload_offset), 'Tus-Temp-Filename' : str(fw.id) }
         return TusManager.build_response(code=200, headers=headers)
+
 
 
     # OPTIONS request done by client to know how the server is convigured
@@ -162,8 +168,9 @@ class TusManager:
     def delete_file(self, request):
         fw = TusFileWrapper.from_request(request)
         os.unlink(fw.path)
-        pirus.files.delete(fw.id)
+        annso.sample.delete_files(fw.id)
         return TusManager.build_response(code=204)
+
 
 
     # GET request !!! Not implemented - Trash code !!!
@@ -186,64 +193,8 @@ class TusManager:
 
 
 
-
-
-
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# PIRUS SPECIFIC IMPLEMENTATION 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-
-# Custom wrapper for Pirus file
-class PirusFileWrapper (TusFileWrapper) :
-    def __init__(self, id):
-        self.pfile = pirus.files.get_from_id(id, 0, ["name", "upload_offset", "path", "size", "upload_url"])
-        self.id = id
-        self.name = self.pfile["name"]
-        self.upload_offset = self.pfile["upload_offset"]
-        self.path = self.pfile["path"]
-        self.size = self.pfile["size"]
-        self.upload_url = self.pfile["upload_url"]
-
-    def save(self):
-        try:
-            pirus.files.edit(self.id, {"upload_offset" : self.upload_offset, "status" : "UPLOADING"})
-        except Exception as error:
-            return TusManager.build_response(code=500, body="Unexpected error occured : {}".format(error))
-
-    def complete(self, checksum=None, checksum_type="md5"):
-        try:
-            pirus.files.upload_finish(self.id, checksum, checksum_type)
-        except Exception as error:
-            return TusManager.build_response(code=500, body="Unexpected error occured : {}".format(error))
         
 
-
-
-# Custom wrapper for Pirus pipeline
-class PirusPipelineWrapper (TusFileWrapper) :
-    def __init__(self, id):
-        self.ppipe = pirus.pipelines.get_from_id(id)
-        self.id = self.ppipe.id
-        self.name = self.ppipe.name
-        self.upload_offset = self.ppipe.upload_offset
-        self.path = self.ppipe.pipeline_file
-        self.size = self.ppipe.size
-        self.upload_url = self.ppipe.upload_url
-
-    def save(self):
-        # Update upload status of the pipe
-        self.ppipe.upload_offset = self.upload_offset
-        self.ppipe.status = "UPLOADING"
-        self.ppipe.save()
-
-    def complete(self):
-        # Save pirus package on the server plugins directory
-        try:
-            pipeline = pirus.pipelines.install(self.ppipe.id)
-        except Exception as error:
-            return TusManager.build_response(code=500, body="Unexpected error occured : {}".format(error))
 
 
 

@@ -31,9 +31,9 @@ install:
 	echo "Don't forget to update the config.py file with your settings"
 
 
-
+# > pirus.out 2>pirus_error.out  &
 app:
-	python pirus_server.py > pirus.out 2>pirus_error.out  &
+	python pirus_server.py 
 
 stop:
 	ps -ef | grep pirus_server | awk '{print $$2}'  | xargs sudo kill -9
