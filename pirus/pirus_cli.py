@@ -145,7 +145,7 @@ pirus job play <job_id>
 pirus job stop <pipe_id>
       Force the job's execution to stop. Job is canceled, its container is deleted.
 
-pirus job terminate <pipe_id>
+pirus job finalize <pipe_id>
       Force the finalization of the job. If the job execution is finished, but for some raisons, the container have not been deleted, 
       this action will properly clean the job's container stuff.
       """

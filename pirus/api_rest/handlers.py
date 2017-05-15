@@ -591,7 +591,12 @@ class JobHandler:
             job = pirus.jobs.monitoring(job_id)
         except Exception as error:
             return rest_error("Unable to retrieve monitoring info for the jobs with id " + str(job_id) + ". " + error.msg)
-        return rest_success(job.to_json())
+        result = job.to_json()
+        result.update({"pipeline":job.pipeline.to_json()})
+        result.update({"logs": {}})
+        for log in job.logs:
+            result["logs"][log.name] = log.tail()
+        return rest_success(result)
 
 
 
