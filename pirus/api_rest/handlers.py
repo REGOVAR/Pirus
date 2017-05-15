@@ -308,51 +308,12 @@ class FileHandler:
         
 
 
-    # UPLOAD is now manage using TUS.IO protocol
-    # async def upload_simple(self, request):
-    #     """
-    #         "Simple" upload (synchrone and not resumable)
-    #     """
-    #     name = str(uuid.uuid4())
-    #     path = os.path.join(FILES_DIR, name)
-    #     plog.info('I: Start file uploading : ' + path)
-    #     # 1- Retrieve file from post request
-    #     data = await request.post()
-    #     uploadFile = data['uploadFile']
-    #     comments = None
-    #     tags = None
-    #     if "comments" in data.keys():
-    #         comments = data['comments'].strip()
-    #     if "tags" in data.keys():
-    #         tmps = data['tags'].split(',')
-    #         tags = []
-    #         for i in tmps:
-    #             i2 = i.strip()
-    #             if i2 != "":
-    #                 tags.append(i2)
-    #     # 2- save file on the server 
-    #     try:
-    #         with open(path, 'bw+') as f:
-    #             f.write(uploadFile.file.read())
-    #     except:
-    #         # TODO : manage error
-    #         raise PirusException("Bad pirus pipeline format : Manifest file corrupted.")
-    #     plog.info('I: File uploading done : ' + path)
-    #     # 3- save file on the database
-    #     pirusfile = pirus.files.register(uploadFile.filename, path, {
-    #         "tags"          : tags,
-    #         "comments"      : comments
-    #     })
-    #     return rest_success(pirusfile)
-
-
-
     def delete(self, request):
         file_id = request.match_info.get('file_id', "")
         try:
             return rest_success(pirus.files.delete(file_id).to_json())
         except Exception as ex:
-            return rest_error("Error occured : " + ex.msg)
+            return rest_error("Error occured : " + str(ex))
 
 
 
@@ -463,7 +424,7 @@ class PipelineHandler:
             pipe = pirus.pipelines.delete(pipe_id)
         except Exception as ex:
             # TODO : manage error
-            return rest_error("Unable to delete the pipeline with id {} : {}".format(pipe_id, ex.msg))
+            return rest_error("Unable to delete the pipeline with id {} : {}".format(pipe_id, str(ex)))
         return rest_success(p.to_json())
 
 
@@ -600,15 +561,15 @@ class JobHandler:
 
     async def update_status(self, request):
         # 1- Retrieve data from request
-        print("Handler.update_status", end="")
         data = await request.json()
         job_id = request.match_info.get('job_id', -1)
         try:
-            print(" => pirus.jobs.edit : ", data)
+            if "status" in data.keys():
+                pirus.jobs.set_status(job_id, data["status"])
             job = Job.from_id(job_id)
             job.load(data)
         except Exception as ex:
-            return rest_error("Unable to update information for the jobs with id {}. {}".format(job_id, ex.msg))
+            return rest_error("Unable to update information for the jobs with id {}. {}".format(job_id, ex))
 
         return rest_success(job.to_json())
 
@@ -621,12 +582,11 @@ class JobHandler:
         pipe_id = data["pipeline_id"]
         config = data["config"]
         inputs = data["inputs"]
-        ipdb.set_trace()
         # Create the job 
         try:
-            job = pirus.jobs.new(pipe_id, config, inputs, asynch=False)
+            job = pirus.jobs.new(pipe_id, config, inputs, asynch=True)
         except Exception as ex:
-            rest_error("Unable to create a new job. {}".format(ex.msg))
+            return rest_error("Error occured when initializing the new job. {}".format(ex))
         if job is None:
             return rest_error("Unable to create a new job.")
         return rest_success(job.to_json())
@@ -637,7 +597,7 @@ class JobHandler:
         try:
             pirus.jobs.pause(job_id)
         except Exception as ex:
-            return rest_error("Unable to pause the job {}. {}".format(job.id, ex.msg))
+            return rest_error("Unable to pause the job {}. {}".format(job.id, ex))
         return rest_success()
 
 
@@ -646,7 +606,7 @@ class JobHandler:
         try:
             pirus.jobs.play(job_id)
         except Exception as ex:
-            return rest_error("Unable to start the job {}. {}".format(job.id, ex.msg))
+            return rest_error("Unable to start the job {}. {}".format(job.id, ex))
         return rest_success()
 
 
@@ -655,7 +615,7 @@ class JobHandler:
         try:
             pirus.jobs.stop(job_id)
         except Exception as ex:
-            return rest_error("Unable to stop the job {}. {}".format(job.id, ex.msg))
+            return rest_error("Unable to stop the job {}. {}".format(job.id, ex))
         return rest_success()
 
 
@@ -663,8 +623,8 @@ class JobHandler:
         job_id  = request.match_info.get('job_id',  -1)
         try:
             job = pirus.jobs.monitoring(job_id)
-        except Exception as error:
-            return rest_error("Unable to retrieve monitoring info for the jobs with id " + str(job_id) + ". " + error.msg)
+        except Exception as ex:
+            return rest_error("Unable to retrieve monitoring info for the jobs with id={}. {}".format(job_id, ex))
         result = job.to_json()
         result.update({"pipeline":job.pipeline.to_json()})
         result.update({"logs": {}})

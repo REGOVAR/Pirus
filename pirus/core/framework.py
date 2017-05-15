@@ -38,12 +38,18 @@ def run_async(future, *args):
     asyncio_main_loop.run_in_executor(None, future, *args)
 
 
-def exec_cmd(cmd):
+def exec_cmd(cmd, asynch=False):
     """
         execute a system command and return the stdout result
     """
+    if asynch:
+        print("execute command async : {}".format(" ".join(cmd)))
+        subprocess.Popen(cmd)
+        return True, None, None
+
     out_tmp = '/tmp/pirus_exec_cmd_out'
     err_tmp = '/tmp/pirus_exec_cmd_err'
+    print("execute command sync : {}".format(" ".join(cmd)))
     res = subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
     out = open(out_tmp, "r").read()
     err = open(err_tmp, "r").read()

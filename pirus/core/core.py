@@ -523,18 +523,18 @@ class JobManager:
         # Check that all inputs files are ready to be used
         for f in job.inputs:
             if f is None :
-                self.__set_status(job, "error", asynch=asynch)
+                self.set_status(job, "error", asynch=asynch)
                 raise RegovarException("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
             if f.status not in ["checked", "uploaded"]:
                 # inputs not ready, we keep the run in the waiting status
                 war("INPUTS of the run not ready. waiting")
-                self.__set_status(job, "waiting", asynch=asynch)
+                self.set_status(job, "waiting", asynch=asynch)
                 return Job.from_id(job.id)
 
         # Put inputs files and job's config in the inputs directory of the job
         config_path = os.path.join(inputs_path, "config.json")
         job_config = {
-            "pirus" : { "pirus" : {"notify_url" : ""}},
+            "pirus" : {"notify_url" : NOTIFY_URL.format(job.id)},
             "job" : config
         }
         with open(config_path, 'w') as f:
@@ -546,10 +546,12 @@ class JobManager:
             os.chmod(link_path, 0o644)
 
         # Call init of the container
-        if asynch: 
-            run_async(self.__init_job, (job.id, asynch,))
-        else:
-            self.__init_job(job.id, asynch)
+        # if asynch: 
+        #     print("run init async")
+        #     run_async(self.__init_job, job.id, asynch)
+        # else:
+        #     print("run init")
+        self.__init_job(job.id, asynch)
 
         # Return job object
         return Job.from_id(job.id)
@@ -688,8 +690,7 @@ class JobManager:
 
 
 
-
-    def __set_status(self, job, new_status, notify=True, asynch=True):
+    def set_status(self, job, new_status, notify=True, asynch=True):
         global  pirus
         # Avoid useless notification
         # Impossible to change state of a job in error or canceled
@@ -727,12 +728,12 @@ class JobManager:
         job = Job.from_id(job_id, 1)
         if job and job.status == "initializing":
             try:
-                success = pirus.container_managers[job.pipeline.type].init_job(job)
+                success = pirus.container_managers[job.pipeline.type].init_job(job, asynch)
             except Exception as ex:
                 # TODO : Manage error
-                self.__set_status(job, "error", asynch)
+                self.set_status(job, "error", asynch)
                 return
-            self.__set_status(job, "running" if success else "error", asynch) 
+            self.set_status(job, "running" if success else "error", asynch) 
 
 
 
@@ -748,18 +749,18 @@ class JobManager:
             return 
 
         # Ok, job is now waiting
-        self.__set_status(job, "waiting")
+        self.set_status(job, "waiting")
 
         # Check that all inputs files are ready to be used
         for file in job.inputs:
             if file is None :
                 err("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
-                self.__set_status(job, "error", asynch=asynch)
+                self.set_status(job, "error", asynch=asynch)
                 return
             if file.status not in ["checked", "uploaded"]:
                 # inputs not ready, we keep the run in the waiting status
                 war("INPUTS of the run not ready. waiting")
-                self.__set_status(job, "waiting", asynch=asynch)
+                self.set_status(job, "waiting", asynch=asynch)
                 return
             
         # TODO : check that enough reszources to run the job
@@ -776,7 +777,7 @@ class JobManager:
 
         #Try to run the job
         if pirus.container_managers[job.pipeline.type].start_job(job):
-            self.__set_status(job, "running", asynch)
+            self.set_status(job, "running", asynch)
 
 
 
@@ -793,9 +794,9 @@ class JobManager:
                 pirus.container_managers[job.pipeline.type].pause_job(job)
             except Exception as ex:
                 # TODO : Log error
-                self.__set_status(job, "error", asynch)
+                self.set_status(job, "error", asynch)
                 return
-            self.__set_status(job, "pause", asynch)
+            self.set_status(job, "pause", asynch)
 
 
 
@@ -810,9 +811,9 @@ class JobManager:
                 pirus.container_managers[job.pipeline.type].stop_job(job)
             except Exception as ex:
                 # Log error
-                self.__set_status(job, "error", asynch)
+                self.set_status(job, "error", asynch)
                 return
-            self.__set_status(job, "waiting", asynch)
+            self.set_status(job, "waiting", asynch)
 
 
 
@@ -827,9 +828,9 @@ class JobManager:
             return 
 
         if pirus.container_managers[job.pipeline.type].finalize_job(job):
-            self.__set_status(job, "done", asynch)
+            self.set_status(job, "done", asynch)
         else:
-            self.__set_status(job, "error", asynch)
+            self.set_status(job, "error", asynch)
 
 
 

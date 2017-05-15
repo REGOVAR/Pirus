@@ -35,7 +35,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def install_pipeline(self, pipeline):
+    def install_pipeline(self, pipeline, asynch=False):
         """
             Perform the installation of a pipeline that use LXD container
         """
@@ -182,7 +182,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def uninstall_pipeline(self, pipeline):
+    def uninstall_pipeline(self, pipeline, asynch=False):
         """
             Uninstall the pipeline lxd image.
             Database & filesystem clean is done by the core
@@ -208,7 +208,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def init_job(self, job):
+    def init_job(self, job, asynch=False):
         """
             Init a job :
             - check settings (stored in database) 
@@ -234,6 +234,7 @@ class LxdManager(PirusContainerManager):
             log(job_file)
             with open(job_file, 'w') as f:
                 f.write("#!/bin/bash\n")
+                f.write("curl -X POST -d '{{\"status\" : \"running\"}}' {}\n".format(notify_url))
                 # TODO : catch if execution return error and notify pirus with error status
                 f.write("chmod +x {}\n".format(lxd_job_cmd)) # ensure that we can execute the job's script
                 f.write("{} 1> {} 2> {}".format(lxd_job_cmd, os.path.join(lxd_logs_path, 'out.log'), os.path.join(lxd_logs_path, "err.log\n"))) #  || curl -X POST -d '{\"status\" : \"error\"}' " + notify_url + "
@@ -262,15 +263,19 @@ class LxdManager(PirusContainerManager):
             lxd_job_file = os.path.join("/", os.path.basename(job_file))
             exec_cmd(["lxc", "file", "push", job_file, lxd_container + lxd_job_file])
             exec_cmd(["lxc", "exec", lxd_container, "--",  "chmod", "+x", lxd_job_file])
-            r, o, e = exec_cmd(["lxc", "exec", lxd_container, lxd_job_file, "1>", os.path.join(lxd_logs_path, "pirus.out", "2>", os.path.join(lxd_logs_path, "pirus.err"))])
-            if e.startswith("error: Container is not running."): # catch lxd error
-                job.status = "error"
-                job.save()
-                err('Error occured when starting the job {} (id={}).\n{}'.format(job.name, job.id, e))
+
+            cmd = ["lxc", "exec", lxd_container, lxd_job_file]
+            if not asynch:
+                r, o, e = exec_cmd(cmd)
+                if e.startswith("error: Container is not running."): # catch lxd error
+                    job.status = "error"
+                    job.save()
+                    err('Error occured when starting the job {} (id={}).\n{}'.format(job.name, job.id, e))
+                else:
+                    log('New job {} (id={}) start with success.'.format(job.name, job.id))
             else:
-                log('New job {} (id={}) start with success.'.format(job.name, job.id))
-
-
+                subprocess.Popen(cmd)
+                return True
         except Exception as ex:
             raise RegovarException("Unexpected error.", "", ex)
 
@@ -282,7 +287,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def start_job(self, job):
+    def start_job(self, job, asynch=False):
         """
             (Re)Start the job execution. By unfreezing the 
         """
@@ -298,7 +303,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def pause_job(self, job):
+    def pause_job(self, job, asynch=False):
         """
             Pause the execution of the job.
         """
@@ -311,7 +316,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def stop_job(self, job):
+    def stop_job(self, job, asynch=False):
         """
             Stop the job. The job is canceled and the container is destroyed.
         """
@@ -323,7 +328,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def monitoring_job(self, job):
+    def monitoring_job(self, job, asynch=False):
         """
             Provide monitoring information about the container (CPU/RAM used, etc)
         """
@@ -344,7 +349,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def finalize_job(self, job):
+    def finalize_job(self, job, asynch=False):
         """
             IMPLEMENTATION REQUIRED
             Clean temp resources created by the container (log shall be kept), copy outputs file from the container
