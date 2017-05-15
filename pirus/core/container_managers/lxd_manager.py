@@ -109,13 +109,17 @@ class LxdManager(PirusContainerManager):
             source = PIPELINE_DEFAULT_ICON_PATH
             icon_file = os.path.join(root_path, "icon.png")
             if metadata["icon"] is not None:
-                source = os.path.join("rootfs",metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
-                tar_data = [info for info in tar.getmembers() if info.name == source]
-                file = tar.extractfile(member=tar_data[0])
-                source = os.path.join(root_path, source)
-                icon_file = os.path.join(root_path, os.path.basename(metadata['icon']))
-                with open(icon_file, 'bw+') as f:
-                    f.write(file.read())
+                source = os.path.join("rootfs", metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
+                try:
+                    tar_data = [info for info in tar.getmembers() if info.name == source]
+                    file = tar.extractfile(member=tar_data[0])
+                    source = os.path.join(root_path, source)
+                    icon_file = os.path.join(root_path, os.path.basename(metadata['icon']))
+                    with open(icon_file, 'bw+') as f:
+                        f.write(file.read())
+                except:
+                    war("Icon file not found in the image archive : {}. Using default icon.".format(source))
+                    shutil.copyfile(PIPELINE_DEFAULT_ICON_PATH, icon_file)
             else:
                 shutil.copyfile(source, icon_file)
         except Exception as ex:
@@ -131,7 +135,11 @@ class LxdManager(PirusContainerManager):
         pipeline.ui_form = ui_form.decode()
         pipeline.ui_icon = icon_file
         pipeline.root_path = root_path
-        pipeline.save()
+        try:
+            pipeline.save()
+        except Exception as ex:
+            raise RegovarException("FAILLED to save the new pipeline in database (already exists or wrong name ?).", "", ex)
+
         log("Pipeline saved in database with id={}".format(pipeline.id))
 
         # 6- Install lxd container
@@ -144,6 +152,7 @@ class LxdManager(PirusContainerManager):
             raise RegovarException("FAILLED Installation of the lxd image. ($: {})\nPlease, check logs {}".format(" ".join(cmd), err_tmp), "", ex)
         error = open(err_tmp, "r").read()
         if error != "":
+
             pipeline.delete()
             shutil.rmtree(root_path)
             raise RegovarException("FAILLED Lxd image. ($: {}) : \n{}".format(" ".join(cmd), error))
@@ -226,6 +235,7 @@ class LxdManager(PirusContainerManager):
             with open(job_file, 'w') as f:
                 f.write("#!/bin/bash\n")
                 # TODO : catch if execution return error and notify pirus with error status
+                f.write("chmod +x {}\n".format(lxd_job_cmd)) # ensure that we can execute the job's script
                 f.write("{} 1> {} 2> {}".format(lxd_job_cmd, os.path.join(lxd_logs_path, 'out.log'), os.path.join(lxd_logs_path, "err.log\n"))) #  || curl -X POST -d '{\"status\" : \"error\"}' " + notify_url + "
                 f.write("chown -Rf {}:{} {}\n".format(self.config["pirus_uid"], self.config["pirus_gid"], lxd_outputs_path))
                 f.write("curl -X POST -d '{{\"status\" : \"finalizing\"}}' {}\n".format(notify_url))

@@ -723,7 +723,6 @@ class JobManager:
             Call manager to prepare the container for the job.
         """
         global pirus
-        ipdb.set_trace()
         job = Job.from_id(job_id, 1)
         if job and job.status == "initializing":
             try:

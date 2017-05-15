@@ -12,6 +12,7 @@ import yaml
 import time
 
 from config import *
+from core.framework import *
 from core.model import File, Pipeline, Job
 from core.core import pirus
 
@@ -75,7 +76,7 @@ class TestCoreLxdManager(unittest.TestCase):
 
 
     def test_100_job_CRUD_normal_workflow(self):
-        """ Check lxd job's normal worklow (without errors) """
+        """ Check lxd job's normal worklow. """
 
         fake_config = {
             "name" : "job4test",
@@ -125,7 +126,7 @@ class TestCoreLxdManager(unittest.TestCase):
 
         # restart the job
         pirus.jobs.start(job.id, asynch=False)
-        job = Job.from_id(job.id)
+        job = pirus.jobs.monitoring(job.id)
         self.assertEqual(job.status, "running")
         self.assertEqual(job.logs_moninitoring['Status'], 'Running')
 
@@ -139,6 +140,10 @@ class TestCoreLxdManager(unittest.TestCase):
         # Todo check log out/err
         job = pirus.jobs.monitoring(job.id)
         self.assertEqual(job.logs_moninitoring, {})
+
+
+        # sanitize the shell as lxd outputs probably broke it
+        exec_cmd(["stty", "sane"])
 
 
 
@@ -161,7 +166,7 @@ class TestCoreLxdManager(unittest.TestCase):
         lxd_alias = yaml.load(p0.vm_settings)["lxd_alias"]
         r, o, e = exec_cmd(["lxc", "image", "list"])
         self.assertEqual(r, 0)
-        self.assertEqual(lxd_alias in out, False)
+        self.assertEqual(lxd_alias in o, False)
 
 
 

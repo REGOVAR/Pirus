@@ -8,6 +8,7 @@ import asyncio
 import multiprocessing as mp
 import json
 import yaml
+import subprocess
 
 
 import tarfile
@@ -20,7 +21,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.expression import ClauseElement
 from sqlalchemy.orm import sessionmaker
 
-from core.framework import RegovarException
+from core.framework import *
 
 import config as C
 import ipdb
@@ -508,7 +509,10 @@ def pipeline_delete(pipeline_id):
     """
         Delete the pipeline with the provided id in the database
     """
-    __db_session.query(Pipeline).filter_by(id=pipeline_id).delete(synchronize_session=False)
+    try:
+        __db_session.query(Pipeline).filter_by(id=pipeline_id).delete(synchronize_session=False)
+    except Exception as ex:
+        err("Unable to remove pipe from database", ex)
 
 
 def pipeline_new():
