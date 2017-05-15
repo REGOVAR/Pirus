@@ -245,6 +245,9 @@ class LxdManager(PirusContainerManager):
             # set up env
             exec_cmd(["lxc", "config", "set", lxd_container, "environment.PIRUS_NOTIFY_URL", notify_url ])
             exec_cmd(["lxc", "config", "set", lxd_container, "environment.PIRUS_CONFIG_FILE", os.path.join(lxd_inputs_path, "config.json") ])
+            # Add write access to the container root user to the logsoutputs folders on the host
+            exec_cmd(["setfacl", "-Rm", "user:lxd:rwx,default:user:lxd:rwx,user:{0}:rwx,default:user:{0}:rwx".format(self.config["lxd_uid"]), logs_path])
+            exec_cmd(["setfacl", "-Rm", "user:lxd:rwx,default:user:lxd:rwx,user:{0}:rwx,default:user:{0}:rwx".format(self.config["lxd_uid"]), outputs_path])
             # set up devices
             exec_cmd(["lxc", "config", "device", "add", lxd_container, "pirus_inputs",  "disk", "source=" + inputs_path,   "path=" + lxd_inputs_path[1:], "readonly=True"])
             exec_cmd(["lxc", "config", "device", "add", lxd_container, "pirus_outputs", "disk", "source=" + outputs_path,  "path=" + lxd_outputs_path[1:]])
@@ -259,7 +262,15 @@ class LxdManager(PirusContainerManager):
             lxd_job_file = os.path.join("/", os.path.basename(job_file))
             exec_cmd(["lxc", "file", "push", job_file, lxd_container + lxd_job_file])
             exec_cmd(["lxc", "exec", lxd_container, "--",  "chmod", "+x", lxd_job_file])
-            subprocess.Popen(["lxc", "exec", lxd_container, lxd_job_file])
+            r, o, e = exec_cmd(["lxc", "exec", lxd_container, lxd_job_file, "1>", os.path.join(lxd_logs_path, "pirus.out", "2>", os.path.join(lxd_logs_path, "pirus.err"))])
+            if e.startswith("error: Container is not running."): # catch lxd error
+                job.status = "error"
+                job.save()
+                err('Error occured when starting the job {} (id={}).\n{}'.format(job.name, job.id, e))
+            else:
+                log('New job {} (id={}) start with success.'.format(job.name, job.id))
+
+
         except Exception as ex:
             raise RegovarException("Unexpected error.", "", ex)
 

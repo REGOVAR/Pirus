@@ -413,6 +413,7 @@ class PipelineManager:
         try:
             pipeline = Pipeline.from_id(pipeline_id, 1)
             if pipeline:
+                ipdb.set_trace()
                 # Clean container
                 if asynch: 
                     run_async(self.__delete, pipeline) 

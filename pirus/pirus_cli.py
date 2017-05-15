@@ -31,7 +31,7 @@ parser.add_argument("-a", "--async", help="try to execute the command asynchrono
 
 parser.add_argument("-f",  type=str, nargs='*', default=[], help=argparse.SUPPRESS)
 parser.add_argument("-i",  type=str, nargs='*', default=[], help=argparse.SUPPRESS)
-parser.add_argument("-j",  type=str, help=argparse.SUPPRESS)
+parser.add_argument("-c",  type=str, help=argparse.SUPPRESS)
 
 
 
@@ -52,26 +52,18 @@ parser.add_argument("-j",  type=str, help=argparse.SUPPRESS)
 
 parse_pipeline_help_show = """pirus pipeline  show <pipe_id>
       Display information about the requested pipe."""
+parse_pipeline_help_check = """pirus pipeline check <local_image_file>
+      Check that the image of the pipeline is supported by pirus, and have all mandatory information for the installation."""
 parse_pipeline_help_install = """pirus pipeline  install <local_image_file> [--async] [--verbose]
       Install the pipeline image on Pirus."""
-
-
+parse_pipeline_help_uninstall = """pirus pipeline uninstall <pipe_id> [--async] [--verbose]
+      Uninstall the pipeline. To avoid ambiguity, the id of the pipe must be provided."""
 parse_pipeline_help = """Manage pirus pipeline
 
 pirus pipeline list
       Display the list of pipeline installed on the server and their status.
 
-pirus pipeline show <pipe_id>
-      Display information about the requested pipe.
-
-pirus pipeline check <local_image_file>
-      Check that the image of the pipeline is supported by pirus, and have all mandatory information for the installation.
-
-pirus pipeline install <local_image_file> [--async] [--verbose]
-      Install the pipeline image on Pirus.
-
-pirus pipeline uninstall <pipe_id> [--async] [--verbose]
-      Uninstall the pipeline. To avoid ambiguity, the id of the pipe must be provided."""
+""" + parse_pipeline_help_show + "\n\n" + parse_pipeline_help_check + "\n\n" + parse_pipeline_help_install + "\n\n" + parse_pipeline_help_uninstall
 
 
 
@@ -91,7 +83,16 @@ def parse_pipeline(args, help=False, verbose=False, asynch=False):
         else:
             print(parse_pipeline_help_install)
     elif args[0] == "uninstall":
-        print("Not implemented")
+        if len(args) > 1:
+            p = Pipeline.from_id(args[1])
+            if p:
+                p = pirus.pipelines.delete(p.id, asynch=asynch)
+                if p:
+                    print ("Pipeline {} (id={}) deleted".format(p.name, p.id))
+            else:
+                print("No pipeline found with the id {}".format(args[1]))
+        else:
+            print(parse_pipeline_help_uninstall)
     elif args[0] == "list":
         if len(args) > 1 :
             print("Warning : list take only one argument... all other have been ignored.")
@@ -118,10 +119,10 @@ def parse_pipeline(args, help=False, verbose=False, asynch=False):
 
 
 
-parse_job_help_show = """pirus pipeline  show <pipe_id>
-      Display information about the requested pipe. Id or name of the pipe can be provided."""
-parse_job_help_install = """pirus pipeline  install <local_image_file> [--async] [--verbose]
-      Install the pipeline image on Pirus."""
+parse_job_help_show = """pirus job  show <pipe_id>
+      Display information about the requested job."""
+parse_job_help_new = """pirus job new <job_name> <pipeline_id> [-c|--config <json_config_file>] [-i <inputs_ids> [...]] [-f <local_file> [...]] 
+      Start a new job for the corresponding <pipeline_id> with the provided name. Inputs files can be provided with -i and or -f options."""
 
 
 parse_job_help = """Manage pirus job
@@ -132,7 +133,7 @@ pirus job list [filters...] [--help]
 pirus job  show <pipe_id>
       Display information about the requested job.
 
-pirus job init <job_name> <pipeline_id> [-j|--form <json_form>] [-i <inputs_ids> [...]] [-f <local_file> [...]] 
+pirus job new <job_name> <pipeline_id> [-c|--config <json_config_file>] [-i <inputs_ids> [...]] [-f <local_file> [...]] 
       Start a new job for the corresponding <pipeline_id> with the provided name. Inputs files can be provided with -i and or -f options.
 
 pirus job pause <job_id>
@@ -154,32 +155,35 @@ pirus job terminate <pipe_id>
 
 def parse_job(args, inputs_ids=[], files=[], form=None, help=False, verbose=False, asynch=False):
     print ("manage job command [{}] h:{} v:{} a:{}".format(",".join(args), help, verbose, asynch))
-    ipdb.set_trace()
     if len(args) == 0:
         print(parse_pipeline_help)
-    elif args[0] == "check":
-        print("Not implemented")
-    elif args[0] == "install":
-        if len(args) > 1:
-            p = pirus.pipelines.install_init_image_local(args[1], False, {"type" : "lxd"})
-            pirus.pipelines.install(p.id, asynch=asynch)
+    elif args[0] == "list":
+        if len(args) > 1 :
+            print("Warning : list take only one argument... all other have been ignored.")
+        print("\n".join([json.dumps(j.to_json(), sort_keys=True, indent=4) for j in pirus.jobs.get()]))
+    elif args[0] == "show":
+        if len(args) > 1 and args[1].isdigit():
+            j = pirus.jobs.monitoring(int(args[1]))
+            if j:
+                print(json.dumps(j.to_json(), sort_keys=True, indent=4))
+            else:
+                print("No job found with the id {}".format(args[1]))
         else:
-            print(parse_pipeline_help_install)
+            print(parse_job_help_show)
+    elif args[0] == "new":
+        if len(args) > 3:
+            print("Warning : list take only one argument... all other have been ignored.")
+        if len(args) < 3:
+            print(parse_pipeline_help_new)
+
+        j = pirus.jobs.new(int(args[2]), {"name" : args[1]}, inputs_ids, asynch)
+        print(json.dumps(j.to_json(), sort_keys=True, indent=4))
     elif args[0] == "uninstall":
         print("Not implemented")
     elif args[0] == "list":
         if len(args) > 1 :
             print("Warning : list take only one argument... all other have been ignored.")
         print("\n".join([json.dumps(p.to_json(), sort_keys=True, indent=4) for p in pirus.pipelines.get()]))
-    elif args[0] == "show":
-        if len(args) > 1 and args[1].isdigit():
-            p = Pipeline.from_id(int(args[1]), 1)
-            if p:
-                print(json.dumps(p.to_json(), sort_keys=True, indent=4))
-            else:
-                print("No pipeline found with the id {}".format(args[1]))
-        else:
-            print(parse_pipeline_help_show)
     else:
         print(parse_pipeline_help)
 
@@ -205,7 +209,7 @@ if len(args.subcommand) > 0:
     if args.subcommand[0] == "pipeline":
         parse_pipeline(args.subcommand[1:], args.help, args.verbose, args.async)
     elif args.subcommand[0] == "job":
-        parse_job(args.subcommand[1:], args.i, args.f, args.j, args.help, args.verbose, args.async)
+        parse_job(args.subcommand[1:], args.i, args.f, args.c, args.help, args.verbose, args.async)
     elif args.subcommand[0] == "file":
         print ("manage pipeline command")
     elif args.subcommand[0] == "config":

@@ -511,7 +511,9 @@ def pipeline_delete(pipeline_id):
     """
     try:
         __db_session.query(Pipeline).filter_by(id=pipeline_id).delete(synchronize_session=False)
+        __db_session.commit()
     except Exception as ex:
+        ipdb.set_trace()
         err("Unable to remove pipe from database", ex)
 
 
