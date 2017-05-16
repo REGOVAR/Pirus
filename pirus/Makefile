@@ -2,15 +2,19 @@ init:
 	pip install -r requirements.txt
 
 clear:
-	sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'pirus'"
-	sudo -u postgres psql -c "DROP DATABASE pirus"
-	sudo -u postgres psql -c "CREATE DATABASE pirus OWNER pirus"
-	psql -U pirus -d pirus -f ../install/create_all.sql
-	rm -rf /var/regovar/pirus/files/*
-	rm -rf /var/regovar/pirus/downloads/*
-	rm -rf /var/regovar/pirus/pipelines/*
-	rm -rf /var/regovar/pirus/jobs/*
-
+	database_name=$$(sed -n 's/^\s*DATABASE_NAME\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
+	sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$${database_name}'" ; \
+	sudo -u postgres psql -c "DROP DATABASE $${database_name}" ; \
+	sudo -u postgres psql -c "CREATE DATABASE $${database_name} OWNER pirus" ; \
+	psql -U pirus -d $$database_name -f ../install/create_all.sql
+	files_dir=$$(sed -n 's/^\s*FILES_DIR\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
+	test $$files_dir && rm -rf $$files_dir/*
+	temp_dir=$$(sed -n 's/^\s*TEMP_DIR\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
+	test $$temp_dir && rm -rf $$temp_dir/*
+	pipelines_dir=$$(sed -n 's/^\s*PIPELINES_DIR\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
+	test $$pipelines_dir && rm -rf $$pipelines_dir/*
+	jobs_dir=$$(sed -n 's/^\s*JOBS_DIR\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
+	test $$jobs_dir && rm -rf $$jobs_dir/*
 
 test:
 	database_name=$$(sed -n 's/^\s*DATABASE_NAME\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \
