@@ -7,7 +7,6 @@ import uuid
 import time
 import asyncio
 import subprocess
-import config as C
 
 
 from config import LOG_DIR
@@ -19,15 +18,24 @@ from config import LOG_DIR
 # TODO : find a way to manage it properly with github (subproject ?)
 #
 
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+
+
 # =====================================================================================================================
 # GENERIC TOOLS
 # =====================================================================================================================
-asyncio_main_loop = asyncio.get_event_loop()
 def run_until_complete(future):
     """
         Allow calling of an async method into a "normal" method (which is not a coroutine)
     """
-    asyncio_main_loop.run_until_complete(future)
+    asyncio.get_event_loop().run_until_complete(future)
 
 
 def run_async(future, *args):
@@ -35,7 +43,7 @@ def run_async(future, *args):
         Call a "normal" method into another thread 
         (don't block the caller method, but cannot retrieve result)
     """
-    asyncio_main_loop.run_in_executor(None, future, *args)
+    asyncio.get_event_loop().run_in_executor(None, future, *args)
 
 
 def exec_cmd(cmd, asynch=False):
@@ -47,8 +55,8 @@ def exec_cmd(cmd, asynch=False):
         subprocess.Popen(cmd)
         return True, None, None
 
-    out_tmp = '/tmp/pirus_exec_cmd_out'
-    err_tmp = '/tmp/pirus_exec_cmd_err'
+    out_tmp = '/tmp/regovar_exec_cmd_out'
+    err_tmp = '/tmp/regovar_exec_cmd_err'
     print("execute command sync : {}".format(" ".join(cmd)))
     res = subprocess.call(cmd, stdout=open(out_tmp, "w"), stderr=open(err_tmp, "w"))
     out = open(out_tmp, "r").read()
@@ -77,12 +85,12 @@ def get_pipeline_forlder_name(name:str):
 
 
 
-def plugin_running_task(task_id):
-    """
-        Todo : doc
-    """
-    result = execute_plugin.AsyncResult(task_id)
-    return result.get()
+# def plugin_running_task(task_id):
+#     """
+#         Todo : doc
+#     """
+#     result = execute_plugin.AsyncResult(task_id)
+#     return result.get()
 
 
 
@@ -124,6 +132,8 @@ def md5(file_path):
 # LOGS MANAGEMENT
 # =====================================================================================================================
 
+regovar_logger = None 
+
 
 def setup_logger(logger_name, log_file, level=logging.INFO):
     """
@@ -142,21 +152,21 @@ def setup_logger(logger_name, log_file, level=logging.INFO):
 
 
 def log(msg):
-    global rlog
-    rlog.info(msg)
+    global regovar_logger
+    regovar_logger.info(msg)
 
 
 def war(msg):
-    global rlog
-    rlog.warning(msg)
+    global regovar_logger
+    regovar_logger.warning(msg)
 
 
 def err(msg, exception=None):
-    global rlog
-    rlog.error(msg)
+    global regovar_logger
+    regovar_logger.error(msg)
     if exception and not isinstance(exception, RegovarException):
         # To avoid to log multiple time the same exception when chaining try/catch
-        rlog.exception(exception)
+        regovar_logger.exception(exception)
 
 
 
@@ -213,109 +223,6 @@ def log_snippet(longmsg, exception: RegovarException=None):
 
 
 
-# =====================================================================================================================
-# PIRUS CORE - Container Manager Abstracts
-# =====================================================================================================================
-
-class PirusContainerManager():
-    """
-        This abstract method shall be overrided by all pirus managers.
-        Pirus managers clain to manage virtualisation of job with a specific technologie.
-        Pirus managers implementations are in the core/managers/ directory
-    """
-    def __init__(self):
-        # To allow the core to know if this kind of pipeline need an image to be donwloaded for the installation
-        self.need_image_file = True
-        # Job's control features supported by this bind of pipeline
-        self.supported_features = {
-            "pause_job" : False,
-            "stop_job" : False,
-            "monitoring_job" : False
-        }
-
-
-    def install_pipeline(self, pipeline):
-        """
-            IMPLEMENTATION REQUIRED
-            Install the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
-            Return True if success; False otherwise
-        """
-        raise NotImplementedError("The abstract method \"install_pipeline\" of PirusManager must be implemented.")
-
-
-    def uninstall_pipeline(self, pipeline):
-        """
-            IMPLEMENTATION REQUIRED
-            Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
-            Note that Database and filesystem clean is done by the core. 
-
-            Return True if success; False otherwise
-        """
-        raise NotImplementedError("The abstract method \"uninstall_pipeline\" of PirusManager must be implemented.")
-
-
-
-    def init_job(self, job):
-        """
-            IMPLEMENTATION REQUIRED
-            Init a job by checking its settings (stored in database) and preparing the container for this job.
-            Return void. Must raise exception in case of error
-        """
-        raise NotImplementedError("The abstract method \"init_job\" of PirusManager must be implemented.")
-
-
-    def start_job(self, job):
-        """
-            IMPLEMENTATION REQUIRED
-            Start the job into the container. The container may already exists as this method can be call
-            after init_job and pause_job.
-            Return True if success; False otherwise
-        """
-        raise NotImplementedError("The abstract method \"start_job\" of PirusManager must be implemented.")
-
-
-    def pause_job(self, job):
-        """
-            IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Pause the execution of the job to save server resources by example
-            Return True if success; False otherwise
-        """
-        if self.supported_features["pause_job"]:
-            raise RegovarException("The abstract method \"pause_job\" of PirusManager shall be implemented.")
-
-
-    def stop_job(self, job):
-        """
-            IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Stop the job. The job is canceled and the container shall be destroyed
-            Return True if success; False otherwise
-        """
-        if self.supported_features["stop_job"]:
-            raise RegovarException("The abstract method \"stop_job\" of PirusManager shall be implemented.")
-
-
-    def monitoring_job(self, job):
-        """
-            IMPLEMENTATION OPTIONAL (according to self.supported_features)
-            Provide monitoring information about the container (CPU/RAM used, etc)
-            This method is always called synchronously, so take care to not take to much time to retrieve informations
-            Return monitoring information as json.
-        """
-        if self.supported_features["monitoring_job"]:
-            raise RegovarException("The abstract method \"monitoring_job\" of PirusManager shall be implemented.")
-
-
-    def finalize_job(self, job):
-        """
-            IMPLEMENTATION REQUIRED
-            Clean temp resources created by the container (log shall be kept)
-            Return True if success; False otherwise
-        """
-        raise NotImplementedError("The abstract method \"terminate_job\" of PirusManager must be implemented.")
-
-
-
-
 
 
 
@@ -333,6 +240,6 @@ class PirusContainerManager():
 # INIT OBJECTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-# Create pirus logger : plog
-setup_logger('pirus', os.path.join(LOG_DIR, "pirus.log"))
-rlog = logging.getLogger('pirus')
+# Create logger
+setup_logger('regovar', os.path.join(LOG_DIR, "regovar.log"))
+regovar_logger = logging.getLogger('regovar')

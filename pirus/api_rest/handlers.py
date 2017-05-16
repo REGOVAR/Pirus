@@ -19,10 +19,12 @@ from aiohttp import web, MultiDict
 from urllib.parse import parse_qsl
 
 
-from core.framework import *
+from config import *
+from core.framework.common import *
+from core.framework.tus import *
 from core.model import *
-from core.core import *
-from api_rest.tus import *
+from core.core import core
+
 
 
 
@@ -74,7 +76,7 @@ def rest_notify_all(src, msg):
             ws[0].send_str(msg)
 
 # Give to the core the delegate to call to notify all via websockets
-pirus.notify_all = rest_notify_all
+core.notify_all = rest_notify_all
 
 
 
@@ -179,7 +181,7 @@ class FileWrapper (TusFileWrapper):
     def complete(self, checksum=None, checksum_type="md5"):
         try:
             log ('Upload of the file (id={0}) is complete.'.format(self.id))
-            pirus.files.upload_finish(self.id, checksum, checksum_type)
+            core.files.upload_finish(self.id, checksum, checksum_type)
         except Exception as ex:
             return TusManager.build_response(code=500, body="Unexpected error occured: {}".format(ex))
 
@@ -189,7 +191,7 @@ class FileWrapper (TusFileWrapper):
         """ 
             Create and return the wrapper to manipulate the uploading file
         """
-        pfile = pirus.files.upload_init(filename, file_size)
+        pfile = core.files.upload_init(filename, file_size)
         return FileWrapper(pfile.id)
 
 
@@ -224,12 +226,12 @@ class WebsiteHandler:
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
         data = {
-            "pipes_inprogress" : [p.to_json() for p in pirus.pipelines.get(order='name', depth=1) if p.status in ["uploading", "pause", "installing"]],
-            "files_all"        : [f.to_json() for f in pirus.files.get(order='create_date desc', depth=1)],
-            "files_inprogress" : [f.to_json() for f in pirus.files.get(order='create_date desc', depth=1) if f.status in ["uploading", "pause"]],
-            "pipes"            : [p.to_json() for p in pirus.pipelines.get(query={"status" : "ready"}, order='name', depth=1)],
-            "jobs_done"        : [j.to_json() for j in pirus.jobs.get(order='start_date desc', depth=1) if j.status in ["error", "done", "canceled"]],
-            "jobs_inprogress"  : [j.to_json() for j in pirus.jobs.get(order='start_date desc', depth=1) if j.status in ["waiting", "pause", "initializing", "running", "finalizing"]], 
+            "pipes_inprogress" : [p.to_json() for p in core.pipelines.get(order='name', depth=1) if p.status in ["uploading", "pause", "installing"]],
+            "files_all"        : [f.to_json() for f in core.files.get(order='create_date desc', depth=1)],
+            "files_inprogress" : [f.to_json() for f in core.files.get(order='create_date desc', depth=1) if f.status in ["uploading", "pause"]],
+            "pipes"            : [p.to_json() for p in core.pipelines.get(query={"status" : "ready"}, order='name', depth=1)],
+            "jobs_done"        : [j.to_json() for j in core.jobs.get(order='start_date desc', depth=1) if j.status in ["error", "done", "canceled"]],
+            "jobs_inprogress"  : [j.to_json() for j in core.jobs.get(order='start_date desc', depth=1) if j.status in ["waiting", "pause", "initializing", "running", "finalizing"]], 
             "hostname"         : HOST_P
         }
         for f in data["files_all"]: 
@@ -296,7 +298,7 @@ class FileHandler:
             "range_max"    : RANGE_MAX,
         }
         # Return result of the query for PirusFile 
-        files = pirus.files.get(fields, query, order, offset, limit, depth)
+        files = core.files.get(fields, query, order, offset, limit, depth)
         return rest_success([f.to_json() for f in files], range_data)
 
 
@@ -311,7 +313,7 @@ class FileHandler:
     def delete(self, request):
         file_id = request.match_info.get('file_id', "")
         try:
-            return rest_success(pirus.files.delete(file_id).to_json())
+            return rest_success(core.files.delete(file_id).to_json())
         except Exception as ex:
             return rest_error("Error occured : " + str(ex))
 
@@ -412,7 +414,7 @@ class PipelineHandler:
             "range_total"  : Pipeline.count(),
             "range_max"    : RANGE_MAX,
         }
-        pipes = pirus.pipelines.get(fields, query, order, offset, limit, depth)
+        pipes = core.pipelines.get(fields, query, order, offset, limit, depth)
         return rest_success([p.to_json() for p in pipes], range_data)
 
 
@@ -421,7 +423,7 @@ class PipelineHandler:
     def delete(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         try:
-            pipe = pirus.pipelines.delete(pipe_id)
+            pipe = core.pipelines.delete(pipe_id)
         except Exception as ex:
             # TODO : manage error
             return rest_error("Unable to delete the pipeline with id {} : {}".format(pipe_id, str(ex)))
@@ -479,14 +481,14 @@ class JobHandler:
             "range_total"  : Job.count(),
             "range_max"    : RANGE_MAX,
         }
-        jobs = pirus.jobs.get(fields, query, order, offset, limit, depth)
+        jobs = core.jobs.get(fields, query, order, offset, limit, depth)
         return rest_success([j.to_json() for j in jobs], range_data)
 
 
     def delete(self, request):
         job_id = request.match_info.get('job_id', "")
         try:
-            return rest_success(pirus.jobs.delete(job_id).to_json())
+            return rest_success(core.jobs.delete(job_id).to_json())
         except Exception as error:
             return rest_error("Unable to delete the job (id={}) : {}".format(job_id, error.msg))
 
@@ -526,7 +528,7 @@ class JobHandler:
 
     def get_plog(self, request):
         job_id = request.match_info.get('job_id', -1)
-        return self.download_file(job_id, "logs/pirus.log")
+        return self.download_file(job_id, "logs/core.log")
 
     def get_olog_tail(self, request):
         job_id = request.match_info.get('job_id', -1)
@@ -538,7 +540,7 @@ class JobHandler:
 
     def get_plog_tail(self, request):
         job_id = request.match_info.get('job_id', -1)
-        return self.download_file(job_id, "logs/pirus.log")
+        return self.download_file(job_id, "logs/core.log")
 
     def get_io(self, request):
         job_id  = request.match_info.get('job_id',  -1)
@@ -565,7 +567,7 @@ class JobHandler:
         job_id = request.match_info.get('job_id', -1)
         try:
             if "status" in data.keys():
-                pirus.jobs.set_status(job_id, data["status"])
+                core.jobs.set_status(job_id, data["status"])
             job = Job.from_id(job_id)
             job.load(data)
         except Exception as ex:
@@ -584,7 +586,7 @@ class JobHandler:
         inputs = data["inputs"]
         # Create the job 
         try:
-            job = pirus.jobs.new(pipe_id, config, inputs, asynch=True)
+            job = core.jobs.new(pipe_id, config, inputs, asynch=True)
         except Exception as ex:
             return rest_error("Error occured when initializing the new job. {}".format(ex))
         if job is None:
@@ -595,7 +597,7 @@ class JobHandler:
     def get_pause(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
-            pirus.jobs.pause(job_id)
+            core.jobs.pause(job_id)
         except Exception as ex:
             return rest_error("Unable to pause the job {}. {}".format(job.id, ex))
         return rest_success()
@@ -604,7 +606,7 @@ class JobHandler:
     def get_play(self, request):
         job_id  = request.match_info.get('job_id', -1)
         try:
-            pirus.jobs.play(job_id)
+            core.jobs.play(job_id)
         except Exception as ex:
             return rest_error("Unable to start the job {}. {}".format(job.id, ex))
         return rest_success()
@@ -613,7 +615,7 @@ class JobHandler:
     def get_stop(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
-            pirus.jobs.stop(job_id)
+            core.jobs.stop(job_id)
         except Exception as ex:
             return rest_error("Unable to stop the job {}. {}".format(job.id, ex))
         return rest_success()
@@ -622,7 +624,7 @@ class JobHandler:
     def get_monitoring(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
-            job = pirus.jobs.monitoring(job_id)
+            job = core.jobs.monitoring(job_id)
         except Exception as ex:
             return rest_error("Unable to retrieve monitoring info for the jobs with id={}. {}".format(job_id, ex))
         result = job.to_json()
