@@ -1,5 +1,5 @@
 -- 
--- CREATE ALL - V1.0.0
+-- CREATE ALL - V0.2.0
 --
 CREATE TYPE file_status AS ENUM ('uploading', 'uploaded', 'checked', 'error');
 CREATE TYPE pipe_status AS ENUM ('initializing', 'installing', 'ready', 'error');
