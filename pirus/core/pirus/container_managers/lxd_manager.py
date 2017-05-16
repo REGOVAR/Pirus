@@ -211,12 +211,19 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def init_job(self, job, asynch=False):
+    def init_job(self, job, asynch=False, auto_notify=True):
         """
             Init a job :
             - check settings (stored in database) 
             - create the lxd container from pipeline image
             - configure container and mount I/O directories to the filesystem
+
+            asynch : execute the start command of the run asynchronously
+            auto_notify : tell the container to send 2 notifications :
+                          the first one before starting to update status to "running"
+                          the last one at the end of the job to update status to "finalizing"
+                          if set to false, you will have to monitore yourself the execution of the job
+                          to finalize it when its done.
         """
         # Setting up the lxc container for the job
         lxd_container = os.path.basename(job.root_path)
@@ -237,12 +244,18 @@ class LxdManager(PirusContainerManager):
             log(job_file)
             with open(job_file, 'w') as f:
                 f.write("#!/bin/bash\n")
-                f.write("curl -X POST -d '{{\"status\" : \"running\"}}' {}\n".format(notify_url))
+                if auto_notify:
+                    f.write("curl -X POST -d '{{\"status\" : \"running\"}}' {}\n".format(notify_url))
+                else:
+                    job.status = "running"
+                    job.save()
+
                 # TODO : catch if execution return error and notify pirus with error status
                 f.write("chmod +x {}\n".format(lxd_job_cmd)) # ensure that we can execute the job's script
                 f.write("{} 1> {} 2> {}".format(lxd_job_cmd, os.path.join(lxd_logs_path, 'out.log'), os.path.join(lxd_logs_path, "err.log\n"))) #  || curl -X POST -d '{\"status\" : \"error\"}' " + notify_url + "
                 f.write("chown -Rf {}:{} {}\n".format(self.config["pirus_uid"], self.config["pirus_gid"], lxd_outputs_path))
-                f.write("curl -X POST -d '{{\"status\" : \"finalizing\"}}' {}\n".format(notify_url))
+                if auto_notify:
+                    f.write("curl -X POST -d '{{\"status\" : \"finalizing\"}}' {}\n".format(notify_url))
                 os.chmod(job_file, 0o777)
             # create container
             exec_cmd(["lxc", "init", lxd_image, lxd_container])
@@ -268,7 +281,7 @@ class LxdManager(PirusContainerManager):
             exec_cmd(["lxc", "exec", "--mode=non-interactive", lxd_container, "--",  "chmod", "+x", lxd_job_file])
 
             cmd = ["lxc", "exec", lxd_container, lxd_job_file]
-            subprocess.Popen(cmd)
+            exec_cmd(cmd, asynch=True)
             # TODO : keep future callback and catch error if start command failled
 
             # if not asynch:
@@ -334,7 +347,7 @@ class LxdManager(PirusContainerManager):
 
 
 
-    def monitoring_job(self, job, asynch=False):
+    def monitoring_job(self, job):
         """
             Provide monitoring information about the container (CPU/RAM used, etc)
         """
@@ -346,7 +359,7 @@ class LxdManager(PirusContainerManager):
             # TODO : to be reimplemented with pylxd api when this feature will be available :)
 
             r, o, e = exec_cmd(["lxc", "info", lxd_container])
-            if r:
+            if r == 0:
                 for l in o.split('\n'):
                     data = l.split(': ')
                     if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:

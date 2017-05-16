@@ -28,7 +28,7 @@ from core.core import core
 class TestCoreLxdManager(unittest.TestCase):
     """ Test case for lxd container management. """
 
-    IMAGE_FILE_PATH = "/var/regovar/pirus/_pipes/PirusTest.tar.gz"
+    IMAGE_FILE_PATH = "/var/regovar/pirus/_pipes/PirusTest2.tar.gz"
     MAX_WAITING_4_INSTALL = 60 # 60s (actually, installing PirusSimple need ~45s)
 
 
@@ -84,14 +84,13 @@ class TestCoreLxdManager(unittest.TestCase):
             "duration" : 20,
             "crash" : False,
             "outfilename" : "result.txt",
-            "notification_enable" : False # as by running in TU we didn't have servert to answer
+            "notification_enable" : False # as by running in TU we didn't have server to answer
         }
 
 
 
         # Create a new job
-        ipdb.set_trace()
-        job = core.jobs.new(TestCoreLxdManager.pid, fake_config, asynch=False)
+        job = core.jobs.new(TestCoreLxdManager.pid, fake_config, asynch=False, auto_notify=False)
         lxd_name = os.path.basename(job.root_path)
         self.assertEqual(job.status, "running")
         self.assertEqual(os.path.exists(job.root_path), True)

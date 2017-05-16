@@ -23,7 +23,7 @@ class PirusContainerManager():
         }
 
 
-    def install_pipeline(self, pipeline):
+    def install_pipeline(self, pipeline, asynch=False):
         """
             IMPLEMENTATION REQUIRED
             Install the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
@@ -32,7 +32,7 @@ class PirusContainerManager():
         raise NotImplementedError("The abstract method \"install_pipeline\" of PirusManager must be implemented.")
 
 
-    def uninstall_pipeline(self, pipeline):
+    def uninstall_pipeline(self, pipeline, asynch=False):
         """
             IMPLEMENTATION REQUIRED
             Uninstall the pipeline image according to the dedicated technology (LXD, Docker, Biobox, ...)
@@ -44,16 +44,22 @@ class PirusContainerManager():
 
 
 
-    def init_job(self, job):
+    def init_job(self, job, asynch=False, auto_notify=True):
         """
             IMPLEMENTATION REQUIRED
             Init a job by checking its settings (stored in database) and preparing the container for this job.
+              asynch : execute the start command of the run asynchronously
+              auto_notify : tell the container to send 2 notifications :
+                            the first one before starting to update status to "running"
+                            the last one at the end of the job to update status to "finalizing"
+                            if set to false, you will have to monitore yourself the execution of the job
+                            to finalize it when its done.
             Return void. Must raise exception in case of error
         """
         raise NotImplementedError("The abstract method \"init_job\" of PirusManager must be implemented.")
 
 
-    def start_job(self, job):
+    def start_job(self, job, asynch=False):
         """
             IMPLEMENTATION REQUIRED
             Start the job into the container. The container may already exists as this method can be call
@@ -63,7 +69,7 @@ class PirusContainerManager():
         raise NotImplementedError("The abstract method \"start_job\" of PirusManager must be implemented.")
 
 
-    def pause_job(self, job):
+    def pause_job(self, job, asynch=False):
         """
             IMPLEMENTATION OPTIONAL (according to self.supported_features)
             Pause the execution of the job to save server resources by example
@@ -73,7 +79,7 @@ class PirusContainerManager():
             raise RegovarException("The abstract method \"pause_job\" of PirusManager shall be implemented.")
 
 
-    def stop_job(self, job):
+    def stop_job(self, job, asynch=False):
         """
             IMPLEMENTATION OPTIONAL (according to self.supported_features)
             Stop the job. The job is canceled and the container shall be destroyed

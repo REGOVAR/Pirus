@@ -30,36 +30,36 @@ class FakeContainerManager4Test(PirusContainerManager):
 
 
 
-    def install_pipeline(self, pipeline):
+    def install_pipeline(self, pipeline, asynch=False):
         """ Fake installation, success if pipeline's name contains "success"; failed otherwise """
         self.is_installed = "success" in pipeline.name
         return self.is_installed
 
-    def uninstall_pipeline(self, pipeline):
+    def uninstall_pipeline(self, pipeline, asynch=False):
         """ Fake uninstallation, success if pipeline's name contains "success"; failed otherwise """
         self.is_installed = "success" in pipeline.name
         return self.is_installed
 
-    def init_job(self, job):
+    def init_job(self, job, asynch=False, auto_notify=True):
         """ Fake init job : success if job's name contains "success"; failed otherwise """
         self.is_init = True
 
         return "success" in job.name
 
 
-    def start_job(self, job):
+    def start_job(self, job, asynch=False):
         """ Fake start job : success if job's name contains "success"; failed otherwise """
         self.is_running = True
         return "success" in job.name
 
 
-    def pause_job(self, job):
+    def pause_job(self, job, asynch=False):
         """ Fake pause job : success if job's name contains "success"; failed otherwise """
         self.is_paused = True
         return "success" in job.name
 
 
-    def stop_job(self, job):
+    def stop_job(self, job, asynch=False):
         """ Fake stop job : success if job's name contains "success"; failed otherwise """
         self.is_stoped = True
         return "success" in job.name
@@ -70,12 +70,7 @@ class FakeContainerManager4Test(PirusContainerManager):
         return {"monitoring_field" : True}
 
 
-    def finalize_job(self, job):
+    def finalize_job(self, job, asynch=False):
         """ Fake finalize job : success if job's name contains "success"; failed otherwise """
         self.is_finalized = True
-        return "success" in job.name
-
-
-    def delete_job(self, job):
-        """ Fake delete job : success if job's name contains "success"; failed otherwise """
         return "success" in job.name

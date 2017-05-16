@@ -51,7 +51,7 @@ class JobManager:
 
 
 
-    def new(self, pipeline_id, config, inputs_ids=[], asynch=True):
+    def new(self, pipeline_id, config, inputs_ids=[], asynch=True, auto_notify=True):
         """
             Create a new job for the specified pipepline (pipeline_id), with provided config and input's files ids
         """
@@ -116,10 +116,10 @@ class JobManager:
         # Call init of the container
         # if asynch: 
         #     print("run init async")
-        #     run_async(self.__init_job, job.id, asynch)
+        #     run_async(self.__init_job, job.id, asynch, auto_notify)
         # else:
         #     print("run init")
-        self.__init_job(job.id, asynch)
+        self.__init_job(job.id, asynch, auto_notify)
 
         # Return job object
         return Job.from_id(job.id)
@@ -293,7 +293,7 @@ class JobManager:
             core.notify_all({"action": "job_updated", "data" : [job.to_json()]})
 
 
-    def __init_job(self, job_id, asynch):
+    def __init_job(self, job_id, asynch, auto_notify):
         """
             Call manager to prepare the container for the job.
         """
@@ -302,7 +302,7 @@ class JobManager:
         job = Job.from_id(job_id, 1)
         if job and job.status == "initializing":
             try:
-                success = core.container_managers[job.pipeline.type].init_job(job, asynch)
+                success = core.container_managers[job.pipeline.type].init_job(job, asynch, auto_notify)
             except Exception as ex:
                 # TODO : Manage error
                 self.set_status(job, "error", asynch)

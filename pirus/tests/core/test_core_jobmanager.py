@@ -52,7 +52,7 @@ class TestCoreJobManager(unittest.TestCase):
     # TESTS
     # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-    def test_main_workflow_without_error(self):
+    def test_main_workflow(self):
         """ Check that job core's workflow, for job, is working as expected. """
 
         # install the fake pipeline
@@ -105,20 +105,6 @@ class TestCoreJobManager(unittest.TestCase):
         self.assertEqual(os.path.exists(job.root_path), False)
 
 
-
-
-    def test_main_workflow_with_error(self):
-
-        # init job 
-
-        # start job
-
-        # check error
-
-        # check that terminate job have been automaticaly called by the manager 
-
-        # check i/o files of the job
-        pass
 
 
 

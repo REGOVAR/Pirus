@@ -1,5 +1,6 @@
 #!env/python3
 # coding: utf-8
+import ipdb
 import os
 
 
@@ -133,7 +134,6 @@ def pipeline_delete(pipeline_id):
         session().query(Pipeline).filter_by(id=pipeline_id).delete(synchronize_session=False)
         session().commit()
     except Exception as ex:
-        ipdb.set_trace()
         err("Unable to remove pipe from database", ex)
 
 
