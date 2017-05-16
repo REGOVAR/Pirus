@@ -27,8 +27,9 @@ test:
 
 
 install:
-	cp ../install/config.default config.py
-	echo "Don't forget to update the config.py file with your settings"
+	../install/install.sh
+	# cp ../install/config.default config.py
+	# echo "Don't forget to update the config.py file with your settings"
 
 
 # > pirus.out 2>pirus_error.out  &
