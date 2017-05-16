@@ -27,14 +27,25 @@ test:
 
 
 install:
+	pirus_uid=$$(id -u pirus) ; \
+	pirus_gid=$$(id -g pirus) ; \
+	lxd_uid=$$(awk -F : '/lxd/ { print $$2 }' /etc/subuid) ; \
+	lxd_gid=$$(awk -F : '/lxd/ { print $$2 }' /etc/subgid) ; \
+	< ../install/config.default > config.py sed " \
+		s/\(^\s*PIRUS_UID\s*=\s*\)[0-9]\+/\1$$pirus_uid/ ; \
+		s/\(^\s*PIRUS_GID\s*=\s*\)[0-9]\+/\1$$pirus_gid/ ; \
+		s/\(^\s*LXD_UID\s*=\s*\)[0-9]\+/\1$$lxd_uid/ ; \
+		s/\(^\s*LXD_GID\s*=\s*\)[0-9]\+/\1$$lxd_gid/ ; \
+	"
+	# To be done in the install script to allow user to see uid/guid that have been retrieved.
+	echo "Don't forget to update the config.py file with your settings"
 	../install/install.sh
-	# cp ../install/config.default config.py
-	# echo "Don't forget to update the config.py file with your settings"
+	
 
 
 # > pirus.out 2>pirus_error.out  &
 app:
-	python pirus_server.py 
+	python pirus_server.py
 
 stop:
 	ps -ef | grep pirus_server | awk '{print $$2}'  | xargs sudo kill -9
