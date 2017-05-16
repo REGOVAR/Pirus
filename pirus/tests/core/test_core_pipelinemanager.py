@@ -8,9 +8,12 @@ import asyncio
 import time
 
 from config import *
-from core.framework import PirusContainerManager, run_until_complete
-from core.model import File, Pipeline
-from core.core import pirus
+from core.framework.common import run_until_complete
+from core.model.file import File
+from core.model.pipeline import Pipeline
+from core.core import core
+
+from tests.core.fake_container_manager import FakeContainerManager4Test
 
 
 
@@ -38,8 +41,7 @@ class TestCorePipelineManager(unittest.TestCase):
             "job_name" : "TU-fake-job-{}",
             "image_name" : "TU-fake-pipe-{}",
         }
-
-        pass
+        core.container_managers["FakeManager4Test"] = FakeContainerManager4Test()
 
 
     @classmethod
@@ -59,7 +61,7 @@ class TestCorePipelineManager(unittest.TestCase):
         """ Check that pipeline core's workflow, for pipeline installed from remote image, is working as expected. """
 
         # Upload init
-        p, f = pirus.pipelines.install_init_image_upload("test_image_success.tar.gz", 10, {"type" : "FakeManager4Test"})
+        p, f = core.pipelines.install_init_image_upload("test_image_success.tar.gz", 10, {"type" : "FakeManager4Test"})
         self.assertEqual(f.name, "test_image_success.tar.gz")
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, 0)
@@ -73,15 +75,15 @@ class TestCorePipelineManager(unittest.TestCase):
         old_path = f.path
 
         # Upload chunk
-        f = pirus.files.upload_chunk(f.id, 0, 5, b'chunk')
+        f = core.files.upload_chunk(f.id, 0, 5, b'chunk')
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, 5)
         self.assertEqual(f.status, "uploading")
         self.assertEqual(p.status, "initializing")
-        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_installed, False)
+        self.assertEqual(core.container_managers["FakeManager4Test"].is_installed, False)
 
         # Upload finish -> installation shall start automatically as the type have been set
-        f = pirus.files.upload_chunk(f.id, 5, 5, b'chunk')
+        f = core.files.upload_chunk(f.id, 5, 5, b'chunk')
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, f.size)
         self.assertEqual(f.status, "uploaded")
@@ -94,16 +96,17 @@ class TestCorePipelineManager(unittest.TestCase):
 
         # Check that install_pipeline method have been successfully called
         p = Pipeline.from_id(p.id)
-        self.assertEqual(pirus.container_managers["FakeManager4Test"].is_installed, True)
+        self.assertEqual(core.container_managers["FakeManager4Test"].is_installed, True)
         self.assertEqual(p.status, "ready")
 
         # Delete pipeline
+        pid = p.id
+        iid = p.image_file_id
         path = f.path
-        r = pirus.pipelines.delete(p.id)
+        r = core.pipelines.delete(pid)
         self.assertEqual(isinstance(r, Pipeline), True)
-        self.assertEqual(r.id, p.id)
-        self.assertEqual(Pipeline.from_id(p.id), None)
-        self.assertEqual(File.from_id(p.image_file_id), None)
+        self.assertEqual(Pipeline.from_id(pid), None)
+        self.assertEqual(File.from_id(iid), None)
         self.assertEqual(os.path.isfile(path), False)
 
 

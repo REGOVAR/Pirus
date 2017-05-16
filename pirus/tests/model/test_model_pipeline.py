@@ -113,8 +113,9 @@ class TestModelPipeline(unittest.TestCase):
         # UPDATE
         p1.name = "TestPipeline"
         p1.save()
+        pid = p1.id
         # READ
-        p2 = Pipeline.from_id(p1.id)
+        p2 = Pipeline.from_id(pid)
         self.assertEqual(p2.name, "TestPipeline")
         self.assertEqual(p2.installation_date, p1.installation_date)
         # UPDATE loading
@@ -145,11 +146,11 @@ class TestModelPipeline(unittest.TestCase):
         self.assertEqual(configjson["param2"][1], 2)
         self.assertEqual(p2.ui_form,'{"param1" : 1, "param2" : [1,2,3]}')
         # READ
-        p3 = Pipeline.from_id(p1.id, 1)
+        p3 = Pipeline.from_id(pid, 1)
         self.assertEqual(p3.status,"ready")
         self.assertEqual(p3.image_file_id, 1)
         # DELETE
-        Pipeline.delete(p3.id)
-        p4 = Pipeline.from_id(p3.id)
+        Pipeline.delete(pid)
+        p4 = Pipeline.from_id(pid)
         self.assertEqual(p4, None)
         self.assertEqual(Pipeline.count(), total)

@@ -17,7 +17,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-TU_PIRUS_JOB_PUBLIC_FIELDS = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
+TU_PIRUS_JOB_PUBLIC_FIELDS = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
 
 
 

@@ -97,11 +97,7 @@ def job_init(self, loading_depth=0):
         else:
             self.outputs_ids.append(f.file_id)
     self.load_depth(loading_depth)
-            
 
-
-def job_container_name(self):
-    "{}{}-{}".format(LXD_CONTAINER_PREFIX, job.pipeline_id, job.id)
 
 def job_load_depth(self, loading_depth):
     from core.model.file import File
@@ -124,6 +120,11 @@ def job_load_depth(self, loading_depth):
                     self.outputs.append(f)
         except Exception as err:
             raise RegovarException("File data corrupted (id={}).".format(self.id), "", err)
+            
+
+
+def job_container_name(self):
+    "{}{}-{}".format(LXD_CONTAINER_PREFIX, job.pipeline_id, job.id)
 
 
 
@@ -166,11 +167,14 @@ def job_to_json(self, fields=None):
                 result.update({"inputs" : [i.to_json() for i in self.inputs]})
             else:
                 result.update({"inputs" : self.inputs})
-        elif f == "inputs":
+        elif f == "outputs":
             if self.loading_depth == 0:
                 result.update({"outputs" : [o.to_json() for o in self.outputs]})
             else:
                 result.update({"outputs" : self.outputs})
+        elif f == "pipeline":
+            if self.loading_depth > 0:
+                result.update({"pipeline" : self.pipeline.to_json()})
         elif f == "config" and self.config:
             result.update({f: json.loads(self.config)})
         else:
@@ -247,7 +251,7 @@ def job_count():
 
 
 Job = Base.classes.job
-Job.public_fields = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
+Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
 Job.init = job_init
 Job.load_depth = job_load_depth
 Job.from_id = job_from_id

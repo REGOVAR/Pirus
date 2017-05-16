@@ -52,7 +52,7 @@ def exec_cmd(cmd, asynch=False):
     """
     if asynch:
         print("execute command async : {}".format(" ".join(cmd)))
-        subprocess.Popen(cmd)
+        subprocess.Popen(cmd, stdout=open(os.devnull, 'w'), stderr=open(os.devnull, 'w'))
         return True, None, None
 
     out_tmp = '/tmp/regovar_exec_cmd_out'

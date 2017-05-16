@@ -7,6 +7,7 @@ import yaml
 import tarfile
 import ipdb
 import subprocess
+import shutil
 
 from config import *
 from core.framework.common import *
@@ -264,20 +265,23 @@ class LxdManager(PirusContainerManager):
             exec_cmd(["lxc", "start", lxd_container])
             lxd_job_file = os.path.join("/", os.path.basename(job_file))
             exec_cmd(["lxc", "file", "push", job_file, lxd_container + lxd_job_file])
-            exec_cmd(["lxc", "exec", lxd_container, "--",  "chmod", "+x", lxd_job_file])
+            exec_cmd(["lxc", "exec", "--mode=non-interactive", lxd_container, "--",  "chmod", "+x", lxd_job_file])
 
             cmd = ["lxc", "exec", lxd_container, lxd_job_file]
-            if not asynch:
-                r, o, e = exec_cmd(cmd)
-                if e.startswith("error: Container is not running."): # catch lxd error
-                    job.status = "error"
-                    job.save()
-                    err('Error occured when starting the job {} (id={}).\n{}'.format(job.name, job.id, e))
-                else:
-                    log('New job {} (id={}) start with success.'.format(job.name, job.id))
-            else:
-                subprocess.Popen(cmd)
-                return True
+            subprocess.Popen(cmd)
+            # TODO : keep future callback and catch error if start command failled
+
+            # if not asynch:
+            #     r, o, e = exec_cmd(cmd)
+            #     if e.startswith("error: Container is not running."): # catch lxd error
+            #         job.status = "error"
+            #         job.save()
+            #         err('Error occured when starting the job {} (id={}).\n{}'.format(job.name, job.id, e))
+            #     else:
+            #         log('New job {} (id={}) start with success.'.format(job.name, job.id))
+            # else:
+            #     subprocess.Popen(cmd)
+            #     return True
         except Exception as ex:
             raise RegovarException("Unexpected error.", "", ex)
 
@@ -340,11 +344,13 @@ class LxdManager(PirusContainerManager):
         # Lxd monitoring data
         try:
             # TODO : to be reimplemented with pylxd api when this feature will be available :)
-            out = subprocess.check_output(["lxc", "info", lxd_container])
-            for l in out.decode().split('\n'):
-                data = l.split(': ')
-                if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
-                    result.update({data[0].strip(): data[1]})
+
+            r, o, e = exec_cmd(["lxc", "info", lxd_container])
+            if r:
+                for l in o.split('\n'):
+                    data = l.split(': ')
+                    if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
+                        result.update({data[0].strip(): data[1]})
         except Exception as ex:
             err("Error occured when trying to finalize the job {} (id={})".format(lxd_container, job.id), ex)
         return result

@@ -6,8 +6,8 @@ import os
 import unittest
 
 from config import *
-from core.model import File
-from core.core import pirus
+from core.model.file import File
+from core.core import core
 
 
 
@@ -47,7 +47,7 @@ class TestCoreFileManager(unittest.TestCase):
         """ Check that upload's features are working as expected """
 
         # Upload init
-        f = pirus.files.upload_init("test_upload.tar.gz", 10, {'tags':'Coucou'})
+        f = core.files.upload_init("test_upload.tar.gz", 10, {'tags':'Coucou'})
         self.assertEqual(f.name, "test_upload.tar.gz")
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, 0)
@@ -57,7 +57,7 @@ class TestCoreFileManager(unittest.TestCase):
         old_path = f.path
 
         # Upload chunk
-        f = pirus.files.upload_chunk(f.id, 0, 5, b'chunk')
+        f = core.files.upload_chunk(f.id, 0, 5, b'chunk')
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, 5)
         self.assertEqual(f.status, "uploading")
@@ -65,7 +65,7 @@ class TestCoreFileManager(unittest.TestCase):
         self.assertEqual(os.path.getsize(f.path), f.upload_offset)
 
         # Upload finish
-        f = pirus.files.upload_chunk(f.id, 5, 5, b'chunk')
+        f = core.files.upload_chunk(f.id, 5, 5, b'chunk')
         self.assertEqual(f.size, 10)
         self.assertEqual(f.upload_offset, f.size)
         self.assertEqual(f.status, "uploaded")
@@ -80,7 +80,7 @@ class TestCoreFileManager(unittest.TestCase):
         self.assertEqual(c, ['chunkchunk'])
 
         # Delete file
-        pirus.files.delete(f.id)
+        core.files.delete(f.id)
         f2 = File.from_id(f.id)
         self.assertEqual(f2, None)
         self.assertEqual(os.path.isfile(f.path), False)
@@ -105,7 +105,7 @@ class TestCoreFileManager(unittest.TestCase):
             f.write("Test it")
 
         # import it in Pirus
-        f = pirus.files.from_local(path)
+        f = core.files.from_local(path)
         self.assertEqual(os.path.isfile(path),True)
         self.assertEqual(f.name, "pirus_tu_filemanager_import_from_local.test")
         self.assertEqual(f.path.startswith(FILES_DIR), True)
@@ -119,6 +119,6 @@ class TestCoreFileManager(unittest.TestCase):
         self.assertEqual(c, ['Test it'])
 
         # Delete file
-        pirus.files.delete(f.id)
+        core.files.delete(f.id)
 
 

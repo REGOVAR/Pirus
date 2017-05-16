@@ -4,7 +4,7 @@
 
 import os
 from config import JOBS_DIR
-from core.framework import PirusContainerManager
+from core.pirus.container_managers.pirus_container_manager import PirusContainerManager
 
 
 class FakeContainerManager4Test(PirusContainerManager):

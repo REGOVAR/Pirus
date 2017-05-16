@@ -10,7 +10,7 @@ import json
 from argparse import RawTextHelpFormatter
 from config import *
 from core.model import *
-from core.core import pirus
+from core.core import core
 
 
 
@@ -78,15 +78,15 @@ def parse_pipeline(args, help=False, verbose=False, asynch=False):
         print("Not implemented")
     elif args[0] == "install":
         if len(args) > 1:
-            p = pirus.pipelines.install_init_image_local(args[1], False, {"type" : "lxd"})
-            pirus.pipelines.install(p.id, asynch=asynch)
+            p = core.pipelines.install_init_image_local(args[1], False, {"type" : "lxd"})
+            core.pipelines.install(p.id, asynch=asynch)
         else:
             print(parse_pipeline_help_install)
     elif args[0] == "uninstall":
         if len(args) > 1:
             p = Pipeline.from_id(args[1])
             if p:
-                p = pirus.pipelines.delete(p.id, asynch=asynch)
+                p = core.pipelines.delete(p.id, asynch=asynch)
                 if p:
                     print ("Pipeline {} (id={}) deleted".format(p.name, p.id))
             else:
@@ -96,7 +96,7 @@ def parse_pipeline(args, help=False, verbose=False, asynch=False):
     elif args[0] == "list":
         if len(args) > 1 :
             print("Warning : list take only one argument... all other have been ignored.")
-        print("\n".join([json.dumps(p.to_json(), sort_keys=True, indent=4) for p in pirus.pipelines.get()]))
+        print("\n".join([json.dumps(p.to_json(), sort_keys=True, indent=4) for p in core.pipelines.get()]))
     elif args[0] == "show":
         if len(args) > 1 and args[1].isdigit():
             p = Pipeline.from_id(int(args[1]), 1)
@@ -160,10 +160,10 @@ def parse_job(args, inputs_ids=[], files=[], form=None, help=False, verbose=Fals
     elif args[0] == "list":
         if len(args) > 1 :
             print("Warning : list take only one argument... all other have been ignored.")
-        print("\n".join([json.dumps(j.to_json(), sort_keys=True, indent=4) for j in pirus.jobs.get()]))
+        print("\n".join([json.dumps(j.to_json(), sort_keys=True, indent=4) for j in core.jobs.get()]))
     elif args[0] == "show":
         if len(args) > 1 and args[1].isdigit():
-            j = pirus.jobs.monitoring(int(args[1]))
+            j = core.jobs.monitoring(int(args[1]))
             if j:
                 print(json.dumps(j.to_json(), sort_keys=True, indent=4))
             else:
@@ -176,14 +176,14 @@ def parse_job(args, inputs_ids=[], files=[], form=None, help=False, verbose=Fals
         if len(args) < 3:
             print(parse_pipeline_help_new)
 
-        j = pirus.jobs.new(int(args[2]), {"name" : args[1]}, inputs_ids, asynch)
+        j = core.jobs.new(int(args[2]), {"name" : args[1]}, inputs_ids, asynch)
         print(json.dumps(j.to_json(), sort_keys=True, indent=4))
     elif args[0] == "uninstall":
         print("Not implemented")
     elif args[0] == "list":
         if len(args) > 1 :
             print("Warning : list take only one argument... all other have been ignored.")
-        print("\n".join([json.dumps(p.to_json(), sort_keys=True, indent=4) for p in pirus.pipelines.get()]))
+        print("\n".join([json.dumps(p.to_json(), sort_keys=True, indent=4) for p in core.pipelines.get()]))
     else:
         print(parse_pipeline_help)
 

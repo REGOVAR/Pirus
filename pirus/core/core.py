@@ -21,10 +21,6 @@ from core.pirus import *
 
 
 
-# need it, and only used by unittests.
-#from tests.core.fake_container_manager import FakeContainerManager4Test
-
-
 
 
 
@@ -66,9 +62,6 @@ class Core:
         # according to api that will be pluged on the core, this method should be overriden 
         # to really do a notification. (See how api_rest override this method)
         self.notify_all = notify_all_print
-
-        # if TEST config
-        #self.container_managers["FakeManager4Test"] = FakeContainerManager4Test()
 
 
 
