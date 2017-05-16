@@ -39,20 +39,19 @@ function run_cmd(order)
 
 function update_run_header(data)
 {
-    progress = Math.round(parseInt(data["progress"]["value"]) / Math.max(1, (parseInt(data["progress"]["max"]) - parseInt(data["progress"]["min"]))) * 100);
-
+    progress = Math.round(data["progress_value"] * 100);
     // Header according the status of the run
-    $("#browser_run_name").html("Run : {0}".format(data["name"]));
+    $("#browser_run_name").html("Run : {0}".format(data["config"]["name"]));
     $("#browser_run_details").html("Pipeline {0} : <b>{1} % </b>".format(demo_pirus_displayed_run_pipename, progress));
-    $("#browser_run_status").html(data["status"]);
+    $("#browser_run_status").html(data["status"].toUpperCase());
     $('#browser_run_monitoring_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
-    if ($.inArray(data["status"],["PAUSE", "WAITING"]) > -1)$('#browser_run_monitoring_header').attr('class', 'orange');
-    if ($.inArray(data["status"], ["ERROR", "CANCELED"]) > -1) $('#browser_run_monitoring_header').attr('class', 'red');
-    if ($.inArray(data["status"], ["INITIALIZING", "RUNNING", "FINISHING"]) > -1) $('#browser_run_monitoring_header').attr('class', 'blue');
-    if ($.inArray(data["status"],["DONE"]) > -1) $('#browser_run_monitoring_header').attr('class', 'green');
+    if ($.inArray(data["status"],["pause", "waiting"]) > -1)$('#browser_run_monitoring_header').attr('class', 'orange');
+    if ($.inArray(data["status"], ["error", "canceled"]) > -1) $('#browser_run_monitoring_header').attr('class', 'red');
+    if ($.inArray(data["status"], ["initializing", "running", "finalizing"]) > -1) $('#browser_run_monitoring_header').attr('class', 'blue');
+    if ($.inArray(data["status"],["done"]) > -1) $('#browser_run_monitoring_header').attr('class', 'green');
 
     //  controls according the status of the run
-    if ($.inArray(data["status"], ["INITIALIZING", "RUNNING", "WAITING"]) > -1) 
+    if ($.inArray(data["status"], ["initializing", "running", "waiting"]) > -1) 
     {
         $('#browser_run_playpause').html('<i class="fa fa-pause" aria-hidden="true"></i>');
         $('#browser_run_playpause').attr('onclick', 'javascript:run_cmd("pause");');
@@ -60,7 +59,7 @@ function update_run_header(data)
         $('#browser_run_stop').removeClass('disabled');
         $('#browser_run_monitoring_refresh').removeClass('collapse');
     }
-    else if ($.inArray(data["status"], ["PAUSE"]) > -1) 
+    else if ($.inArray(data["status"], ["pause"]) > -1) 
     {
         $('#browser_run_playpause').html('<i class="fa fa-play" aria-hidden="true"></i>');
         $('#browser_run_playpause').attr('onclick', 'javascript:run_cmd("play");');
@@ -79,29 +78,29 @@ function update_run_header(data)
     }
 
     // Logs 
-    if (data["vm_info"])
-    {
-        var html = "<ul>";
-        for (k in data["vm"])
-        {
-            html += "<li><b>{0} :</b> {1}</li>".format(k, data["vm"][k]);
-        }
-        $("#browser_run_monitoring_vm").html(html);
-    }
-    else
-    {
-        $("#browser_run_monitoring_vm").html("<i>{0}</i>".format(data["vm"]));
-    }
+    // if (data["vm_info"])
+    // {
+    //     var html = "<ul>";
+    //     for (k in data["vm"])
+    //     {
+    //         html += "<li><b>{0} :</b> {1}</li>".format(k, data["vm"][k]);
+    //     }
+    //     $("#browser_run_monitoring_vm").html(html);
+    // }
+    // else
+    // {
+    //     $("#browser_run_monitoring_vm").html("<i>{0}</i>".format(data["vm"]));
+    // }
 }
 
 
 function update_file_header(data)
 {
     progress = Math.round(data["upload_offset"] / Math.max(1, data["size"]) * 100);
-
+    debugger;
     // Header style / control according to the status of the file
-    if ($.inArray(data["status"],["PAUSE"]) > -1) $('#browser_file_header').attr('class', 'orange');
-    if ($.inArray(data["status"], ["ERROR"]) > -1) $('#browser_file_header').attr('class', 'red');
+    if ($.inArray(data["status"],["pause"]) > -1) $('#browser_file_header').attr('class', 'orange');
+    if ($.inArray(data["status"], ["error"]) > -1) $('#browser_file_header').attr('class', 'red');
     if ($.inArray(data["status"], ["UPLOADING"]) > -1) $('#browser_file_header').attr('class', 'blue');
     if ($.inArray(data["status"],["UPLOADED", "CHECKED"]) > -1) $('#browser_file_header').attr('class', 'green');
     $('#browser_file_progress').attr('style', 'right:'+ (100-Math.max(1, progress)) + '%');
@@ -155,19 +154,19 @@ function show_tab(tab_id, id)
     {        
         $.ajax({ url: rootURL + "/run/" + id + "/monitoring", type: "GET", async: false}).done(function(jsonFile)
         {
-
+            debugger;
             data = jsonFile["data"];
             demo_pirus_displayed_run = id;
-            demo_pirus_displayed_run_pipename = data["pipeline_name"];
+            demo_pirus_displayed_run_pipename = data["pipeline"]["name"];
 
             update_run_header(data)
-            $("#browser_run_icon").html("<img src=\"{0}\" width=\"50px\" style=\"vertical-align:middle\"/>".format(data["pipeline_icon"]));
+            $("#browser_run_icon").html("<img src=\"{0}\" width=\"50px\" style=\"vertical-align:middle\"/>".format(data["pipeline"]["icon"]));
 
 
-            $("#browser_run_monitoring_stdout").text((data["out_tail"] == "") ? "... No log on stdOut ..." : data["out_tail"]);
+            $("#browser_run_monitoring_stdout").text((data["out_tail"] == "") ? "... No log on stdOut ..." : data["logs"]["out.log"]);
             $("#browser_run_monitoring_stdout").animate({scrollTop : $("#browser_run_monitoring_stdout")[0].scrollHeight }, 1000 );
 
-            $("#browser_run_monitoring_stderr").text((data["err_tail"] == "") ? "... No log on stdErr ..." : data["err_tail"]);
+            $("#browser_run_monitoring_stderr").text((data["err_tail"] == "") ? "... No log on stdErr ..." : data["logs"]["err.log"]);
             $("#browser_run_monitoring_stderr").animate({scrollTop : $("#browser_run_monitoring_stderr")[0].scrollHeight}, 1000 );
 
             $("#browser_run_monitoring_refresh").attr("onclick", "javascript:monitor_run('"+id+"')");

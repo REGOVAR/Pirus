@@ -87,3 +87,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+
+# Pirus files to ignore
+config.py.bak
+config.test
+config.py
+*.out

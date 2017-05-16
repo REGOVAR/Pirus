@@ -5,7 +5,6 @@ import aiohttp_jinja2
 import jinja2
 from aiohttp import web
 
-from core import pirus
 from api_rest.handlers import *
 
 
@@ -19,7 +18,7 @@ aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(TEMPLATE_DIR))
 websocket = WebsocketHandler()
 website = WebsiteHandler()
 fileHdl = FileHandler()
-runHdl = RunHandler()
+jobHdl = JobHandler()
 pipeHdl = PipelineHandler()
 
 # Config server app
@@ -50,19 +49,19 @@ app.router.add_route('HEAD',   "/pipeline/upload/{file_id}",     pipeHdl.tus_upl
 app.router.add_route('PATCH',  "/pipeline/upload/{file_id}",     pipeHdl.tus_upload_chunk)
 app.router.add_route('DELETE', "/pipeline/upload/{file_id}",     pipeHdl.tus_upload_delete)
 
-app.router.add_route('GET',    "/run",                     runHdl.get)
-app.router.add_route('POST',   "/run",                     runHdl.post)
-app.router.add_route('GET',    "/run/{run_id}",            runHdl.get_details)
-app.router.add_route('GET',    "/run/{run_id}/out",        runHdl.get_olog)
-app.router.add_route('GET',    "/run/{run_id}/err",        runHdl.get_elog)
-app.router.add_route('GET',    "/run/{run_id}/out/tail",   runHdl.get_olog_tail)
-app.router.add_route('GET',    "/run/{run_id}/err/tail",   runHdl.get_elog_tail)
-app.router.add_route('GET',    "/run/{run_id}/io",         runHdl.get_io)
-app.router.add_route('GET',    "/run/{run_id}/pause",      runHdl.get_pause)
-app.router.add_route('GET',    "/run/{run_id}/play",       runHdl.get_play)
-app.router.add_route('GET',    "/run/{run_id}/stop",       runHdl.get_stop)
-app.router.add_route('GET',    "/run/{run_id}/monitoring", runHdl.get_monitoring)
-#app.router.add_route('GET',    "/run/{run_id}/{filename}", fileHdl.dl_run_file)
+app.router.add_route('GET',    "/run",                     jobHdl.get)
+app.router.add_route('POST',   "/run",                     jobHdl.post)
+app.router.add_route('GET',    "/run/{job_id}",            jobHdl.get_details)
+app.router.add_route('GET',    "/run/{job_id}/out",        jobHdl.get_olog)
+app.router.add_route('GET',    "/run/{job_id}/err",        jobHdl.get_elog)
+app.router.add_route('GET',    "/run/{job_id}/out/tail",   jobHdl.get_olog_tail)
+app.router.add_route('GET',    "/run/{job_id}/err/tail",   jobHdl.get_elog_tail)
+app.router.add_route('GET',    "/run/{job_id}/io",         jobHdl.get_io)
+app.router.add_route('GET',    "/run/{job_id}/pause",      jobHdl.get_pause)
+app.router.add_route('GET',    "/run/{job_id}/play",       jobHdl.get_play)
+app.router.add_route('GET',    "/run/{job_id}/stop",       jobHdl.get_stop)
+app.router.add_route('GET',    "/run/{job_id}/monitoring", jobHdl.get_monitoring)
+#app.router.add_route('GET',    "/run/{job_id}/{filename}", fileHdl.dl_run_file)
 
 app.router.add_route('GET',    "/v1/file", fileHdl.get)
 app.router.add_route('DELETE', "/v1/file/{file_id}",        fileHdl.delete)
@@ -75,7 +74,7 @@ app.router.add_route('PATCH',  "/v1/file/upload/{file_id}", fileHdl.tus_upload_c
 app.router.add_route('DELETE', "/v1/file/upload/{file_id}", fileHdl.tus_upload_delete)
 
 # Websockets / realtime notification
-app.router.add_route('POST',   "/v1/run/notify/{run_id}", runHdl.update_status)
+app.router.add_route('POST',   "/run/notify/{job_id}", jobHdl.update_status)
 
 
 # DEV/DEBUG - Routes that should be manages directly by NginX
