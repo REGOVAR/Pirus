@@ -140,8 +140,9 @@ class JobManager:
         # Call start of the container
         if asynch: 
             run_async(self.__start_job, (job.id, asynch,))
+            return True
         else:
-            self.__start_job(job.id, asynch)
+            return self.__start_job(job.id, asynch)
 
 
     def monitoring(self, job_id):
@@ -188,8 +189,9 @@ class JobManager:
         # Call pause of the container
         if asynch: 
             run_async(self.__pause_job, (job.id, asynch,))
+            return True
         else:
-            self.__pause_job(job.id, asynch)
+            return self.__pause_job(job.id, asynch)
 
 
 
@@ -206,8 +208,9 @@ class JobManager:
         # Call stop of the container
         if asynch: 
             run_async(self.__stop_job, (job.id, asynch,))
+            return True
         else:
-            self.__stop_job(job.id, asynch)
+            return self.__stop_job(job.id, asynch)
 
 
 
@@ -238,8 +241,9 @@ class JobManager:
         # Stop container and delete it
         if asynch: 
             run_async(self.__finalize_job, (job.id, asynch,))
+            return True
         else:
-            self.__finalize_job(job.id, asynch)
+            return self.__finalize_job(job.id, asynch)
 
 
 
@@ -306,8 +310,11 @@ class JobManager:
             except Exception as ex:
                 # TODO : Manage error
                 self.set_status(job, "error", asynch)
-                return
+                return False
             self.set_status(job, "running" if success else "error", asynch) 
+            return True
+        err("Job initializing already done or failled. Not able to reinitialise it.")
+        return False
 
 
 
@@ -321,7 +328,7 @@ class JobManager:
         job = Job.from_id(job_id, 1)
         if not job :
             # TODO : log error
-            return 
+            return False
 
         # Ok, job is now waiting
         self.set_status(job, "waiting")
@@ -331,12 +338,12 @@ class JobManager:
             if file is None :
                 err("Inputs file deleted before the start of the job {} (id={}). Job aborded.".format(job.name, job.id))
                 self.set_status(job, "error", asynch=asynch)
-                return
+                return False
             if file.status not in ["checked", "uploaded"]:
                 # inputs not ready, we keep the run in the waiting status
                 war("INPUTS of the run not ready. waiting")
                 self.set_status(job, "waiting", asynch=asynch)
-                return
+                return False
             
         # TODO : check that enough reszources to run the job
         # Inputs files ready to use, looking for lxd resources now
@@ -353,6 +360,9 @@ class JobManager:
         #Try to run the job
         if core.container_managers[job.pipeline.type].start_job(job):
             self.set_status(job, "running", asynch)
+            return True
+        else:
+            return False
 
 
 
@@ -371,8 +381,9 @@ class JobManager:
             except Exception as ex:
                 # TODO : Log error
                 self.set_status(job, "error", asynch)
-                return
+                return False
             self.set_status(job, "pause", asynch)
+            return True
 
 
 
@@ -389,8 +400,9 @@ class JobManager:
             except Exception as ex:
                 # Log error
                 self.set_status(job, "error", asynch)
-                return
+                return False
             self.set_status(job, "waiting", asynch)
+            return True
 
 
 
@@ -407,5 +419,7 @@ class JobManager:
 
         if core.container_managers[job.pipeline.type].finalize_job(job):
             self.set_status(job, "done", asynch)
+            return True
         else:
             self.set_status(job, "error", asynch)
+            return False

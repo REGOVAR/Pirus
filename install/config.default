@@ -6,7 +6,7 @@ import os
 # HOST (internal)
 HOST = "127.0.0.1"
 PORT = "8200"
-VERSION = "v1"
+VERSION = "0.2.0"
 HOSTNAME = HOST + ":" + PORT
 
 # HOST (public)

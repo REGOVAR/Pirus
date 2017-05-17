@@ -139,7 +139,7 @@ pirus job new <job_name> <pipeline_id> [-c|--config <json_config_file>] [-i <inp
 pirus job pause <job_id>
       Pause the jobn (if supported by the type of pipe's container manager).
 
-pirus job play <job_id>
+pirus job start <job_id>
       Restart a job that have been paused.
 
 pirus job stop <pipe_id>
@@ -148,6 +148,9 @@ pirus job stop <pipe_id>
 pirus job finalize <pipe_id>
       Force the finalization of the job. If the job execution is finished, but for some raisons, the container have not been deleted, 
       this action will properly clean the job's container stuff.
+
+pirus job cd <pipe_id>
+      Go to the job's directory.
       """
 
 
@@ -175,11 +178,46 @@ def parse_job(args, inputs_ids=[], files=[], form=None, help=False, verbose=Fals
             print("Warning : list take only one argument... all other have been ignored.")
         if len(args) < 3:
             print(parse_pipeline_help_new)
-
-        j = core.jobs.new(int(args[2]), {"name" : args[1]}, inputs_ids, asynch)
+        config = {}
+        if form and os.path.exists(form):
+            with open(form, "r") as f:
+                j = f.read()
+                try:
+                    j = json.loads(j)
+                except Exception as ex:
+                    print ("Error with config. Wrong file/json.")
+                    print(j)
+                    raise ex
+                config = j
+        config.update({"name" : args[1]})
+        j = core.jobs.new(int(args[2]), config, inputs_ids, asynch)
         print(json.dumps(j.to_json(), sort_keys=True, indent=4))
-    elif args[0] == "uninstall":
-        print("Not implemented")
+    elif args[0] == "pause":
+        if core.jobs.pause(args[1], asynch=False):
+            print("job paused.")
+        else:
+            print("not able to pause the job.")
+    elif args[0] == "start":
+        if core.jobs.start(args[1], asynch=False):
+            print("job restarted.")
+        else:
+            print("not able to restart the job.")
+    elif args[0] == "stop":
+        if core.jobs.stop(args[1], asynch=False):
+            print("job stoped.")
+        else:
+            print("not able to stop the job.")
+    elif args[0] == "finalize":
+        if core.jobs.finalize(args[1], asynch=False):
+            print("job finalized.")
+        else:
+            print("not able to finalized the job.")
+    elif args[0] == "cd":
+        j = Job.from_id(args[1])
+        if j:
+            print ("cd " + j.root_path)
+        else:
+            print ("No job found with the id : {}".format(args[1]))
     elif args[0] == "list":
         if len(args) > 1 :
             print("Warning : list take only one argument... all other have been ignored.")
@@ -205,6 +243,10 @@ def parse_job(args, inputs_ids=[], files=[], form=None, help=False, verbose=Fals
 
 args = parser.parse_args()
 
+if args.version:
+    print ("Pirus server : {}".format(VERSION))
+
+
 if len(args.subcommand) > 0:
     if args.subcommand[0] == "pipeline":
         parse_pipeline(args.subcommand[1:], args.help, args.verbose, args.async)
@@ -212,16 +254,21 @@ if len(args.subcommand) > 0:
         parse_job(args.subcommand[1:], args.i, args.f, args.c, args.help, args.verbose, args.async)
     elif args.subcommand[0] == "file":
         print ("manage pipeline command")
+    elif args.subcommand[0] == "version":
+        print ("Pirus server : {}".format(VERSION))
     elif args.subcommand[0] == "config":
         print ("Server :\n  Version \t{}\n  Hostname \t{}\n  Hostname pub \t{}\n".format(VERSION, HOSTNAME, HOST_P))
         print ("Database :\n  Host \t\t{}\n  Port \t\t{}\n  User \t\t{} (pwd: \"{}\")\n  Name \t\t{}\n  Pool \t\t{}\n".format(DATABASE_HOST, DATABASE_PORT, DATABASE_USER, DATABASE_PWD, DATABASE_NAME, DATABASE_POOL_SIZE))
         print ("File system :\n  Files \t{}\n  Temp \t\t{}\n  Databases \t{}\n  Pipelines \t{}\n  Jobs \t\t{}\n  Logs \t\t{}".format(FILES_DIR, TEMP_DIR, DATABASES_DIR ,PIPELINES_DIR, JOBS_DIR, LOG_DIR))
+    else:
+        parser.print_help()
+else:
+    parser.print_help()
 
 
 
 
-if args.version:
-    print ("Pirus server : {}".format(VERSION))
+
 
 
 
