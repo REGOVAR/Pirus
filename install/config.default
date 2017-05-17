@@ -18,7 +18,7 @@ DATABASE_HOST = "localhost"
 DATABASE_PORT = 5432
 DATABASE_USER = "pirus"
 DATABASE_PWD = "pirus"
-DATABASE_NAME = "pirus"  # if you change this line, you have to update the sed command of the "test" rule of the Makefile too
+DATABASE_NAME = "pirus"
 DATABASE_POOL_SIZE = 7
 
 
@@ -83,7 +83,7 @@ CONTAINERS_CONFIG = {
         "manifest" : {
             "mandatory" : {
                 "name"        : "The displayed name of the pirus pipeline",
-                "run"         : "The command line that will executed by pirus to run the pipeline.",
+                "job"         : "The command line that will executed by pirus to run the pipeline.",
             },
             "default" : {
                 "pirus_api"   : VERSION,               # The version of the pirus api used by the pipeline
@@ -106,7 +106,7 @@ CONTAINERS_CONFIG = {
         "manifest" : {
             "mandatory" : {
                 "name"        : "The displayed name of the pirus pipeline",
-                "run"         : "The command line that will executed by pirus to run the pipeline.",
+                "job"         : "The command line that will executed by pirus to run the pipeline.",
                 "env"         : "the environment to install in the container (default is \"python 3.5\")",
             },
             "default" : {
