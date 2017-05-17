@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pirus API</title>
+
+
+    <!-- Base -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.1.0.min.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-migrate-3.0.0.js"></script>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+
+    <style>
+        code {
+            margin-left:-4px;
+        }
+
+        i {
+            color: #999;
+        } 
+        input {
+            font-family: monospace;
+        }
+        textarea {
+            font-family: monospace;
+        }
+
+        /* JSON highlighting */
+        pre {outline: 1px solid #ccc; padding: 5px; margin: 5px; }
+        .string { color: green; }
+        .number { color: darkorange; }
+        .boolean { color: blue; }
+        .null { color: magenta; }
+        .key { color: red; }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-inverse">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a data-toggle="tab" href="#home"><i class="glyphicon glyphicon-home"></i> Home</a></li>
+                    <li><a data-toggle="tab" href="#misc"><i class="glyphicon glyphicon-asterisk"></i> Misc</a></li>
+                    <li><a data-toggle="tab" href="#file"><i class="glyphicon glyphicon-file"></i> File</a></li>
+                    <li><a data-toggle="tab" href="#pipe"><i class="glyphicon glyphicon-book"></i> Pipeline</a></li>
+                    <li><a data-toggle="tab" href="#job"><i class="glyphicon glyphicon-cog"></i> Job</a><</li>
+                    <li><a data-toggle="tab" href="#db"><i class="glyphicon glyphicon-folder-open"></i> Database</a></li>
+                    <li><a data-toggle="tab" href="#ws"><i class="glyphicon glyphicon-flash" id="ws_ico"></i> Realtime</a></li>
+                </ul>
+            </div><!--/.nav-collapse -->
+        </div>
+    </nav>
+
+    <div class="container" role="main">
+        <h1 class="content-subhead hidden" style="margin-top:70px"><i class="fa fa-retweet" aria-hidden="true"></i> WS [ <span id="message"></span> ]</h1>
+        <div class="tab-content" style="margin-top:70px">
+
+
+
+            <!--      -->
+            <!-- HOME -->
+            <!--      -->
+            <div id="home" class="tab-pane fade in active">
+                <h1>Hello, </h1>
+                <p>This page is for developpers who want to know how to use Pirus via the Rest api.</p>
+                <p>Choose in the top menu bar the "main" section of the API you want to see. The last one "Realtime" is a special tab where all realtime notification are logged. In addition, the color of the <i class="glyphicon glyphicon-flash" id="ws_ico"></i> indicates if the realtime is active or not (if your browser have an active websockets with the Pirus server).</p>
+                <p>Endpoints of the API have an icon: <ul>
+                    <li><i class="glyphicon glyphicon-ok"></i> : The endpoint is ok. No know problem with it.</li>
+                    <li><i class="glyphicon glyphicon-warning-sign"></i> : Working but some limitation.</li>
+                    <li><i class="glyphicon glyphicon-exclamation-sign"></i> : Not working. Know bug with this endpoint.</li>
+                    </ul>
+                </p>
+            </div>
+
+
+
+            <!--      -->
+            <!-- MISC -->
+            <!--      -->
+            <div id="misc" class="tab-pane fade">
+                <h1>Miscellaneous</h1>
+                <div class="panel with-nav-tabs panel-default">
+                    <div class="panel-heading">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#misc_api_01" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET config</a></li>
+                            <li><a href="#misc_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET home</a></li>
+                            <li><a href="#misc_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET api</a></li>
+                        </ul>
+                    </div>
+                    <div class="panel-body">
+                        <div class="tab-content">
+                            <!-- GET config -->
+                            <div class="tab-pane fade in active" id="misc_api_01">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /config</code><br/>
+                                        <i>Return the server configuration of Pirus.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10"><button onclick="exec_misc_api_01();">Test it</button></div>
+                                </div>
+                            </div>
+                            <!-- GET home -->
+                            <div class="tab-pane fade" id="misc_api_02">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /</code><br/>
+                                        <i>Return the official web page of Pirus.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10"><a href="/" target="_blank" class="btn btn-default">Test it</a></div>  
+                                </div>
+                            </div>
+
+                            <!-- GET api -->
+                            <div class="tab-pane fade" id="misc_api_03">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /api</code><br/>
+                                        <i>Return this webpage. Documentation and dynamic examples about the Pirus API.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10"><a href="/api" target="_blank" class="btn btn-default">Test it</a></div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h1>Result</h1>
+                    <button onclick="clear_container('misc_result');">Clear</button>
+                    <pre id="misc_result"/>
+                </div>
+            </div>
+
+
+
+            <!--      -->
+            <!-- FILE -->
+            <!--      -->
+            <div id="file" class="tab-pane fade">
+                <h1>File REST api</h1>
+                <div class="panel with-nav-tabs panel-default">
+                    <div class="panel-heading">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#file_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> GET files</a></li>
+                            <li><a href="#file_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET file</a></li>
+                            <li><a href="#file_api_03" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> PUT file</a></li>
+                            <li><a href="#file_api_04" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> DELETE file</a></li>
+                            <li><a href="#file_api_05" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> POST file</a></li>
+                        </ul>
+                    </div>
+                    <div class="panel-body">
+                        <div class="tab-content">
+                            <!-- GET files -->
+                            <div class="tab-pane fade in active" id="file_api_01">
+                                <div class="alert alert-info">
+                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> and <code style="background:none!important;">filter</code> not yet implemented or having some issue.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /file?...</code><br/>
+                                        <i>Retrieve the list of file stored on Pirus server.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>range={offset}-{limit}</code><br/>
+                                        <i>Pagination. Return only the {limit} results that start at the {offset} position.</i><br/><br/>
+                                        <code>field={field_name1},{field_name2},...</code><br/>
+                                        <i>Lazy loading. Specify which fields you want to get.<br/>
+                                           Available fields are : {{ file_public_fields }}</i><br/><br/>
+                                        <code>order_by={field_name1}["desc"],{field_name2}["desc"],...</code><br/>
+                                        <i>Order result according to there value in the provided fields.</i><br/><br/>
+                                        <code>filter={free_text}</code><br/>
+                                        <i>Return result that match with the provided text (Fields tested are name and comments).</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="file_api_01_query" type="text" placeholder="/file?range=0-100&amp;..." value="/file"/> 
+                                            <button onclick="exec_file_api_01_e1();">Ex1 : get all</button> 
+                                            <button onclick="exec_file_api_01_e2();">Ex2 : range 1-3</button><br/>
+                                        <button onclick="exec_file_api_01();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- GET file -->
+                            <div class="tab-pane fade" id="file_api_02">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /file/{file_id}</code><br/>
+                                        <i>Retrieve all information about the file.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>file_id</code><br/>
+                                        <i>The Pirus id of the file.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="file_api_02_query" type="text" placeholder="/file/{file_id}" value="/file/1"/>
+                                        <button onclick="exec_file_api_02();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+
+                            <!-- PUT file -->
+                            <div class="tab-pane fade" id="file_api_03">
+                                <div class="alert alert-danger">
+                                    <strong>Warning !</strong> Implemenation of this endpoint is not finished.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>PUT /file/{file_id}</code><br/>
+                                        <i>Update Pirus metada of the file with provided json data.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>file_id</code><br/>
+                                        <i>The Pirus id of the file.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Body</b></div>
+                                    <div class="col-sm-10">
+                                        <code>{key : value}</code><br/>
+                                        <i>Information to update in the file. Note that only following fields are allowed to be edited via the Rest api : "name", "type", "tags".</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        Query : <input id="file_api_03_query" type="text" placeholder="/file/{file_id}" value="/file/1"/><br/>
+                                        Body : <textarea id="file_api_03_body" cols="40" rows="6">{"tags": "toto titi tata"}</textarea>
+                                        <button onclick="exec_file_api_03();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+
+                            <!-- DELETE file -->
+                            <div class="tab-pane fade" id="file_api_04">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>DELETE /file/{file_id}</code><br/>
+                                        <i>Delete the file. The file is deleted in the Pirus database (SQL) and in the Pirus filesystem. If the file was referenced by one or several jobs, they still refer to this file_id, but of course nobody will be able to retrieve which file correspond to this id.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>file_id</code><br/>
+                                        <i>The Pirus id of the file.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="file_api_04_query" type="text" placeholder="/file/{file_id}" value="/file/1"/>
+                                        <button onclick="exec_file_api_04();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+
+                            <!-- POST file (TUS) -->
+                            <div class="tab-pane fade" id="file_api_05">
+                                <div class="alert alert-info">
+                                    <strong>Info : </strong> Checksum TUS extension is planned to be implemented/supported. But not yet available.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <i>Pirus implement the <a href="http://tus.io/" target="_blank">TUS protocol</a> for uploading file on the server. Please, refer to the  <a href="http://tus.io/protocols/resumable-upload.html#core-protocol" target="_blank">official documentation</a> for more details.</i><br/>
+                                        <code>POST /file/upload</code><br/>
+                                        <i>Create a new "empty" file on Pirus server that will be used to handle data and progress regarding the upload. This query will return the id of the file to use to upload the file.</i><br/><br/>
+                                        <code>OPTIONS /file/upload</code><br/>
+                                        <i>To know how TUS is configured on the server.</i><br/><br/>
+                                        <code>HEAD /file/upload/{file_id}</code><br/>
+                                        <i>To retrieve the offset where the upload of the file shall be resume.</i><br/><br/>
+                                        <code>PATCH /file/upload/{file_id}</code><br/>
+                                        <i>To upload a chunk a of file.</i><br/><br/>
+                                        <code>DELETE /file/upload/{file_id}</code><br/>
+                                        <i>To delete the uploading file.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>file_id</code><br/>
+                                        <i>The Pirus id of the file.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input type="hidden" id="file_api_05_endpoint" name="file_api_05_endpoint" value="http://{{ hostname }}/file/upload">
+                                        <input type="hidden" id="file_api_05_chunksize" name="file_api_05_chunksize" value="256000">
+                                        <input type="file" id="file_api_05_localinput"> <span class="alert" id="tus_support_alert"></span>
+                                        <p id="file_api_05_progress" style="margin-top:20px; height:50px;"></p>
+
+
+                                        <button onclick="exec_file_api_05_s();">Start</button> <button onclick="exec_file_api_05_p();">Pause</button> <button onclick="exec_file_api_05_i();">Info (/file/{id})</button>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h1>Result</h1>
+                    <button onclick="clear_container('file_result');">Clear</button>
+                    <pre id="file_result"/>
+                </div>
+            </div>
+
+
+
+            <!--      -->
+            <!-- PIPE -->
+            <!--      -->
+            <div id="pipe" class="tab-pane fade">
+                <h1>Pipeline REST api</h1>
+                <div class="panel with-nav-tabs panel-default">
+                    <div class="panel-heading">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#pipe_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> GET pipelines</a></li>
+                            <li><a href="#pipe_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET pipeline</a></li>
+                            <li><a href="#pipe_api_03" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> GET install</a></li>
+                            <li><a href="#pipe_api_04" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> POST pipeline</a></li>
+                            <li><a href="#pipe_api_05" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> PUT pipeline</a></li>
+                            <li><a href="#pipe_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> DELETE pipeline</a></li>
+                        </ul>
+                    </div>
+                    <div class="panel-body">
+                        <div class="tab-content">
+                            <!-- GET pipelines -->
+                            <div class="tab-pane fade in active" id="pipe_api_01">
+                                <div class="alert alert-info">
+                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> and <code style="background:none!important;">filter</code> not yet implemented or having some issue.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /pipeline?...</code><br/>
+                                        <i>Retrieve the list of pipeline stored on Pirus server.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>range={offset}-{limit}</code><br/>
+                                        <i>Pagination. Return only the {limit} results that start at the {offset} position.</i><br/><br/>
+                                        <code>field={field_name1},{field_name2},...</code><br/>
+                                        <i>Lazy loading. Specify which fields you want to get.<br/>
+                                           Available fields are : {{ file_public_fields }}</i><br/><br/>
+                                        <code>order_by={field_name1}["desc"],{field_name2}["desc"],...</code><br/>
+                                        <i>Order result according to there value in the provided fields.</i><br/><br/>
+                                        <code>filter={free_text}</code><br/>
+                                        <i>Return results that match with the provided text (Fields tested are name and comments).</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="pipe_api_01_query" type="text" placeholder="/pipeline?range=0-100&amp;..." value="/pipeline"/> 
+                                            <button onclick="exec_pipe_api_01_e1();">Ex1 : get all</button> 
+                                            <button onclick="exec_pipe_api_01_e2();">Ex2 : range 1-3</button><br/>
+                                        <button onclick="exec_pipe_api_01();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- GET pipeline -->
+                            <div class="tab-pane fade" id="misc_api_02">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /pipeline/{pipe_id}</code><br/>
+                                        <i>Retrieve all information about the pipeline.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>pipe_id</code><br/>
+                                        <i>The Pirus id of the pipeline.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="pipe_api_02_query" type="text" placeholder="/pipeline/{pipe_id}" value="/pipeline/1"/>
+                                        <button onclick="exec_pipe_api_02();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- GET install -->
+                            <div class="tab-pane fade" id="pipe_api_03">
+                                <div class="alert alert-alert">
+                                    <strong>Warning : </strong> To be implemented.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /pipeline/install/{file_id}/{container_manager_type}</code><br/>
+                                        <i>Install a pipeline from the image file which have been already uploaded on the server and have the id {file_id}. Note that if the installation ends without error, the file is no more available via the Pirus file api.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>file_id</code><br/>
+                                        <i>The Pirus id of the file. This file will be used as pipeline image by the Pirus container manager.</i><br/><br/>
+                                        <code>container_manager_type</code><br/>
+                                        <i>The type of the container manager to use to install the pipeline image. List of available container manager is available in the server config (<code>/config</code>)</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="pipe_api_03_query" type="text" placeholder="/pipeline/install/{file_id}/{container_manager_type}" value="/pipeline/install/1/lxd"/>
+                                        <button onclick="exec_pipe_api_03();">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h1>Result</h1>
+                    <button onclick="clear_container('misc_result');">Clear</button>
+                    <pre id="misc_result"/>
+                </div>
+            </div>
+
+
+
+            <!--      -->
+            <!-- JOB  -->
+            <!--      -->
+            <div id="job" class="tab-pane fade">
+                <div style="width:700px; margin:auto;">
+                    job
+                </div>
+            </div>
+
+
+
+            <!--      -->
+            <!-- DB   -->
+            <!--      -->
+            <div id="db" class="tab-pane fade">
+                <div style="width:700px; margin:auto;">
+                    db
+                </div>
+            </div>
+
+
+
+            <!--      -->
+            <!-- WS   -->
+            <!--      -->
+            <div id="ws" class="tab-pane fade">
+                <div style="width:700px; margin:auto;">
+                    realtime
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="/assets/tus.js"></script>
+    <script>
+        var rootURL = "http://{{ hostname }}";
+
+        var ws = new WebSocket('ws://{{ hostname }}/ws');
+        var $message = $('#message');
+
+
+        function syntaxHighlight(json) 
+        {
+            if (typeof json != 'string') 
+            {
+                 json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) 
+            {
+                var cls = 'number';
+                if (/^"/.test(match)) 
+                {
+                    if (/:$/.test(match)) 
+                    {
+                        cls = 'key';
+                    } 
+                    else 
+                    {
+                        cls = 'string';
+                    }
+                } 
+                else if (/true|false/.test(match)) 
+                {
+                    cls = 'boolean';
+                } 
+                else if (/null/.test(match)) 
+                {
+                    cls = 'null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+        function clear_container(id)
+        {
+            $('#'+id).html("");
+            // 
+        }
+        function buildProgressBar(percentage, containerId) 
+        {
+            var html = "<div class='progress'>\
+                        <div class='progress-bar progress-bar-striped active' role='progressbar' aria-valuenow='" + percentage + "' aria-valuemin='0' aria-valuemax='0' \
+                            style='min-width: 2em; width: " + percentage + "%;'>\
+                            " + percentage + "% \
+                        </div>\
+                    </div>";
+
+            if (containerId !== null)
+            {
+                $("#" + containerId).html(html);
+            }
+            return html;
+        }
+
+
+        // MISC EXEC
+        function exec_misc_api_01()
+        {
+            $.ajax(
+            {
+                url: rootURL + "/config",
+                type: "GET"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#misc_result').html(syntaxHighlight(json));
+            })
+        }
+
+
+        // FILE EXEC
+        function exec_file_api_01()
+        {
+            $.ajax(
+            {
+                url: rootURL + $("#file_api_01_query").val(),
+                type: "GET"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+        function exec_file_api_01_e1()
+        {
+            $("#file_api_01_query").val("/file");
+            $.ajax(
+            {
+                url: rootURL +"/file",
+                type: "GET"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+        function exec_file_api_01_e2()
+        {
+            $("#file_api_01_query").val("/file?range=1-3");
+            $.ajax(
+            {
+                url: rootURL +"/file?range=1-3",
+                type: "GET"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+        function exec_file_api_02()
+        {
+            $.ajax(
+            {
+                url: rootURL + $("#file_api_02_query").val(),
+                type: "GET"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+        function exec_file_api_03()
+        {
+            $.ajax(
+            {
+                url: rootURL + $("#file_api_03_query").val(),
+                type: "PUT",
+                contentType: 'application/json',
+                data: JSON.stringify($("#file_api_03_body").val())
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+        function exec_file_api_04()
+        {
+            $.ajax(
+            {
+                url: rootURL + $("#file_api_04_query").val(),
+                type: "DELETE"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+        function exec_file_api_05_s() 
+        {
+            pirusFileUpload.start();
+            //
+        }
+        function exec_file_api_05_p()
+        {
+            pirusFileUpload.abort();
+            //
+        }
+        function exec_file_api_05_i()
+        {
+            $.ajax(
+            {
+                url: rootURL + "/file/" + pirusFileUpload.url.split("/")[2],
+                type: "GET"
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#file_result').html(syntaxHighlight(json));
+            })
+        }
+
+
+        // PIPELINE EXEC
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // TUS Client for File upload
+        var pirusFileUpload = null;
+        var pirusFileInput = document.querySelector("#file_api_05_localinput");
+        var pirusFileAlertBox = document.querySelector("#tus_support_alert");
+        var pirusFileChunkInput = document.querySelector("#file_api_05_chunksize");
+        var pirusFileEndpointInput = document.querySelector("#file_api_05_endpoint");
+
+        if (!tus.isSupported) 
+        {
+            pirusFileAlertBox.className = pirusFileAlertBox.className.replace("hidden", "");
+        }
+
+        pirusFileInput.addEventListener("change", function(e) 
+        {
+            var file = e.target.files[0];
+            console.log("selected file", file);
+            var endpoint = pirusFileEndpointInput.value;
+            var chunkSize = parseInt(pirusFileChunkInput.value, 10);
+
+
+            if (isNaN(chunkSize)) 
+            {
+                chunkSize = Infinity;
+            }
+            var options = {
+                endpoint: endpoint,
+                resume: true,
+                chunkSize: chunkSize,
+                metadata: { filename: file.name },
+                onError: function(error) 
+                {
+                    pirusFileInput.value = "";
+                    alert("Failed because: " + error);
+                },
+                onProgress: function(bytesUploaded, bytesTotal) 
+                {
+                    var percentage = (bytesUploaded / bytesTotal * 100).toFixed(2);
+                    console.log(bytesUploaded, bytesTotal, percentage + "%");
+                    buildProgressBar(percentage, "file_api_05_progress");
+                },
+                onSuccess: function() 
+                {
+                    pirusFileInput.value = "";
+                    $("#file_api_05_progress").html("");
+
+                }
+            }
+
+            pirusFileUpload = new tus.Upload(file, options);
+            pirusFileUpload.start();
+
+            // fileId = pirusFileUpload.url.substr(pirusFileUpload.url.lastIndexOf('/') + 1);
+            // add_new_activity_to_demo_browser("file", fileId);
+            // Todo : while the upload of the file start/continue, display a form to edit file information (comments, tags, filename, ...)
+        })
+
+
+    </script>
+</body>
+</html> 

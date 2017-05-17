@@ -223,6 +223,17 @@ class WebsiteHandler:
     def __init__(self):
         pass
 
+
+
+
+    @aiohttp_jinja2.template('api_test.html')
+    def api(self, request):
+        return {
+            "hostname" : HOST_P,
+            "file_public_fields" : ", ".join(File.public_fields)
+            }
+
+
     @aiohttp_jinja2.template('home.html')
     def home(self, request):
         data = {
@@ -251,14 +262,16 @@ class WebsiteHandler:
 
 
 
-    def get_config(self, request):
+    def config(self, request):
         return rest_success({
-            "host" : HOST,
+            "host" : HOST_P,
             "port" : PORT,
             "version" : VERSION,
-            "base_url" : "http://" + HOST_P,
-            "max_parallel_job " : LXD_MAX,
-            "job_config " : LXD_HDW_CONF
+            "base_url" : "http://{}/".format(HOST_P),
+            "container_managers" : [k for k in CONTAINERS_CONFIG.keys()],
+            "max_job_running" : MAX_JOB_RUNNING,
+            "rest_results_max_range" : RANGE_MAX,
+            "rest_results_default_range" : RANGE_DEFAULT
         })
 
 
@@ -316,16 +329,31 @@ class FileHandler:
 
 
 
-    def edit_infos(self, request):
-        # TODO : implement PUT to edit file metadata (and remove the obsolete  "simple post" replaced by TUS upload )
-        return rest_error("Not yet implemented")
-        
+    async def edit_infos(self, request):
+        file_id = request.match_info.get('file_id', "")
+        params = await request.json()
+
+        # TO DO !! how to retrieve json from PUT body in python :/ ...
+        # file = File.from_id(file_id)
+        # # By security, we don't allow user to edit several informations
+        # allowed = ["name", "type", "tags"]
+        # data_sane = {}
+        # for key in data:
+        #     if key in allowed:
+        #         data_sane[key] = data[key]
+        #     else:
+        #         war("API REST do not allow to edit the file attribute : {}".format(key))
+        # file.load(data_sane)
+        # return rest_success(file.to_json())
+        return rest_error("Not implemented")
 
 
     def delete(self, request):
         file_id = request.match_info.get('file_id', "")
         try:
-            return rest_success(core.files.delete(file_id).to_json())
+            f = core.files.delete(file_id)
+            if f: return rest_success(f.to_json())
+            else: return rest_error("Unable to find the file (id={})".format(file_id))
         except Exception as ex:
             return rest_error("Error occured : " + str(ex))
 
