@@ -44,6 +44,62 @@ parser.add_argument("-c",  type=str, help=argparse.SUPPRESS)
 # ===================================================================================================
 # FILE Commands
 # ===================================================================================================
+parse_file_help_show = """pirus file  show <file_id>
+      Display information about the requested file."""
+parse_file_help_add = """pirus file add <local_file_path> 
+      Get a local file and register it into pirus database. A copy of the file is done by Pirus."""
+parse_file_help_rem = """pirus file  rem <local_file_path>
+      Delete a file from Pirus."""
+
+parse_file_help = """Manage pirus file
+
+pirus file list
+      Display the list of file installed on the server and their status.
+
+""" + parse_file_help_show + "\n\n" + parse_file_help_add + "\n\n" + parse_file_help_rem
+
+
+
+
+
+
+def parse_file(args, help=False, verbose=False, asynch=False):
+    print ("manage file command [{}] h:{} v:{} a:{}".format(",".join(args), help, verbose, asynch))
+    if len(args) == 0:
+        print(parse_file_help)
+    elif args[0] == "rem":
+        print("Not implemented")
+    elif args[0] == "add":
+        if len(args) > 1:
+            f = core.files.from_local(args[1], False)
+            if f:
+                print(json.dumps(f.to_json(), sort_keys=True, indent=4))
+            else:
+                print("Not able to register the file at the location {}".format(args[1]))
+        else:
+            print(parse_file_help_add)
+
+    elif args[0] == "list":
+        if len(args) > 1 :
+            print("Warning : list take only one argument... all other have been ignored.")
+        print("\n".join([json.dumps(f.to_json(), sort_keys=True, indent=4) for f in core.files.get()]))
+    elif args[0] == "show":
+        if len(args) > 1 and args[1].isdigit():
+            f= File.from_id(int(args[1]), 1)
+            if f:
+                print(json.dumps(f.to_json(), sort_keys=True, indent=4))
+            else:
+                print("No file found with the id {}".format(args[1]))
+        else:
+            print(parse_file_help_show)
+    else:
+        print(parse_file_help)
+
+
+
+
+
+
 
 # ===================================================================================================
 # PIPELINE Commands
@@ -253,7 +309,7 @@ if len(args.subcommand) > 0:
     elif args.subcommand[0] == "job":
         parse_job(args.subcommand[1:], args.i, args.f, args.c, args.help, args.verbose, args.async)
     elif args.subcommand[0] == "file":
-        print ("manage pipeline command")
+        parse_file(args.subcommand[1:], args.help, args.verbose, args.async)
     elif args.subcommand[0] == "version":
         print ("Pirus server : {}".format(VERSION))
     elif args.subcommand[0] == "config":

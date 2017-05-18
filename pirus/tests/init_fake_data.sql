@@ -8,9 +8,9 @@ INSERT INTO file (name, type, size, upload_offset, status, job_source_id) VALUES
     ('TestFile 2.vcf', 'vcf', 100000, 100000, 'checked', 1);
 
 
-INSERT INTO pipeline (name, type, status, description, license, developers, image_file_id, vm_settings, ui_form) VALUES
-    ('TestPipeline 1', 'github', 'ready', 'Pipe description', 'AGPL', '["ikit", "dridk"]', 1, '{}', '{}'),
-    ('TestPipeline 2', 'lxd', 'installing', 'Pipe description', 'FU', '["oodnadata", "arka"]', 2, NULL, NULL);
+INSERT INTO pipeline (name, type, status, description, developers, image_file_id, manifest, documents) VALUES
+    ('TestPipeline 1', 'github', 'ready', 'Pipe description', '["ikit", "dridk"]', 1, '{}', '[]'),
+    ('TestPipeline 2', 'lxd', 'installing', 'Pipe description', '["oodnadata", "arka"]', 2, NULL, NULL);
 
 INSERT INTO job (pipeline_id, name, config, status, progress_value, progress_label) VALUES
     (1, 'TestJob 1', '{}', 'done', 1, '100%'),

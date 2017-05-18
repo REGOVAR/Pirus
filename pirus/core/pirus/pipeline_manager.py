@@ -176,23 +176,27 @@ class PipelineManager:
         """
         from core.core import core
 
-        try:
-            pipeline = Pipeline.from_id(pipeline_id, 1)
-            if pipeline:
-                # Clean container
+        result = None
+        pipeline = Pipeline.from_id(pipeline_id, 1)
+        if pipeline:
+            result = pipeline.to_json()
+            # Clean container
+            try:
                 if asynch: 
                     run_async(self.__delete, pipeline) 
                 else: 
-                    self.__delete(pipeline)  
+                    self.__delete(pipeline)
+            except Exception as ex:
+                err("core.PipelineManager.delete : Container manager failed to delete the pipeline with id {}." + str(pipeline.id), ex)
+            try:
                 # Clean filesystem
                 shutil.rmtree(pipeline.root_path, True)
                 # Clean DB
                 core.files.delete(pipeline.image_file_id)
                 Pipeline.delete(pipeline.id)
-        except Exception as ex:
-            raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline with id " + str(pipeline.id), ex)
-            return False
-        return pipeline
+            except Exception as ex:
+                raise RegovarException("core.PipelineManager.delete : Unable to delete the pipeline's pirus data for the pipeline {}." + str(pipeline.id), ex)
+        return result
 
 
     def __delete(self, pipeline):

@@ -93,50 +93,44 @@ class LxdManager(PirusContainerManager):
                 metadata[k] = conf["manifest"]["default"][k]
 
         # 4- Extract pirus technicals files from the tar file
-        try:
-            if metadata["form"] is not None:
-                source = os.path.join("rootfs",metadata['form'][1:] if metadata['form'][0]=="/" else metadata['form'])
+        formfile = False
+        iconfile = False
+        documents = []
+        for filepath in metadata["documents"]:
+            try:
+                source = os.path.join("rootfs", filepath[1:] if filepath[0]=="/" else filepath)
+                filename = clean_filename(os.path.basename(filepath))
                 tar_data = [info for info in tar.getmembers() if info.name == source]
                 file = tar.extractfile(member=tar_data[0])
                 source = os.path.join(root_path, source)
-                form_file = os.path.join(root_path, "form.json")
-                ui_form = file.read()
-                with open(form_file, 'bw+') as f:
-                    f.write(ui_form)
-            else :
-                form_file = os.path.join(root_path, "form.json")
-                form_file = b'{}'
-                with open(form_file, 'bw+') as f:
-                    f.write(form_file)
-
-            source = PIPELINE_DEFAULT_ICON_PATH
-            icon_file = os.path.join(root_path, "icon.png")
-            if metadata["icon"] is not None:
-                source = os.path.join("rootfs", metadata['icon'][1:] if metadata['icon'][0]=="/" else metadata['icon'])
-                try:
-                    tar_data = [info for info in tar.getmembers() if info.name == source]
-                    file = tar.extractfile(member=tar_data[0])
-                    source = os.path.join(root_path, source)
-                    icon_file = os.path.join(root_path, os.path.basename(metadata['icon']))
-                    with open(icon_file, 'bw+') as f:
-                        f.write(file.read())
-                except:
-                    war("Icon file not found in the image archive : {}. Using default icon.".format(source))
-                    shutil.copyfile(PIPELINE_DEFAULT_ICON_PATH, icon_file)
-            else:
-                shutil.copyfile(source, icon_file)
-        except Exception as ex:
-            raise RegovarException("Error occure during extraction of pipeline technical files (form.json / icon) from image file : {}".format(pipeline.image_file.path), "", ex)
-        log('Extraction of pipeline technical files (form.json / icon)')
+                pirus_file = os.path.join(root_path, filename)
+                with open(pirus_file, 'bw+') as f:
+                    f.write(file.read())
+                    documents.append(pirus_file)
+                    log('Document extraction : {} => {}'.format(source, pirus_file))
+                if filename == "form.json": formfile = True
+                if filename in ["icon.png", "icon.jpg"] : iconfile = True
+            except Exception as ex:
+                err("Document extraction failed : {}".format(filepath))
+        if not formfile:
+            pirus_file = os.path.join(root_path, "form.json")
+            with open(pirus_file, 'bw+') as f:
+                f.write(b'{}')
+                documents.append(pirus_file)
+        if not iconfile:
+            war("Icon file not found in the image archive. Using default icon.")
+            shutil.copyfile(PIPELINE_DEFAULT_ICON_PATH, os.path.join(root_path, "icon.png"))
+            documents.append(os.path.join(root_path, "icon.png"))
+        log('Extraction of pipeline technical files (pipeline\'s documents)')
 
         # 5- Save pipeline into database
         lxd_alias = conf["image_name"].format(lxd_alias)
         metadata["lxd_alias"] = lxd_alias
+        metadata.pop("documents")
         pipeline.load(metadata)
-        pipeline.vm_settings = yaml.dump(metadata)
         pipeline.status = "installing"
-        pipeline.ui_form = ui_form.decode()
-        pipeline.ui_icon = icon_file
+        pipeline.documents = json.dumps(documents, sort_keys=True, indent=2)
+        pipeline.manifest = json.dumps(metadata, sort_keys=True, indent=2)
         pipeline.root_path = root_path
         try:
             pipeline.save()
@@ -164,7 +158,8 @@ class LxdManager(PirusContainerManager):
 
         # 7- Clean directory
         try:
-            keep = [pipeline.image_file.path, form_file, icon_file]
+            keep = documents
+            keep = documents.append(pipeline.image_file.path)
             for f in os.listdir(root_path):
                 fullpath = os.path.join(root_path, f)
                 if fullpath not in keep:
@@ -193,7 +188,7 @@ class LxdManager(PirusContainerManager):
         if not pipeline or not isinstance(pipeline, Pipeline) :
             raise RegovarException("Pipeline's data error.")
         # Retrieve container settings
-        settings = yaml.load(pipeline.vm_settings)
+        settings = yaml.load(pipeline.manifest)
         lxd_alias = settings["lxd_alias"]
         # Install lxd container
         cmd = ["lxc", "image", "delete", lxd_alias]
@@ -227,13 +222,13 @@ class LxdManager(PirusContainerManager):
         """
         # Setting up the lxc container for the job
         lxd_container = os.path.basename(job.root_path)
-        vm_settings = yaml.load(job.pipeline.vm_settings)
-        lxd_job_cmd = vm_settings["job"]
-        lxd_logs_path = vm_settings["logs"]
-        lxd_inputs_path = vm_settings["inputs"]
-        lxd_outputs_path = vm_settings["outputs"]
-        lxd_db_path = vm_settings["databases"]
-        lxd_image = vm_settings["lxd_alias"]
+        manifest = yaml.load(job.pipeline.manifest)
+        lxd_job_cmd = manifest["job"]
+        lxd_logs_path = manifest["logs"]
+        lxd_inputs_path = manifest["inputs"]
+        lxd_outputs_path = manifest["outputs"]
+        lxd_db_path = manifest["databases"]
+        lxd_image = manifest["lxd_alias"]
         notify_url = NOTIFY_URL.format(job.id)
         inputs_path = os.path.join(job.root_path, "inputs")
         outputs_path = os.path.join(job.root_path, "outputs")

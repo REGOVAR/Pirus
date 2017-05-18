@@ -45,57 +45,17 @@
         .key { color: red; }
 
         /* WS log table */
-        @header_background_color: #333;
-        @header_text_color: #FDFDFD;
-        @alternate_row_background_color: #DDD;
-
-        @table_width: 750px;
-        @table_body_height: 300px;
-        @column_one_width: 200px;
-        @column_two_width: 200px;
-        @column_three_width: 350px;
-
-        .fixed_headers {
-          width: @table_width;
+        .ws_logs {
+          width: 90%;
           table-layout: fixed;
           border-collapse: collapse;
           
-          th { text-decoration: underline; }
-          th, td {
-            padding: 5px;
-            text-align: left;
-          }
           
-          td:nth-child(1), th:nth-child(1) { min-width: @column_one_width; }
-          td:nth-child(2), th:nth-child(2) { min-width: @column_two_width; }
-          td:nth-child(3), th:nth-child(3) { width: @column_three_width; }
-
-          thead {
-            background-color: @header_background_color;
-            color: @header_text_color;
-            tr {
-              display: block;
-              position: relative;
-            }
-          }
-          tbody {
-            display: block;
-            overflow: auto;
-            width: 100%;
-            height: @table_body_height;
-            tr:nth-child(even) {
-              background-color: @alternate_row_background_color;
-            }
-          }
         }
+        .ws_logs tbody tr:nth-child(even) {
+              background-color: #eee;
+            }
 
-        .old_ie_wrapper {
-          height: @table_body_height;
-          width: @table_width;
-          overflow-x: hidden;
-          overflow-y: auto;
-          tbody { height: auto; }
-        }
     </style>
 </head>
 
@@ -148,6 +108,18 @@
                     </ul>
                 </p>
                 <p>Sometime, git issue are link in the description of the endpoint when there issue, bug or feature implementation planned. Be free to have a look to github issue. All help is welcome \o/ !</p>
+                <h1>Changes log</h1>
+                <h2>0.2.0 [Current]</h2>
+                <ul><li>API online documentation (here you are)</li>
+                    <li>First version of endpoints to manage pipelines</li>
+                    <li>First version of endpoints to manage databases</li>
+                    <li>Rework 0.1.0 existings endpoints to be more complient with core and cli api</li>
+                </ul>
+                <h2>0.1.0</h2>
+                <ul><li>First version of the API with endpoints to manage file and jobs</li>
+                    <li>Websocket implementation for realtime notification (job progress)</li>
+                    <li>TUS protocol implementation to allow resumable upload for file</li>
+                </ul>
             </div>
 
 
@@ -160,9 +132,9 @@
                 <div class="panel with-nav-tabs panel-default">
                     <div class="panel-heading">
                         <ul class="nav nav-tabs">
-                            <li class="active"><a href="#misc_api_01" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET config</a></li>
-                            <li><a href="#misc_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET home</a></li>
-                            <li><a href="#misc_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET api</a></li>
+                            <li class="active"><a href="#misc_api_01" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> Config</a></li>
+                            <li><a href="#misc_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> Website</a></li>
+                            <li><a href="#misc_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> Api</a></li>
                         </ul>
                     </div>
                     <div class="panel-body">
@@ -229,11 +201,11 @@
                 <div class="panel with-nav-tabs panel-default">
                     <div class="panel-heading">
                         <ul class="nav nav-tabs">
-                            <li class="active"><a href="#file_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> GET files</a></li>
-                            <li><a href="#file_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET file</a></li>
-                            <li><a href="#file_api_03" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> PUT file</a></li>
-                            <li><a href="#file_api_04" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> DELETE file</a></li>
-                            <li><a href="#file_api_05" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> POST file</a></li>
+                            <li class="active"><a href="#file_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> list</a></li>
+                            <li><a href="#file_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> show</a></li>
+                            <li><a href="#file_api_03" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> edit</a></li>
+                            <li><a href="#file_api_04" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> delete</a></li>
+                            <li><a href="#file_api_05" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> new</a></li>
                         </ul>
                     </div>
                     <div class="panel-body">
@@ -423,11 +395,12 @@
                 <div class="panel with-nav-tabs panel-default">
                     <div class="panel-heading">
                         <ul class="nav nav-tabs">
-                            <li class="active"><a href="#pipe_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> GET pipelines</a></li>
-                            <li><a href="#pipe_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET pipeline</a></li>
-                            <li><a href="#pipe_api_03" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> GET install</a></li>
-                            <li><a href="#pipe_api_04" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> POST install</a></li>
-                            <li><a href="#pipe_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> DELETE pipeline</a></li>
+                            <li class="active"><a href="#pipe_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> list</a></li>
+                            <li><a href="#pipe_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> show</a></li>
+                            <li><a href="#pipe_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> install (quick)</a></li>
+                            <li><a href="#pipe_api_04" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> install</a></li>
+                            <li><a href="#pipe_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> delete</a></li>
+                            <li><a href="#pipe_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> document</a></li>
                         </ul>
                     </div>
                     <div class="panel-body">
@@ -455,7 +428,7 @@
                                         <code>order_by={field_name1}["desc"],{field_name2}["desc"],...</code><br/>
                                         <i>Order result according to there value in the provided fields.</i><br/><br/>
                                         <code>filter={free_text}</code><br/>
-                                        <i>Return results that match with the provided text (Fields tested are name and comments).</i>
+                                        <i>Return results that match with the provided text (Fields tested are name, description, author and version).</i>
                                     </div>
                                 </div>
                                 <div class="row form-group">
@@ -494,9 +467,6 @@
                             </div>
                             <!-- GET install -->
                             <div class="tab-pane fade" id="pipe_api_03">
-                                <div class="alert alert-alert">
-                                    <strong>Warning : </strong> <a href="https://github.com/REGOVAR/Pirus/issues/93" target="_blank">To be implemented</a>.
-                                </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
                                     <div class="col-sm-10">
@@ -523,7 +493,7 @@
                             </div>
                             <!-- POST install -->
                             <div class="tab-pane fade" id="pipe_api_04">
-                                <div class="alert alert-alert">
+                                <div class="alert alert-danger">
                                     <strong>Warning : </strong> <a href="https://github.com/REGOVAR/Pirus/issues/93" target="_blank">To be implemented</a>.
                                 </div>
                                 <div class="row form-group">
@@ -553,8 +523,6 @@
                                     </div>  
                                 </div>
                             </div>
-
-
                             <!-- DELETE pipeline -->
                             <div class="tab-pane fade" id="pipe_api_05">
                                 <div class="row form-group">
@@ -574,8 +542,35 @@
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
-                                        <input id="pipe_api_04_query" type="text" placeholder="/pipeline/{pipe_id}" value="/pipeline/1"/>
-                                        <button onclick="generic_exec_from_input('pipe_api_04_query', 'pipe_result', 'DELETE');" class="btn btn-primary">Test it</button>
+                                        <input id="pipe_api_05_query" type="text" placeholder="/pipeline/{pipe_id}" value="/pipeline/1"/>
+                                        <button onclick="generic_exec_from_input('pipe_api_05_query', 'pipe_result', 'DELETE');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+
+                            <!-- GET pipeline's documents -->
+                            <div class="tab-pane fade" id="pipe_api_06">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /pipeline/{pipe_id}/{filename}</code><br/>
+                                        <i>Dowload the static document of the pipeline. Return 404 not found if the file or the pipeline doesn't exists.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>file_id</code><br/>
+                                        <i>The Pirus id of the pipeline.</i><br/><br/>
+                                        <code>filename</code><br/>
+                                        <i>The name of the file. Names of available files for the pipeline can be retrieved with the endpoint : <code>GET /pipeline/{pipe_id}</code>.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="pipe_api_06_query" type="text" placeholder="/pipeline/{pipe_id}/{filename}" value="/pipeline/1/form.json"/>
+                                        <button onclick="generic_exec_from_input('pipe_api_06_query', 'pipe_result');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>
                             </div>
@@ -594,8 +589,125 @@
             <!-- JOB  -->
             <!--      -->
             <div id="job" class="tab-pane fade">
-                <div style="width:700px; margin:auto;">
-                    job
+                <h1>Job REST api</h1>
+                <div class="panel with-nav-tabs panel-default">
+                    <div class="panel-heading">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#job_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> list</a></li>
+                            <li><a href="#job_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> show</a></li>
+                            <li><a href="#job_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> new</a></li>
+                            <li><a href="#job_api_04" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> pause</a></li>
+                            <li><a href="#job_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> play</a></li>
+                            <li><a href="#job_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> stop</a></li>
+                            <li><a href="#job_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> finalize</a></li>
+                            <li><a href="#job_api_07" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> logs</a></li>
+                            <li><a href="#job_api_08" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> inputs</a></li>
+                            <li><a href="#job_api_09" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> outputs</a></li>
+                        </ul>
+                    </div>
+
+
+                    <div class="panel-body">
+                        <div class="tab-content">
+                            <!-- GET jobs -->
+                            <div class="tab-pane fade in active" id="job_api_01">
+                                <div class="alert alert-info">
+                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> have an <a href="https://github.com/REGOVAR/Pirus/issues/92" target="_blank">issue</a> with "desc" ordering and <code style="background:none!important;">filter</code> is <a href="https://github.com/REGOVAR/Pirus/issues/105" target="_blank">not yet implemented</a>.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job?...</code><br/>
+                                        <i>Retrieve the list of job on Pirus server.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>range={offset}-{limit}</code><br/>
+                                        <i>Pagination. Return only the {limit} results that start at the {offset} position.</i><br/><br/>
+                                        <code>field={field_name1},{field_name2},...</code><br/>
+                                        <i>Lazy loading. Specify which fields you want to get.<br/>
+                                           Available fields are : {{ file_public_fields }}</i><br/><br/>
+                                        <code>order_by={field_name1}["desc"],{field_name2}["desc"],...</code><br/>
+                                        <i>Order result according to there value in the provided fields.</i><br/><br/>
+                                        <code>filter={free_text}</code><br/>
+                                        <i>Return results that match with the provided text (Fields tested are name, pipeline's name and version).</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_01_query" type="text" placeholder="/job?range=0-100&amp;..." value="/job"/> 
+                                        <button onclick="generic_exec_from_input('job_api_01_query', 'job_result');" class="btn btn-primary">Test it</button> - 
+                                        <button onclick="generic_exec_static('/job', 'job_result', 'job_api_01_query');">Ex1 : get all</button> 
+                                        <button onclick="generic_exec_static('/job?range=1-3', 'job_result', 'job_api_01_query');">Ex2 : range 1-3</button><br/>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- GET job -->
+                            <div class="tab-pane fade" id="job_api_02">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job/{job_id}</code><br/>
+                                        <i>Retrieve all information about the job.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>job_id</code><br/>
+                                        <i>The Pirus id of the job.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_02_query" type="text" placeholder="/job/{job_id}" value="/job/1"/>
+                                        <button onclick="generic_exec_from_input('job_api_02_query', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- POST job -->
+                            <div class="tab-pane fade" id="job_api_03">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>POST /job</code><br/>
+                                        <i>Create a new job with provided json configuration in the body of the post request.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Body</b></div>
+                                    <div class="col-sm-10">
+                                        <code>{ "pipeline_id" : &lt;pipe_id&gt;, "config" : &lt;json&gt;, "inputs" : [&lt;file_id&gt;,...]}</code><br/>
+                                        <i> <ul><li>&lt;pipe_id&gt; must refer to a pipeline "ready" to be used on the Pirus server;</li>
+                                            <li>&lt;json&gt; is the json data that will be provided to the pipeline to configure the job. The only mandatory key in this json 
+                                                is the <code>"name"</code> to set the name of the job in pirus HMI;</li>
+                                            <li>[&lt;file_id&gt;,...] : a list of Pirus file's file id. Note that if one or several file are not ready to be used (still uploading by
+                                                example), je job will be in "waiting" status and will automaticaly start when all inputs files will be ready. Of course, if a file is deleted
+                                                or its upload never end, the job will never start. And you will have to stop or delete it yourself.</li>
+                                            </ul>
+                                        </i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_03_query" type="text" placeholder="/job" value="/job" readonly="readonly"/>
+                                        Body : <br/>
+                                        <textarea id="job_api_03_body" cols="40" rows="6">{ "pipeline_id" : 1, "config" : {"name" : "my test", "inputs" : []}</textarea><br/>
+                                        <button onclick="generic_exec_body('job_api_03_query', 'job_api_03_body', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h1>Result</h1>
+                    <button onclick="clear_container('job_result');">Clear</button>
+                    <pre id="job_result"/>
                 </div>
             </div>
 
@@ -620,23 +732,31 @@
                     <h1>Last message received</h1>
                     <div id="ws_message"></div>
                     <h1>Historic</h1>
-                    <table class="fixed_headers" >
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Sender</th>
-                                <th>Message</th>
-                                <th>Data</th>
-                            </tr>
-                        </thead>
-                        <tbody id="ws_logs">
-                            <tr>
-                                <td>Apple</td>
-                                <td>Red</td>
-                                <td>These are red.</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <div style="overflow: auto; width: 100%; height: 75%; border: 1px solid #ccc;">
+                        <table class="ws_logs" >
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Sender</th>
+                                    <th>Message</th>
+                                    <th>Data</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ws_logs">
+                                <tr>
+                                    <td>Apple</td>
+                                    <td>Red</td>
+                                    <td>These are red.</td>
+                                </tr>
+                                <tr>
+                                    <td>Date</td>
+                                    <td>Sender</td>
+                                    <td>Message</td>
+                                    <td>Data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>

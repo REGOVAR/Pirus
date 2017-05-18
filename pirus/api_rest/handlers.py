@@ -345,7 +345,7 @@ class FileHandler:
         #         war("API REST do not allow to edit the file attribute : {}".format(key))
         # file.load(data_sane)
         # return rest_success(file.to_json())
-        return rest_error("Not implemented")
+        return rest_error("Not implemented.")
 
 
     def delete(self, request):
@@ -458,24 +458,18 @@ class PipelineHandler:
         return rest_success([p.to_json() for p in pipes], range_data)
 
 
-
-
-    def delete(self, request):
-        pipe_id = request.match_info.get('pipe_id', -1)
-        try:
-            pipe = core.pipelines.delete(pipe_id)
-        except Exception as ex:
-            # TODO : manage error
-            return rest_error("Unable to delete the pipeline with id {} : {}".format(pipe_id, str(ex)))
-        return rest_success(p.to_json())
-
-
     def get_details(self, request):
         pipe_id = request.match_info.get('pipe_id', -1)
         pipe = Pipeline.from_id(pipe_id, 2)
         if not pipe:
             return rest_error("No pipeline with id ".format(pipe_id))
-        return rest_success(pipe.to_json(Pipeline.public_fields))
+
+        pipe = pipe.to_json(Pipeline.public_fields)
+        docs = []
+        for doc in pipe["documents"]:
+            docs.append("http://{}/pipeline/{}/{}".format(HOST_P, pipe_id, os.path.basename(doc)))
+        pipe["documents"] = docs
+        return rest_success(pipe)
 
 
     def install(self, request):
@@ -489,14 +483,30 @@ class PipelineHandler:
         if file.status not in ["uploaded", "checked"]:
             return rest_error("File status is {}, this file cannot be used as pipeline image (status shall be \"uploaded\" or \"checked\"".format(file_id))
         # TODO install the pipeline
-
-        return rest_error("Not implemente. ")
+        p = core.pipelines.install_init_image_local(file.path, False, {"type" : container_type})
+        if core.pipelines.install(p.id, asynch=False):
+            return rest_success(pipe.to_json())
+        return rest_error("Error occured during installation of the pipeline.")
 
 
     async def install_json(self, request):
         params = await request.json()
         # TO DO 
         return rest_error("Not implemented")
+
+
+    def delete(self, request):
+        pipe_id = request.match_info.get('pipe_id', -1)
+        try:
+            pipe = core.pipelines.delete(pipe_id, False)
+        except Exception as ex:
+            # TODO : manage error
+            return rest_error("Unable to delete the pipeline with id {} : {}".format(pipe_id, str(ex)))
+        return rest_success(pipe)
+
+
+
+
 
 
 

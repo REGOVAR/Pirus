@@ -17,7 +17,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-TU_PIRUS_PIPELINE_PUBLIC_FIELDS = ["id", "name", "type", "status", "description", "license", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "vm_settings", "ui_form", "ui_icon", "root_path", "jobs_ids", "jobs"]
+TU_PIRUS_PIPELINE_PUBLIC_FIELDS = ["id", "name", "type", "status", "description", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "manifest", "documents", "root_path", "jobs_ids", "jobs"]
 
 
 
@@ -88,19 +88,24 @@ class TestModelPipeline(unittest.TestCase):
         # Test export with default fields
         p = Pipeline.from_id(1, 1)
         j = p.to_json()
-        self.assertEqual(len(j), 14)
+        self.assertEqual(len(j), 12)
         json.dumps(j)
 
         # Test export with only requested fields
-        j = p.to_json(["id", "ui_form", "status", "jobs_ids"])
-        self.assertEqual(len(j), 4)
+        j = p.to_json(["id", "status", "jobs_ids"])
+        self.assertEqual(len(j), 3)
         json.dumps(j)
 
         # Test export with depth loading
-        j = p.to_json(["id", "ui_form", "status", "jobs"])
-        self.assertEqual(len(j), 4)
+        j = p.to_json(["id", "status", "jobs"])
+        self.assertEqual(len(j), 3)
         self.assertEqual(j["jobs"][0]["id"], 1)
         self.assertEqual(j["jobs"][1]["progress_value"], 0.5)
+
+        # test that documents key is no more present in the manifest
+        self.assertEqual("documents" not in j["manifest"], True)
+        self.assertEqual(j["documents"], '{}')
+
 
 
     def test_CRUD(self):
@@ -125,26 +130,25 @@ class TestModelPipeline(unittest.TestCase):
             "type" : "lxd", 
             "status" : "ready",
             "description" : "Pipeline Description",
-            "license" : "AGPL8",
             "developers" : "['Tata', 'Titi']",
             "version" : v,
             "pirus_api" : "v1",
             "image_file_id" : 1,
-            "vm_settings" : '{"param1" : 1, "param2" : [1,2,3]}',
-            "ui_form" : '{"param1" : 1, "param2" : [1,2,3]}'
+            "manifest" : '{"param1" : 1, "param2" : [1,2,3]}',
+            "documents" : '["/pipeline/form.json", "/pipeline/icon.png"]'
             })
         self.assertEqual(p2.name,"FinalPipeline")
         self.assertEqual(p2.type,"lxd")
         self.assertEqual(p2.status,"ready")
         self.assertEqual(p2.description,"Pipeline Description")
-        self.assertEqual(p2.license,"AGPL8")
         self.assertEqual(p2.developers,"['Tata', 'Titi']")
         self.assertEqual(p2.version, v)
         self.assertEqual(p2.pirus_api,"v1")
         self.assertEqual(p2.image_file_id,1)
-        configjson = json.loads(p2.vm_settings)
+        configjson = json.loads(p2.manifest)
         self.assertEqual(configjson["param2"][1], 2)
-        self.assertEqual(p2.ui_form,'{"param1" : 1, "param2" : [1,2,3]}')
+        documents = json.loads(p2.documents)
+        self.assertEqual("/pipeline/form.json" in p2.documents, True)
         # READ
         p3 = Pipeline.from_id(pid, 1)
         self.assertEqual(p3.status,"ready")

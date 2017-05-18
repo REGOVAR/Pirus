@@ -84,13 +84,9 @@ def get_pipeline_forlder_name(name:str):
 
 
 
-
-# def plugin_running_task(task_id):
-#     """
-#         Todo : doc
-#     """
-#     result = execute_plugin.AsyncResult(task_id)
-#     return result.get()
+def clean_filename(filename):
+    # TODO : clean filename by removing special characters, trimming white spaces, and replacing white space by _
+    return filename
 
 
 

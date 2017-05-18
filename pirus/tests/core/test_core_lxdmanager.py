@@ -28,7 +28,7 @@ from core.core import core
 class TestCoreLxdManager(unittest.TestCase):
     """ Test case for lxd container management. """
 
-    IMAGE_FILE_PATH = "/var/regovar/pirus/_pipes/PirusTest2.tar.gz"
+    IMAGE_FILE_PATH = "/var/regovar/pirus/_pipes/PirusTest.tar.gz"
     MAX_WAITING_4_INSTALL = 60 # 60s (actually, installing PirusSimple need ~45s)
 
 
@@ -95,7 +95,6 @@ class TestCoreLxdManager(unittest.TestCase):
         self.assertEqual(job.status, "running")
         self.assertEqual(os.path.exists(job.root_path), True)
         self.assertEqual(os.path.exists(os.path.join(job.root_path, "inputs", "config.json")), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "out.log")), True)
         self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "err.log")), True)
         self.assertEqual(lxd_name in exec_cmd(["lxc", "list"])[1], True)
         self.assertEqual("Status: Running" in exec_cmd(["lxc", "info", lxd_name])[1], True)
@@ -109,6 +108,7 @@ class TestCoreLxdManager(unittest.TestCase):
         self.assertEqual('Memory (current)' in job.logs_moninitoring.keys(), True)
         self.assertEqual(job.logs_moninitoring['Status'], 'Running')
         self.assertEqual(job.logs_moninitoring['Name'], lxd_name)
+        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "out.log")), True)
         self.assertEqual(len(job.logs), 2)
         olog = job.logs[0]
         self.assertEqual(olog.name, "out.log")
@@ -143,9 +143,6 @@ class TestCoreLxdManager(unittest.TestCase):
         self.assertEqual(job.logs_moninitoring, {})
 
 
-        # sanitize the shell as lxd outputs probably broke it
-        exec_cmd(["stty", "sane"])
-
 
 
     def test_900_pipeline_image_deletion(self):
@@ -155,7 +152,7 @@ class TestCoreLxdManager(unittest.TestCase):
         ppath = p0.image_file.path
         iid = p0.image_file_id
         rpath = p0.root_path
-        settings = p0.vm_settings
+        manifest = p0.manifest
         core.pipelines.delete(p0.id, False)  # delete it synchronously to be able to test correctly
 
         # check that image file no more exists
@@ -169,7 +166,7 @@ class TestCoreLxdManager(unittest.TestCase):
         self.assertEqual(p1, None)
 
         # check that lxd image no more exists
-        lxd_alias = yaml.load(settings)["lxd_alias"]
+        lxd_alias = yaml.load(manifest)["lxd_alias"]
         r, o, e = exec_cmd(["lxc", "image", "list"])
         self.assertEqual(r, 0)
         self.assertEqual(lxd_alias in o, False)

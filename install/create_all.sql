@@ -39,7 +39,6 @@ CREATE TABLE public.pipeline
     type character varying(50) COLLATE pg_catalog."C",
     status pipe_status,
     description text COLLATE pg_catalog."C",
-    license character varying(255) COLLATE pg_catalog."C",
     developers text COLLATE pg_catalog."C",
     installation_date timestamp without time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -48,12 +47,10 @@ CREATE TABLE public.pipeline
 
     image_file_id int,
     root_path character varying(500) COLLATE pg_catalog."C",
-    vm_settings text COLLATE pg_catalog."C",
-    ui_form text COLLATE pg_catalog."C",
-    ui_icon character varying(255) COLLATE pg_catalog."C",
+    manifest text COLLATE pg_catalog."C",
+    documents text COLLATE pg_catalog."C",
 
-    CONSTRAINT pipe_pkey PRIMARY KEY (id),
-    CONSTRAINT pipe_ukey UNIQUE (name, version)
+    CONSTRAINT pipe_pkey PRIMARY KEY (id)
 );
 ALTER TABLE public.pipeline OWNER TO pirus;
 
