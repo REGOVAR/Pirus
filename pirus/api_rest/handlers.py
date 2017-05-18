@@ -478,22 +478,25 @@ class PipelineHandler:
         return rest_success(pipe.to_json(Pipeline.public_fields))
 
 
-    # Resumable download implement the TUS.IO protocol.
-    def tus_config(self, request):
-        return tus_manager.options(request)
+    def install(self, request):
+        file_id = request.match_info.get('file_id', -1)
+        container_type = request.match_info.get('container_type', -1)
+        if container_type not in CONTAINERS_CONFIG.keys():
+            return rest_error("Container manager of type {} not supported by the server.".format(container_type))
+        file = File.from_id(file_id)
+        if not file:
+            return rest_error("Unable to find file with id {}.".format(file_id))
+        if file.status not in ["uploaded", "checked"]:
+            return rest_error("File status is {}, this file cannot be used as pipeline image (status shall be \"uploaded\" or \"checked\"".format(file_id))
+        # TODO install the pipeline
 
-    def tus_upload_init(self, request):
-        return tus_manager.creation(request)
+        return rest_error("Not implemente. ")
 
-    def tus_upload_resume(self, request):
-        return tus_manager.resume(request)
 
-    async def tus_upload_chunk(self, request):
-        result = await tus_manager.patch(request)
-        return result
-
-    def tus_upload_delete(self, request):
-        return tus_manager.delete_file(request)
+    async def install_json(self, request):
+        params = await request.json()
+        # TO DO 
+        return rest_error("Not implemented")
 
 
 

@@ -28,6 +28,10 @@
         input {
             font-family: monospace;
         }
+        input[type=text] {
+            display: block;
+            width:100%;
+        }
         textarea {
             font-family: monospace;
         }
@@ -39,6 +43,59 @@
         .boolean { color: blue; }
         .null { color: magenta; }
         .key { color: red; }
+
+        /* WS log table */
+        @header_background_color: #333;
+        @header_text_color: #FDFDFD;
+        @alternate_row_background_color: #DDD;
+
+        @table_width: 750px;
+        @table_body_height: 300px;
+        @column_one_width: 200px;
+        @column_two_width: 200px;
+        @column_three_width: 350px;
+
+        .fixed_headers {
+          width: @table_width;
+          table-layout: fixed;
+          border-collapse: collapse;
+          
+          th { text-decoration: underline; }
+          th, td {
+            padding: 5px;
+            text-align: left;
+          }
+          
+          td:nth-child(1), th:nth-child(1) { min-width: @column_one_width; }
+          td:nth-child(2), th:nth-child(2) { min-width: @column_two_width; }
+          td:nth-child(3), th:nth-child(3) { width: @column_three_width; }
+
+          thead {
+            background-color: @header_background_color;
+            color: @header_text_color;
+            tr {
+              display: block;
+              position: relative;
+            }
+          }
+          tbody {
+            display: block;
+            overflow: auto;
+            width: 100%;
+            height: @table_body_height;
+            tr:nth-child(even) {
+              background-color: @alternate_row_background_color;
+            }
+          }
+        }
+
+        .old_ie_wrapper {
+          height: @table_body_height;
+          width: @table_width;
+          overflow-x: hidden;
+          overflow-y: auto;
+          tbody { height: auto; }
+        }
     </style>
 </head>
 
@@ -79,13 +136,18 @@
             <div id="home" class="tab-pane fade in active">
                 <h1>Hello, </h1>
                 <p>This page is for developpers who want to know how to use Pirus via the Rest api.</p>
-                <p>Choose in the top menu bar the "main" section of the API you want to see. The last one "Realtime" is a special tab where all realtime notification are logged. In addition, the color of the <i class="glyphicon glyphicon-flash" id="ws_ico"></i> indicates if the realtime is active or not (if your browser have an active websockets with the Pirus server).</p>
+                <p>Choose in the top menu bar the "main" section of the API you want to see. The last one "Realtime" is a special tab where all realtime notification are logged. In addition, the color of the <i class="glyphicon glyphicon-flash" id="ws_ico"></i> indicates if the realtime is active or not : <ul>
+                    <li><i class="glyphicon glyphicon-flash" style="color:lightgrey"></i> : no websocket connection available;</li>
+                    <li><i class="glyphicon glyphicon-flash" style="color:orangered"></i> : error occured;</li>
+                    <li><i class="glyphicon glyphicon-flash" style="color:lightgreen"></i> : websocket active (no problem detected).</li></ul>
+                </p>
                 <p>Endpoints of the API have an icon: <ul>
-                    <li><i class="glyphicon glyphicon-ok"></i> : The endpoint is ok. No know problem with it.</li>
-                    <li><i class="glyphicon glyphicon-warning-sign"></i> : Working but some limitation.</li>
+                    <li><i class="glyphicon glyphicon-ok"></i> : The endpoint is ok. No know problem with it;</li>
+                    <li><i class="glyphicon glyphicon-warning-sign"></i> : Working but some limitation;</li>
                     <li><i class="glyphicon glyphicon-exclamation-sign"></i> : Not working. Know bug with this endpoint.</li>
                     </ul>
                 </p>
+                <p>Sometime, git issue are link in the description of the endpoint when there issue, bug or feature implementation planned. Be free to have a look to github issue. All help is welcome \o/ !</p>
             </div>
 
 
@@ -116,7 +178,7 @@
                                 </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Test</b></div>  
-                                    <div class="col-sm-10"><button onclick="exec_misc_api_01();">Test it</button></div>
+                                    <div class="col-sm-10"><button onclick="generic_exec_static('/config', 'misc_result');">Test it</button></div>
                                 </div>
                             </div>
                             <!-- GET home -->
@@ -179,7 +241,7 @@
                             <!-- GET files -->
                             <div class="tab-pane fade in active" id="file_api_01">
                                 <div class="alert alert-info">
-                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> and <code style="background:none!important;">filter</code> not yet implemented or having some issue.
+                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> have an <a href="https://github.com/REGOVAR/Pirus/issues/92" target="_blank">issue</a> with "desc" ordering and <code style="background:none!important;">filter</code> is <a href="https://github.com/REGOVAR/Pirus/issues/105" target="_blank">not yet implemented</a>.
                                 </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
@@ -206,9 +268,10 @@
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
                                         <input id="file_api_01_query" type="text" placeholder="/file?range=0-100&amp;..." value="/file"/> 
-                                            <button onclick="exec_file_api_01_e1();">Ex1 : get all</button> 
-                                            <button onclick="exec_file_api_01_e2();">Ex2 : range 1-3</button><br/>
-                                        <button onclick="exec_file_api_01();">Test it</button>
+                                        <button onclick="generic_exec_from_input('file_api_01_query', 'file_result');" class="btn btn-primary">Test it</button> -
+                                        <button onclick="generic_exec_static('/file', 'file_result', 'file_api_01_query');">Ex1 : get all</button> 
+                                        <button onclick="generic_exec_static('/file?range=1-3', 'file_result', 'file_api_01_query');">Ex2 : range 1-3</button><br/>
+                                        
                                     </div>  
                                 </div>
                             </div>
@@ -232,7 +295,7 @@
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
                                         <input id="file_api_02_query" type="text" placeholder="/file/{file_id}" value="/file/1"/>
-                                        <button onclick="exec_file_api_02();">Test it</button>
+                                        <button onclick="generic_exec_from_input('file_api_02_query', 'file_result');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>
                             </div>
@@ -266,9 +329,11 @@
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
-                                        Query : <input id="file_api_03_query" type="text" placeholder="/file/{file_id}" value="/file/1"/><br/>
-                                        Body : <textarea id="file_api_03_body" cols="40" rows="6">{"tags": "toto titi tata"}</textarea>
-                                        <button onclick="exec_file_api_03();">Test it</button>
+                                        Query : 
+                                        <input id="file_api_03_query" type="text" placeholder="/file/{file_id}" value="/file/1"/><br/>
+                                        Body : <br/>
+                                        <textarea id="file_api_03_body" cols="40" rows="6">{"tags": "toto titi tata"}</textarea><br/>
+                                        <button onclick="generic_exec_body('file_api_03_query', 'file_api_03_body', 'file_result', 'PUT');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>
                             </div>
@@ -293,7 +358,7 @@
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
                                         <input id="file_api_04_query" type="text" placeholder="/file/{file_id}" value="/file/1"/>
-                                        <button onclick="exec_file_api_04();">Test it</button>
+                                        <button onclick="generic_exec_from_input('file_api_04_query', 'file_result', 'DELETE');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>
                             </div>
@@ -301,7 +366,7 @@
                             <!-- POST file (TUS) -->
                             <div class="tab-pane fade" id="file_api_05">
                                 <div class="alert alert-info">
-                                    <strong>Info : </strong> Checksum TUS extension is planned to be implemented/supported. But not yet available.
+                                    <strong>Info : </strong> Checksum TUS extension is <a href="https://github.com/REGOVAR/Pirus/issues/48" target="_blank">planned</a> to be implemented/supported. But not yet available.
                                 </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
@@ -334,8 +399,9 @@
                                         <input type="file" id="file_api_05_localinput"> <span class="alert" id="tus_support_alert"></span>
                                         <p id="file_api_05_progress" style="margin-top:20px; height:50px;"></p>
 
-
-                                        <button onclick="exec_file_api_05_s();">Start</button> <button onclick="exec_file_api_05_p();">Pause</button> <button onclick="exec_file_api_05_i();">Info (/file/{id})</button>
+                                        <button onclick="pirusFileUpload.start();">Start</button> 
+                                        <button onclick="pirusFileUpload.abort();">Pause</button> 
+                                        <button onclick="exec_file_api_05_i();">Info (/file/{id})</button>
                                     </div>  
                                 </div>
                             </div>
@@ -360,9 +426,8 @@
                             <li class="active"><a href="#pipe_api_01" data-toggle="tab"><i class="glyphicon glyphicon-warning-sign"></i> GET pipelines</a></li>
                             <li><a href="#pipe_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> GET pipeline</a></li>
                             <li><a href="#pipe_api_03" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> GET install</a></li>
-                            <li><a href="#pipe_api_04" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> POST pipeline</a></li>
-                            <li><a href="#pipe_api_05" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> PUT pipeline</a></li>
-                            <li><a href="#pipe_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> DELETE pipeline</a></li>
+                            <li><a href="#pipe_api_04" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> POST install</a></li>
+                            <li><a href="#pipe_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> DELETE pipeline</a></li>
                         </ul>
                     </div>
                     <div class="panel-body">
@@ -370,7 +435,7 @@
                             <!-- GET pipelines -->
                             <div class="tab-pane fade in active" id="pipe_api_01">
                                 <div class="alert alert-info">
-                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> and <code style="background:none!important;">filter</code> not yet implemented or having some issue.
+                                    <strong>Warning : </strong> <code style="background:none!important;">order_by</code> have an <a href="https://github.com/REGOVAR/Pirus/issues/92" target="_blank">issue</a> with "desc" ordering and <code style="background:none!important;">filter</code> is <a href="https://github.com/REGOVAR/Pirus/issues/105" target="_blank">not yet implemented</a>.
                                 </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
@@ -397,14 +462,14 @@
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
                                         <input id="pipe_api_01_query" type="text" placeholder="/pipeline?range=0-100&amp;..." value="/pipeline"/> 
-                                            <button onclick="exec_pipe_api_01_e1();">Ex1 : get all</button> 
-                                            <button onclick="exec_pipe_api_01_e2();">Ex2 : range 1-3</button><br/>
-                                        <button onclick="exec_pipe_api_01();">Test it</button>
+                                        <button onclick="generic_exec_from_input('pipe_api_01_query', 'pipe_result');" class="btn btn-primary">Test it</button> - 
+                                        <button onclick="generic_exec_static('/pipeline', 'pipe_result', 'pipe_api_01_query');">Ex1 : get all</button> 
+                                        <button onclick="generic_exec_static('/pipeline?range=1-3', 'pipe_result', 'pipe_api_01_query');">Ex2 : range 1-3</button><br/>
                                     </div>  
                                 </div>
                             </div>
                             <!-- GET pipeline -->
-                            <div class="tab-pane fade" id="misc_api_02">
+                            <div class="tab-pane fade" id="pipe_api_02">
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
                                     <div class="col-sm-10">
@@ -423,14 +488,14 @@
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
                                         <input id="pipe_api_02_query" type="text" placeholder="/pipeline/{pipe_id}" value="/pipeline/1"/>
-                                        <button onclick="exec_pipe_api_02();">Test it</button>
+                                        <button onclick="generic_exec_from_input('pipe_api_02_query', 'pipe_result');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>
                             </div>
                             <!-- GET install -->
                             <div class="tab-pane fade" id="pipe_api_03">
                                 <div class="alert alert-alert">
-                                    <strong>Warning : </strong> To be implemented.
+                                    <strong>Warning : </strong> <a href="https://github.com/REGOVAR/Pirus/issues/93" target="_blank">To be implemented</a>.
                                 </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
@@ -452,7 +517,65 @@
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
                                         <input id="pipe_api_03_query" type="text" placeholder="/pipeline/install/{file_id}/{container_manager_type}" value="/pipeline/install/1/lxd"/>
-                                        <button onclick="exec_pipe_api_03();">Test it</button>
+                                        <button onclick="generic_exec_from_input('pipe_api_03_query', 'pipe_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- POST install -->
+                            <div class="tab-pane fade" id="pipe_api_04">
+                                <div class="alert alert-alert">
+                                    <strong>Warning : </strong> <a href="https://github.com/REGOVAR/Pirus/issues/93" target="_blank">To be implemented</a>.
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>POST /pipeline</code><br/>
+                                        <i>The generic endpoint to install a pipeline. A json form shall be provide in the body of the post to describe how to proceed to install the pipeline. There is 3 differents way to do the installation :<ul>
+                                            <li>from an image file already uploaded. You shall set "container_type" and "file_id" params in the body;</li>
+                                            <li>from an image that is currently uploading. The installation will start automatically when the upload finish. You shall set "container_type" and "file_id" params in the body;</li>
+                                            <li>from an url. According to the type of the container. You shall set "container_type" and "pipe_url" params in the body.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Body</b></div>
+                                    <div class="col-sm-10">
+                                        <code>{ "container_type" : value, "pipe_url" : value, "file_id" : value}</code><br/>
+                                        <i>Information to update in the file. Note that only following fields are allowed to be edited via the Rest api : "name", "type", "tags".</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="pipe_api_04_query" type="text" placeholder="/pipeline/install" value="/pipeline/install" readonly="readonly"/>
+                                        Body : <br/>
+                                        <textarea id="pipe_api_04_body" cols="40" rows="6">{"pipe_url": "http://...", "container_type": "lxd"}</textarea><br/>
+                                        <button onclick="generic_exec_body('pipe_api_04_query', 'pipe_api_04_body', 'pipe_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+
+
+                            <!-- DELETE pipeline -->
+                            <div class="tab-pane fade" id="pipe_api_05">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>DELETE /pipeline/{pipe_id}</code><br/>
+                                        <i>Delete the pipeline. The pipeline is deleted in the Pirus database (SQL) and in the Pirus filesystem. All jobs of this pipe are still here, and they still refer to this pipeline_id, but of course nobody will be able to retrieve which pipeline correspond to this id.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>pipe_id</code><br/>
+                                        <i>The Pirus id of the pipeline.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="pipe_api_04_query" type="text" placeholder="/pipeline/{pipe_id}" value="/pipeline/1"/>
+                                        <button onclick="generic_exec_from_input('pipe_api_04_query', 'pipe_result', 'DELETE');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>
                             </div>
@@ -460,8 +583,8 @@
                     </div>
 
                     <h1>Result</h1>
-                    <button onclick="clear_container('misc_result');">Clear</button>
-                    <pre id="misc_result"/>
+                    <button onclick="clear_container('pipe_result');">Clear</button>
+                    <pre id="pipe_result"/>
                 </div>
             </div>
 
@@ -494,7 +617,26 @@
             <!--      -->
             <div id="ws" class="tab-pane fade">
                 <div style="width:700px; margin:auto;">
-                    realtime
+                    <h1>Last message received</h1>
+                    <div id="ws_message"></div>
+                    <h1>Historic</h1>
+                    <table class="fixed_headers" >
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Sender</th>
+                                <th>Message</th>
+                                <th>Data</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ws_logs">
+                            <tr>
+                                <td>Apple</td>
+                                <td>Red</td>
+                                <td>These are red.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -506,8 +648,6 @@
     <script>
         var rootURL = "http://{{ hostname }}";
 
-        var ws = new WebSocket('ws://{{ hostname }}/ws');
-        var $message = $('#message');
 
 
         function syntaxHighlight(json) 
@@ -564,122 +704,59 @@
         }
 
 
-        // MISC EXEC
-        function exec_misc_api_01()
+        function generic_exec_from_input(input_id, result_id, verb="GET")
         {
             $.ajax(
             {
-                url: rootURL + "/config",
-                type: "GET"
+                url: rootURL + $("#" + input_id).val(),
+                type: verb
             }).fail(function()
             {
                 alert( "ERROR" );
             }).done(function(json) 
             {
-                $('#misc_result').html(syntaxHighlight(json));
+                $('#' + result_id).html(syntaxHighlight(json));
             })
         }
+        function generic_exec_static(endpoint, result_id, input_id=false, verb="GET")
+        {
+            if (input_id)
+            {
+                $("#" + input_id).val(endpoint);
+            }
+            $.ajax(
+            {
+                url: rootURL + endpoint,
+                type: verb
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#' + result_id).html(syntaxHighlight(json));
+            })
+        }
+        function generic_exec_body(input_id, body_id, result_id, verb="POST")
+        {
+            $.ajax(
+            {
+                url: rootURL + $("#" + input_id).val(),
+                type: verb,
+                contentType: 'application/json',
+                data: JSON.stringify($("#" + body_id).val())
+            }).fail(function()
+            {
+                alert( "ERROR" );
+            }).done(function(json) 
+            {
+                $('#' + result_id).html(syntaxHighlight(json));
+            })
+        }
+
 
 
         // FILE EXEC
-        function exec_file_api_01()
-        {
-            $.ajax(
-            {
-                url: rootURL + $("#file_api_01_query").val(),
-                type: "GET"
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                $('#file_result').html(syntaxHighlight(json));
-            })
-        }
-        function exec_file_api_01_e1()
-        {
-            $("#file_api_01_query").val("/file");
-            $.ajax(
-            {
-                url: rootURL +"/file",
-                type: "GET"
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                $('#file_result').html(syntaxHighlight(json));
-            })
-        }
-        function exec_file_api_01_e2()
-        {
-            $("#file_api_01_query").val("/file?range=1-3");
-            $.ajax(
-            {
-                url: rootURL +"/file?range=1-3",
-                type: "GET"
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                $('#file_result').html(syntaxHighlight(json));
-            })
-        }
-        function exec_file_api_02()
-        {
-            $.ajax(
-            {
-                url: rootURL + $("#file_api_02_query").val(),
-                type: "GET"
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                $('#file_result').html(syntaxHighlight(json));
-            })
-        }
-        function exec_file_api_03()
-        {
-            $.ajax(
-            {
-                url: rootURL + $("#file_api_03_query").val(),
-                type: "PUT",
-                contentType: 'application/json',
-                data: JSON.stringify($("#file_api_03_body").val())
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                $('#file_result').html(syntaxHighlight(json));
-            })
-        }
-        function exec_file_api_04()
-        {
-            $.ajax(
-            {
-                url: rootURL + $("#file_api_04_query").val(),
-                type: "DELETE"
-            }).fail(function()
-            {
-                alert( "ERROR" );
-            }).done(function(json) 
-            {
-                $('#file_result').html(syntaxHighlight(json));
-            })
-        }
-        function exec_file_api_05_s() 
-        {
-            pirusFileUpload.start();
-            //
-        }
-        function exec_file_api_05_p()
-        {
-            pirusFileUpload.abort();
-            //
-        }
+
         function exec_file_api_05_i()
         {
             $.ajax(
@@ -696,7 +773,6 @@
         }
 
 
-        // PIPELINE EXEC
 
 
 
@@ -712,7 +788,76 @@
 
 
 
+        // WEBSOCKETS SESSION
+        var ws = new WebSocket('ws://{{ hostname }}/ws');
+        var $message = $('#ws_message');
+        var $ico = $("#ws_ico");
 
+        function ws_new_msg(sender, msg, data="")
+        {
+            if (msg == "error")
+            {
+                $ico.css("color", "orangered");
+                $message.attr("class", 'label label-warning');
+            }
+            else if (msg == "close")
+            {
+                $ico.css("color", "lightgrey");
+                $message.attr("class", 'label label-warning');
+            }
+            else
+            {
+                $ico.css("color", "lightgreen");
+                $message.attr("class", 'label label-success');
+            }
+
+            var dt = new Date();
+            var time = dt.getHours() + "h " + dt.getMinutes() + "m " + dt.getSeconds() + "s"
+
+            $('#ws_logs').append("<tr><td>" + time + "</td><td>" + sender + "</td><td>" + msg + "</td><td>" + data + "</td></tr>");
+        }
+
+        function ws_onopen()
+        {
+            ws_new_msg("Pirus", "open")
+        };
+        function ws_onmessage(ev)
+        {
+            var json = JSON.parse(ev.data);
+            ws_new_msg("Pirus", json["msg"], json["data"])
+
+            switch(json["msg"])
+            {
+                case 'run_changed':
+                    ws_run_changed(json["data"])
+                    break;
+                case 'file_changed':
+                    ws_file_changed(json["data"])
+                    break;
+                case 'error':
+                    ws_error(json["data"])
+                    break;
+            }
+        };
+        function ws_onclose(ev)
+        {
+            // Try to reconnect websocket every seconds
+            ws_new_msg("Me", "close", ev.data)
+            setTimeout(ws_setup, 1000);
+        };
+        function ws_onerror(ev)
+        {
+            ws_new_msg("Me", "error", ev.data)
+        };
+        function ws_setup()
+        {
+            $ico.css("color", "lightgrey");
+            ws = new WebSocket('ws://{{ hostname }}/ws'); //new WebSocket((location.protocol == 'https:' ? 'wss://' : 'ws://') + '{{ hostname }}/ws');
+            //ws.onerror = ws_onerror;
+            ws.onopen = ws_onopen;
+            ws.onmessage = ws_onmessage;
+            ws.onclose = ws_onclose;
+        }
 
 
 
@@ -767,12 +912,15 @@
 
             pirusFileUpload = new tus.Upload(file, options);
             pirusFileUpload.start();
-
-            // fileId = pirusFileUpload.url.substr(pirusFileUpload.url.lastIndexOf('/') + 1);
-            // add_new_activity_to_demo_browser("file", fileId);
-            // Todo : while the upload of the file start/continue, display a form to edit file information (comments, tags, filename, ...)
         })
 
+
+        // ON DOCUMENT READY
+        $(document).ready(function()
+        {
+            // Init websocket
+            ws_setup();
+        });
 
     </script>
 </body>
