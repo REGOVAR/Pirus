@@ -51,7 +51,7 @@ class JobManager:
 
 
 
-    def new(self, pipeline_id, config, inputs_ids=[], asynch=True, auto_notify=True):
+    def new(self, pipeline_id:int, name:str, config:dict, inputs_ids=[], asynch=True, auto_notify=True):
         """
             Create a new job for the specified pipepline (pipeline_id), with provided config and input's files ids
         """
@@ -60,12 +60,12 @@ class JobManager:
             raise RegovarException("Pipeline not found (id={}).".format(pipeline_id))
         if pipeline.status != "ready":
             raise RegovarException("Pipeline status ({}) is not \"ready\". Cannot create a job.".format(pipeline.status))
-        if not isinstance(config, dict) and "name" not in config.keys():
+        if not name:
             raise RegovarException("A name must be provided to create new job")
         # Init model
         job = Job.new()
         job.status = "initializing"
-        job.name = config["name"]
+        job.name = name
         job.config = json.dumps(config, sort_keys=True, indent=4)
         job.progress_value = 0
         job.pipeline_id = pipeline_id
@@ -92,7 +92,7 @@ class JobManager:
         # Set job's config in the inputs directory of the job
         config_path = os.path.join(inputs_path, "config.json")
         job_config = {
-            "pirus" : {"notify_url" : NOTIFY_URL.format(job.id)},
+            "pirus" : {"notify_url" : NOTIFY_URL.format(job.id), "job_name" : job.name},
             "job" : config
         }
         with open(config_path, 'w') as f:
@@ -231,8 +231,6 @@ class JobManager:
         job = Job.from_id(job_id)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
-        if job.status not in ["waiting", "running", "pause"]:
-            raise RegovarException("Job status is \"{}\". Cannot proceed to the finalization of the job.".format(job.status ))
         # Register outputs files
         outputs_path = os.path.join(job.path, "outputs")
         logs_path = os.path.join(job.path, "logs")
@@ -303,7 +301,7 @@ class JobManager:
             self.finalize(job.id, asynch)
         # Push notification
         if notify:
-            core.notify_all({"action": "job_updated", "data" : [job.to_json()]})
+            core.notify_all(msg={"action": "job_updated", "data" : [job.to_json()]})
 
 
     def __init_job(self, job_id, asynch, auto_notify):
@@ -370,8 +368,7 @@ class JobManager:
         if core.container_managers[job.pipeline.type].start_job(job):
             self.set_status(job, "running", asynch)
             return True
-        else:
-            return False
+        return False
 
 
 
@@ -393,7 +390,7 @@ class JobManager:
                 return False
             self.set_status(job, "pause", asynch)
             return True
-
+        return False
 
 
     def __stop_job(self, job_id, asynch):
@@ -410,8 +407,9 @@ class JobManager:
                 # Log error
                 self.set_status(job, "error", asynch)
                 return False
-            self.set_status(job, "waiting", asynch)
+            self.set_status(job, "canceled", asynch)
             return True
+        return False
 
 
 
@@ -432,3 +430,4 @@ class JobManager:
         else:
             self.set_status(job, "error", asynch)
             return False
+        return False

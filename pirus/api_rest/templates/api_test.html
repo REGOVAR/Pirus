@@ -41,8 +41,8 @@
 
         /* Loading indicator */
         .loader {
-            border: 16px solid #f3f3f3;     /* Light grey */
-            border-top: 16px solid #3498db; /* Blue */
+            border: 10px solid #f3f3f3;     /* Light grey */
+            border-top: 10px solid #3498db; /* Blue */
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -668,26 +668,50 @@
                                         <i>Create a new job with provided json configuration in the body of the post request.</i>
                                     </div>  
                                 </div>
+                                contentType: 
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>ContentType</b></div>
+                                    <div class="col-sm-10">
+                                        <code>'application/json'</code><br/>
+                                    </div>
+                                </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Body</b></div>
                                     <div class="col-sm-10">
-                                        <code>{ "pipeline_id" : &lt;pipe_id&gt;, "config" : &lt;json&gt;, "inputs" : [&lt;file_id&gt;,...]}</code><br/>
-                                        <i> <ul><li>&lt;pipe_id&gt; must refer to a pipeline "ready" to be used on the Pirus server;</li>
-                                            <li>&lt;json&gt; is the json data that will be provided to the pipeline to configure the job. The only mandatory key in this json 
-                                                is the <code>"name"</code> to set the name of the job in pirus HMI;</li>
-                                            <li>[&lt;file_id&gt;,...] : a list of Pirus file's file id. Note that if one or several file are not ready to be used (still uploading by
+                                        <i>As a json request, the body is a json dictionnary with following keys: </i><br/>
+                                        <code>"pipeline_id" : int</code><br/>
+                                        <i>Refer to the id of a pipeline "ready" to be used on the Pirus server.</i><br/><br/>
+                                        <code>"name" : str</code><br/>
+                                        <i>The name of the job.</i><br/><br/>
+
+                                        <code>"config" : {json}</code><br/>
+                                        <i>The json data that will be provided to the pipeline to configure the job. You can download the json form use to generate this config 
+                                           by looking the form.json document of the pipe (<code>/pipeline/{pipeline_id}</code>). If the pipeline do no provide form.json file, 
+                                           then, you can let this entry empty.<br/>
+                                           IMPORTANT : the form.json describe the form to set the config json. so you dont have to set config with all information describe in the 
+                                           form.json file. The config shall be a simple key-value dictionnary</i><br/><br/>
+
+                                        <code>"inputs" : [int,...]</code><br/>
+                                        <i>A list of Pirus file's file id. Note that if one or several file are not ready to be used (still uploading by
                                                 example), je job will be in "waiting" status and will automaticaly start when all inputs files will be ready. Of course, if a file is deleted
-                                                or its upload never end, the job will never start. And you will have to stop or delete it yourself.</li>
-                                            </ul>
-                                        </i>
+                                                or its upload never end, the job will never start. And you will have to stop or delete it yourself.</i>
+
                                     </div>
                                 </div>
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Test</b></div>  
                                     <div class="col-sm-10">
+                                        Main query : <br/>
                                         <input id="job_api_03_query" type="text" placeholder="/job" value="/job" readonly="readonly"/>
-                                        Body : <br/>
-                                        <textarea id="job_api_03_body" cols="40" rows="6">{ "pipeline_id" : 1, "config" : {"name" : "my test", "inputs" : []}</textarea><br/>
+                                        Body : to set config, retrieve the form.json document of the pipeline you want to run (<code>/pipeline/{pipeline_id}</code>)<br/>
+                                        <textarea id="job_api_03_body" cols="60" rows="10">{ 
+    "pipeline_id" : 1, 
+    "name" : "My Test Job",
+    "config" : {
+        "Prop1" : "value 1", 
+        "HasProp2" : true, 
+    "inputs" : []
+}</textarea><br/>
                                         <button onclick="generic_exec_body('job_api_03_query', 'job_api_03_body', 'job_result');" class="btn btn-primary">Test it</button>
                                     </div>  
                                 </div>

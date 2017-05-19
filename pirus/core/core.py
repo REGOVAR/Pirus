@@ -28,7 +28,7 @@ from core.pirus import *
 # CORE OBJECT
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 
-def notify_all_print(msg):
+def notify_all_print(msg=None, src=None):
     """
         Default delegate used by the core for notification.
     """

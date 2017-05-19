@@ -274,10 +274,9 @@ class LxdManager(PirusContainerManager):
             exec_cmd(["lxc", "start", lxd_container])
             lxd_job_file = os.path.join("/", os.path.basename(job_file))
             exec_cmd(["lxc", "file", "push", job_file, lxd_container + lxd_job_file])
-            exec_cmd(["lxc", "exec", "--mode=non-interactive", lxd_container, "--",  "chmod", "+x", lxd_job_file])
 
-            cmd = ["lxc", "exec", lxd_container, lxd_job_file]
-            exec_cmd(cmd, asynch=True)
+            cmd = ["lxc", "exec", "--mode=non-interactive", lxd_container, "--",  "chmod", "+x", lxd_job_file]
+            r, o, e = exec_cmd(cmd, True)
             # TODO : keep future callback and catch error if start command failled
 
             # if not asynch:

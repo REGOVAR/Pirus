@@ -70,10 +70,13 @@ def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
 
 
 
-def rest_notify_all(src, msg):
+def rest_notify_all(msg=None, src=None):
     for ws in WebsocketHandler.socket_list:
         if src != ws[1]:
-            ws[0].send_str(msg)
+            if msg:
+                ws[0].send_str(msg)
+            else:
+                print("rest_notify_all no message...", msg, src)
 
 # Give to the core the delegate to call to notify all via websockets
 core.notify_all = rest_notify_all
@@ -168,26 +171,26 @@ def format_pipeline_json(pipe_json):
 
 
 def format_job_json(job_json, include_log_tail=False):
-    if job_json["pipeline"]:
+    if "pipeline" in job_json.keys():
         job_json["pipeline"] = format_pipeline_json(job_json["pipeline"])
 
-    if job_json["logs"]:
+    if "logs" in job_json.keys():
         if include_log_tail: result.update({"logs_tails": {}})
         result.update({"logs": []})
         for log in job_json["logs"]:
             result["logs"].append("http://{}/dl/job/{}/logs/{}".format(HOST_P, os.path.basename(job_json["path"]), log.name))
             result["logs_tails"][log.name] = log.tail()
-    if result["inputs"]:
+    if "inputs" in job_json.keys():
         inputs = []
-        for file in result["inputs"]:
+        for file in job_json["inputs"]:
             inputs.append(format_file_json(file))
-        result["inputs"] = inputs
-    if result["outputs"]:
+        job_json["inputs"] = inputs
+    if "outputs" in job_json.keys():
         outputs = []
-        for file in result["outputs"]:
+        for file in job_json["outputs"]:
             outputs.append(format_file_json(file))
-        result["outputs"] = outputs
-    return result
+        job_json["outputs"] = outputs
+    return job_json
 
 
 
@@ -685,12 +688,19 @@ class JobHandler:
             data = json.loads(data)
         except Exception as ex:
             return rest_error("Error occured when retriving json data to start new job. {}".format(ex))
+        missing = []
+        for k in ["pipeline_id", "name", "config", "inputs"]:
+            if k not in data.keys(): missing.append(k)
+        if len(missing) > 0:
+            return rest_error("Following informations are missing to create a new job : {}".format(", ".join(missing)))
+
         pipe_id = data["pipeline_id"]
+        name = data["name"]
         config = data["config"]
         inputs = data["inputs"]
         # Create the job 
         try:
-            job = core.jobs.new(pipe_id, config, inputs, asynch=True)
+            job = core.jobs.new(pipe_id, name, config, inputs, asynch=True)
         except Exception as ex:
             return rest_error("Error occured when initializing the new job. {}".format(ex))
         if job is None:
@@ -701,7 +711,7 @@ class JobHandler:
     def pause(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
-            core.jobs.pause(job_id)
+            core.jobs.pause(job_id, False)
         except Exception as ex:
             return rest_error("Unable to pause the job {}. {}".format(job.id, ex))
         return rest_success()
@@ -710,7 +720,7 @@ class JobHandler:
     def start(self, request):
         job_id  = request.match_info.get('job_id', -1)
         try:
-            core.jobs.play(job_id)
+            core.jobs.start(job_id, False)
         except Exception as ex:
             return rest_error("Unable to start the job {}. {}".format(job.id, ex))
         return rest_success()
@@ -719,7 +729,7 @@ class JobHandler:
     def cancel(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
-            core.jobs.stop(job_id)
+            core.jobs.stop(job_id, False)
         except Exception as ex:
             return rest_error("Unable to stop the job {}. {}".format(job.id, ex))
         return rest_success()
@@ -742,7 +752,7 @@ class JobHandler:
             core.jobs.finalize(job_id, False)
         except Exception as ex:
             return rest_error("Unable to finalize the job {}. {}".format(job_id, ex))
-        return rest_success(format_job_json(Job.from_id(job_id)))
+        return rest_success(format_job_json(Job.from_id(job_id).to_json()))
 
 
 
@@ -770,7 +780,7 @@ class WebsocketHandler:
         print('WS connection open by', ws_id)
         WebsocketHandler.socket_list.append((ws, ws_id))
         msg = '{"action":"online_user", "data" : [' + ','.join(['"' + _ws[1] + '"' for _ws in WebsocketHandler.socket_list]) + ']}'
-        rest_notify_all(None, msg)
+        core.notify_all(msg=msg)
 
         try:
             async for msg in ws:
