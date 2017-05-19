@@ -76,7 +76,7 @@ app.router.add_static('/assets', TEMPLATE_DIR)
 app.router.add_static('/dl/db/', DATABASES_DIR)
 app.router.add_static('/dl/pipe/', PIPELINES_DIR)
 app.router.add_static('/dl/file/', FILES_DIR)
-app.router.add_static('/dl/job/', FILES_DIR)
+app.router.add_static('/dl/job/', JOBS_DIR)
 
 app.router.add_route('GET',    "/dl/f/{file_id}", fileHdl.dl_file)
 #app.router.add_route('GET',    "/dl/p/{file_id}", fileHdl.dl_pipeline)

@@ -360,7 +360,7 @@ class LxdManager(PirusContainerManager):
                     if data[0].strip() in ["Name","Created", "Status", "Processes", "Memory (current)", "Memory (peak)"]:
                         result.update({data[0].strip(): data[1]})
         except Exception as ex:
-            err("Error occured when trying to finalize the job {} (id={})".format(lxd_container, job.id), ex)
+            err("Error occured when retriving monitoring data for job {} (id={})".format(lxd_container, job.id), ex)
         return result
 
 

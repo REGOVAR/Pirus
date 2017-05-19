@@ -163,21 +163,27 @@ def job_to_json(self, fields=None):
         if f == "start_date" or f == "update_date" :
             result.update({f: eval("self." + f + ".ctime()")})
         elif f == "inputs":
-            if self.loading_depth == 0:
+            if self.loading_depth > 0:
                 result.update({"inputs" : [i.to_json() for i in self.inputs]})
             else:
                 result.update({"inputs" : self.inputs})
         elif f == "outputs":
-            if self.loading_depth == 0:
+            if self.loading_depth > 0:
                 result.update({"outputs" : [o.to_json() for o in self.outputs]})
             else:
                 result.update({"outputs" : self.outputs})
         elif f == "pipeline":
             if self.loading_depth > 0:
                 result.update({"pipeline" : self.pipeline.to_json()})
+        elif f == "logs":
+            logs = []
+            for l in self.logs:
+                logs.append(l.path)
+            result.update({"logs" : logs})
         elif f == "config" and self.config:
             result.update({f: json.loads(self.config)})
-        else:
+        # else
+        elif f in Job.public_fields:
             result.update({f: eval("self." + f)})
     return result
 
@@ -252,7 +258,7 @@ def job_count():
 
 
 Job = Base.classes.job
-Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path"]
+Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path", "logs"]
 Job.init = job_init
 Job.load_depth = job_load_depth
 Job.from_id = job_from_id
@@ -352,7 +358,7 @@ def jobfile_get_outputs_ids(job_id):
     return result
 
 
-def jobfile_new(job_id, file_id, as_input):
+def jobfile_new(job_id, file_id, as_input=False):
     """
         Create a new job-file association and save it in the database
     """

@@ -159,7 +159,6 @@ class JobManager:
              - logs : list of MonitoringLog (log file) write by the run/manager in the run's logs directory
         """
         from core.core import core
-
         job = Job.from_id(job_id, 1)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
@@ -170,7 +169,6 @@ class JobManager:
             job.logs_moninitoring = core.container_managers[job.pipeline.type].monitoring_job(job)
         except Exception as ex:
             err("Error occured when retrieving monitoring information for the job {} (id={})".format(os.path.basename(job.path), job.id), ex)
-            return None
         return job
 
 
@@ -231,10 +229,11 @@ class JobManager:
         job = Job.from_id(job_id)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
+        if job.status in ["canceled", "done", "error"]:
+            raise RegovarException("Job status is \"{}\". Cannot be finalized.".format(job.status))
         # Register outputs files
         outputs_path = os.path.join(job.path, "outputs")
         logs_path = os.path.join(job.path, "logs")
-
         for f in os.listdir(outputs_path):
             file_path = os.path.join(outputs_path, f)
             if os.path.isfile(file_path):
@@ -243,8 +242,7 @@ class JobManager:
                 # 2- create link (to help admins when browsing pirus filesystem)
                 os.link(pf.path, file_path)
                 # 3- update job's entry in db to link file to job's outputs
-                job.outputs_ids.append(pf.id)
-        job.save()
+                JobFile.new(job_id, pf.id)
         # Stop container and delete it
         if asynch: 
             run_async(self.__finalize_job, (job.id, asynch,))

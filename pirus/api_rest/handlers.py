@@ -45,7 +45,7 @@ def rest_success(response_data=None, pagination_data=None):
         results = {"success":True}
     else:
         results = {"success":True, "data":response_data}
-    if pagination_data is not None:
+    if pagination_data:
         results.update(pagination_data)
     return web.json_response(results)
 
@@ -170,16 +170,20 @@ def format_pipeline_json(pipe_json):
 
 
 
-def format_job_json(job_json, include_log_tail=False):
+def format_job_json(job, fields=None):
+    job_json = job.to_json(fields)
+    lt = "logs_tails" in fields
     if "pipeline" in job_json.keys():
         job_json["pipeline"] = format_pipeline_json(job_json["pipeline"])
 
     if "logs" in job_json.keys():
-        if include_log_tail: result.update({"logs_tails": {}})
-        result.update({"logs": []})
-        for log in job_json["logs"]:
-            result["logs"].append("http://{}/dl/job/{}/logs/{}".format(HOST_P, os.path.basename(job_json["path"]), log.name))
-            result["logs_tails"][log.name] = log.tail()
+        logs = []
+        if lt: job_json.update({"logs_tails" : {}})
+        for log in job.logs:
+            logs.append("http://{}/dl/job/{}/logs/{}".format(HOST_P, os.path.basename(job.path), log.name))
+            if lt: job_json["logs_tails"].update({ log.name : log.tail(20) })
+        job_json["logs"] = logs
+
     if "inputs" in job_json.keys():
         inputs = []
         for file in job_json["inputs"]:
@@ -731,7 +735,7 @@ class JobHandler:
         try:
             core.jobs.stop(job_id, False)
         except Exception as ex:
-            return rest_error("Unable to stop the job {}. {}".format(job.id, ex))
+            return rest_error("Unable to stop the job {}. {}".format(job_id, ex))
         return rest_success()
 
 
@@ -742,7 +746,7 @@ class JobHandler:
         except Exception as ex:
             return rest_error("Unable to retrieve monitoring info for the jobs with id={}. {}".format(job_id, ex))
         if job:
-            rest_success(format_job_json(job.to_json(), True))
+            return rest_success(format_job_json(job, ["id", "pipeline_id", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "logs", "logs_tails"]))
         return rest_error("Unable to get monitoring information for the job {}.".format(job_id))
 
 
@@ -752,7 +756,8 @@ class JobHandler:
             core.jobs.finalize(job_id, False)
         except Exception as ex:
             return rest_error("Unable to finalize the job {}. {}".format(job_id, ex))
-        return rest_success(format_job_json(Job.from_id(job_id).to_json()))
+        job = Job.from_id(job_id)
+        return rest_success(format_job_json(job))
 
 
 

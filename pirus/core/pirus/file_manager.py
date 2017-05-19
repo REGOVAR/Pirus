@@ -174,6 +174,7 @@ class FileManager:
         if not os.path.isfile(path):
             raise RegovarException("File \"{}\" doesn't exists.".format(path))
         pfile = File.new()
+        pfile.load(metadata)
         pfile.name = clean_filename(os.path.basename(path))
         pfile.type = os.path.splitext(pfile.name)[1][1:].strip().lower()
         new_path = os.path.join(FILES_DIR, str(pfile.id))
