@@ -71,6 +71,10 @@ def rest_error(message:str="Unknow", code:str="0", error_id:str=""):
 
 
 def rest_notify_all(msg=None, src=None):
+    if isinstance(msg, dict):
+        msg = json.dumps(msg)
+    elif msg:
+        msg = str(msg)
     for ws in WebsocketHandler.socket_list:
         if src != ws[1]:
             if msg:
@@ -332,26 +336,33 @@ class WebsiteHandler:
 
 
 
-    def get_db(self, request):
-        ref = request.match_info.get('ref', None)
-        bundle = request.match_info.get('bundle', None)
-        
-        json = {r:{} for r in os.listdir(DATABASES_DIR) if os.path.isdir(os.path.join(DATABASES_DIR, r))}
-        for r in json.keys():
-            json[r] = {b:{
-                "size": humansize(os.path.getsize(os.path.join(DATABASES_DIR, r,b))),
-                "bsize" : os.path.getsize(os.path.join(DATABASES_DIR, r,b)),
-                "url" : "http://{}/databases/{}/{}".format(HOST_P, r, b),
-                "path" : os.path.join(r,b)
-                } for b in os.listdir(os.path.join(DATABASES_DIR, r))}
-
-        return rest_success(json)
+    
 
 
  
 
 
 
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+# DATABASE HANDLER
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+class DatabaseHandler:
+
+
+    def get_db(self, request):
+        ref = request.match_info.get('ref', None)
+        
+        if not ref:
+            return rest_success([r for r in os.listdir(DATABASES_DIR) if os.path.isdir(os.path.join(DATABASES_DIR, r))])
+
+        if os.path.isdir(os.path.join(DATABASES_DIR, ref)):
+            result = {db:{
+                "size": humansize(os.path.getsize(os.path.join(DATABASES_DIR, ref, db))),
+                "bsize" : os.path.getsize(os.path.join(DATABASES_DIR, ref, db)),
+                "url" : "http://{}/dl/db/{}/{}".format(HOST_P, ref, db),
+                } for db in os.listdir(os.path.join(DATABASES_DIR, ref))}
+            return rest_success(result)
+        return rest_error("Unknow database reference : {}".format(ref))
 
 
 

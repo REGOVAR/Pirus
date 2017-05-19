@@ -20,6 +20,7 @@ website = WebsiteHandler()
 fileHdl = FileHandler()
 jobHdl = JobHandler()
 pipeHdl = PipelineHandler()
+dbHdl = DatabaseHandler()
 
 # Config server app
 app['websockets'] = []
@@ -34,17 +35,17 @@ app.on_shutdown.append(on_shutdown)
 app.router.add_route('GET',    "/",       website.home)
 app.router.add_route('GET',    "/api",    website.api)
 app.router.add_route('GET',    "/config", website.config)
-app.router.add_route('GET',    "/db",     website.get_db)
-app.router.add_route('GET',    "/db/{ref}", website.get_db)
-app.router.add_route('GET',    "/db/{ref}/{bundle}", website.get_db)
 app.router.add_route('GET',    "/ws",     websocket.get)
+
+app.router.add_route('GET',    "/db",     dbHdl.get_db)
+app.router.add_route('GET',    "/db/{ref}", dbHdl.get_db)
 
 app.router.add_route('GET',    "/pipeline",                                    pipeHdl.get)
 app.router.add_route('GET',    "/pipeline/{pipe_id}",                          pipeHdl.get_details)
 app.router.add_route('DELETE', "/pipeline/{pipe_id}",                          pipeHdl.delete)
 app.router.add_route('GET',    "/pipeline/install/{file_id}/{container_type}", pipeHdl.install)
 app.router.add_route('POST',   "/pipeline/install",                            pipeHdl.install_json)
-app.router.add_route('GET',    "/pipeline/{pipe_id}/{filename}",               fileHdl.dl_pipe_file)
+# app.router.add_route('GET',    "/pipeline/{pipe_id}/{filename}",               fileHdl.dl_pipe_file)
 
 app.router.add_route('GET',    "/job",                     jobHdl.get)
 app.router.add_route('POST',   "/job",                     jobHdl.new)
@@ -67,7 +68,7 @@ app.router.add_route('PATCH',  "/file/upload/{file_id}", fileHdl.tus_upload_chun
 app.router.add_route('DELETE', "/file/upload/{file_id}", fileHdl.tus_upload_delete)
 
 # Websockets / realtime notification
-app.router.add_route('POST',   "/job/notify/{job_id}", jobHdl.update_status)
+app.router.add_route('POST',   "/job/{job_id}/notify", jobHdl.update_status)
 
 
 # Statics root for direct download
@@ -78,6 +79,6 @@ app.router.add_static('/dl/pipe/', PIPELINES_DIR)
 app.router.add_static('/dl/file/', FILES_DIR)
 app.router.add_static('/dl/job/', JOBS_DIR)
 
-app.router.add_route('GET',    "/dl/f/{file_id}", fileHdl.dl_file)
+# app.router.add_route('GET',    "/dl/f/{file_id}", fileHdl.dl_file)
 #app.router.add_route('GET',    "/dl/p/{file_id}", fileHdl.dl_pipeline)
 #app.router.add_route('GET',    "/dl/r/{file_id}", fileHdl.dl_job)

@@ -709,7 +709,8 @@
     "name" : "My Test Job",
     "config" : {
         "Prop1" : "value 1", 
-        "HasProp2" : true, 
+        "HasProp2" : true
+    },
     "inputs" : []
 }</textarea><br/>
                                         <button onclick="generic_exec_body('job_api_03_query', 'job_api_03_body', 'job_result');" class="btn btn-primary">Test it</button>
@@ -867,8 +868,66 @@
             <!-- DB   -->
             <!--      -->
             <div id="db" class="tab-pane fade">
-                <div style="width:700px; margin:auto;">
-                    db
+                                <h1>Databases REST api</h1>
+                <div class="panel with-nav-tabs panel-default">
+                    <div class="panel-heading">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#db_api_01" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> list ref</a></li>
+                            <li><a href="#db_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> list db</a></li>
+                        </ul>
+                    </div>
+
+
+                    <div class="panel-body">
+                        <div class="tab-content">
+                            <!-- List ref -->
+                            <div class="tab-pane fade in active" id="db_api_01">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /db</code><br/>
+                                        <i>Return the list of database's reference available on Pirus server.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="db_api_01_query" type="text" placeholder="/db" value="/db"/> 
+                                        <button onclick="generic_exec_from_input('db_api_01_query', 'db_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- List dbs -->
+                            <div class="tab-pane fade" id="db_api_02">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /db/{ref_name}</code><br/>
+                                        <i>Return the list of databases for the provided reference.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>ref_name</code><br/>
+                                        <i>The name of the reference.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="db_api_02_query" type="text" placeholder="/db/{ref_name}" value="/db/hg19"/> 
+                                        <button onclick="generic_exec_from_input('db_api_02_query', 'db_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2>Result</h2>
+                    <button onclick="clear_container('db_result');">Clear</button>
+                    <pre id="db_result"/>
+                    </pre>
                 </div>
             </div>
 

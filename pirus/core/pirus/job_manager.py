@@ -273,7 +273,6 @@ class JobManager:
 
     def set_status(self, job, new_status, notify=True, asynch=True):
         from core.core import core
-
         # Avoid useless notification
         # Impossible to change state of a job in error or canceled
         if (new_status != "running" and job.status == new_status) or job.status in  ["error", "canceled"]:
