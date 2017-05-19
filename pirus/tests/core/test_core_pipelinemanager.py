@@ -104,7 +104,7 @@ class TestCorePipelineManager(unittest.TestCase):
         iid = p.image_file_id
         path = f.path
         r = core.pipelines.delete(pid)
-        self.assertEqual(isinstance(r, Pipeline), True)
+        self.assertEqual(isinstance(r, dict), True)
         self.assertEqual(Pipeline.from_id(pid), None)
         self.assertEqual(File.from_id(iid), None)
         self.assertEqual(os.path.isfile(path), False)

@@ -110,8 +110,8 @@ class PipelineManager:
         pfile = core.files.from_local(filepath, move, metadata)
         pipe = self.install_init(os.path.basename(filepath), metadata)
 
-        # FIXME : Sometime getting sqlalchemy error 'is not bound to a Session' 
-        #         why it occure here ... why sometime :/ 
+        # Sometime getting sqlalchemy error 'is not bound to a Session' 
+        # why it occure here ... why sometime :/ 
         check_session(pfile)
         check_session(pipe)
 
@@ -135,8 +135,8 @@ class PipelineManager:
             raise RegovarException("Pipeline not found (id={}).".format(pipeline_id))
         if pipeline.status != "initializing":
             raise RegovarException("Pipeline status ({}) is not \"initializing\". Cannot perform an installation.".format(pipeline.status))
-        if pipeline.image_file and pipeline.image_file.status not in ["uploaded", "checked"]:
-            raise RegovarException("Pipeline image (status={}) upload is not complete.".format(pipeline.image_file.status))
+        if pipeline.image_file and pipeline.image_file.status not in ["uploading", "uploaded", "checked"]:
+            raise RegovarException("Wrong pipeline image (status={}).".format(pipeline.image_file.status))
 
         if not pipeline.type: pipeline.type = pipeline_type
         if not pipeline.type :
@@ -146,10 +146,11 @@ class PipelineManager:
         if core.container_managers[pipeline.type].need_image_file and not pipeline.image_file:
             raise RegovarException("This kind of pipeline need a valid image file to be uploaded on the server.")
 
-        if asynch:
-            run_async(self.__install, pipeline)
-        else:
-            self.__install(pipeline)
+        if not pipeline.image_file or pipeline.image_file.status in ["uploaded", "checked"]:
+            if asynch:
+                run_async(self.__install, pipeline)
+            else:
+                self.__install(pipeline)
 
 
 
@@ -159,6 +160,7 @@ class PipelineManager:
         try:
             result = core.container_managers[pipeline.type].install_pipeline(pipeline)
         except Exception as ex:
+            if isinstance(ex, RegovarException): raise ex
             raise RegovarException("Error occured during installation of the pipeline. Installation aborded.", "", ex)
         pipeline.status = "ready" if result else "error"
         pipeline.save()
@@ -190,7 +192,7 @@ class PipelineManager:
                 err("core.PipelineManager.delete : Container manager failed to delete the pipeline with id {}." + str(pipeline.id), ex)
             try:
                 # Clean filesystem
-                shutil.rmtree(pipeline.root_path, True)
+                shutil.rmtree(pipeline.path, True)
                 # Clean DB
                 core.files.delete(pipeline.image_file_id)
                 Pipeline.delete(pipeline.id)

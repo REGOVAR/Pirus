@@ -75,11 +75,11 @@ class JobManager:
         # TODO : check if enough free resources to start the new job. otherwise, set status to waiting and return
         job.init(1)
         # Init directories entries for the container
-        job.root_path = os.path.join(JOBS_DIR, CONTAINERS_CONFIG[job.pipeline.type]["job_name"].format("{}-{}".format(job.pipeline_id, job.id)))
+        job.path = os.path.join(JOBS_DIR, CONTAINERS_CONFIG[job.pipeline.type]["job_name"].format("{}-{}".format(job.pipeline_id, job.id)))
         job.save()
-        inputs_path = os.path.join(job.root_path, "inputs")
-        outputs_path = os.path.join(job.root_path, "outputs")
-        logs_path = os.path.join(job.root_path, "logs")
+        inputs_path = os.path.join(job.path, "inputs")
+        outputs_path = os.path.join(job.path, "outputs")
+        logs_path = os.path.join(job.path, "logs")
         if not os.path.exists(inputs_path): 
             os.makedirs(inputs_path)
         if not os.path.exists(outputs_path):
@@ -88,6 +88,17 @@ class JobManager:
         if not os.path.exists(logs_path):
             os.makedirs(logs_path)
             os.chmod(logs_path, 0o777)
+        
+        # Set job's config in the inputs directory of the job
+        config_path = os.path.join(inputs_path, "config.json")
+        job_config = {
+            "pirus" : {"notify_url" : NOTIFY_URL.format(job.id)},
+            "job" : config
+        }
+        with open(config_path, 'w') as f:
+            f.write(json.dumps(job_config, sort_keys=True, indent=4))
+            os.chmod(config_path, 0o777)
+
         # Check that all inputs files are ready to be used
         for f in job.inputs:
             if f is None :
@@ -98,16 +109,6 @@ class JobManager:
                 war("INPUTS of the run not ready. waiting")
                 self.set_status(job, "waiting", asynch=asynch)
                 return Job.from_id(job.id)
-
-        # Put inputs files and job's config in the inputs directory of the job
-        config_path = os.path.join(inputs_path, "config.json")
-        job_config = {
-            "pirus" : {"notify_url" : NOTIFY_URL.format(job.id)},
-            "job" : config
-        }
-        with open(config_path, 'w') as f:
-            f.write(json.dumps(job_config, sort_keys=True, indent=4))
-            os.chmod(config_path, 0o777)
         for f in job.inputs:
             link_path = os.path.join(inputs_path, f.name)
             os.link(f.path, link_path)
@@ -126,8 +127,6 @@ class JobManager:
 
 
 
-
-
     def start(self, job_id, asynch=True):
         """
             Start or restart the job
@@ -135,6 +134,14 @@ class JobManager:
         job = Job.from_id(job_id)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
+        # If job is still initializing
+        if job.status == "initializing":
+            if asynch: 
+                run_async(self.__init_job, (job.id, asynch, True))
+                return True
+            else:
+                return self.__init_job(job.id, asynch, True)
+
         if job.status not in ["waiting", "pause"]:
             raise RegovarException("Job status ({}) is not \"pause\" or \"waiting\". Cannot start the job.".format(job.status))
         # Call start of the container
@@ -162,7 +169,7 @@ class JobManager:
         try:
             job.logs_moninitoring = core.container_managers[job.pipeline.type].monitoring_job(job)
         except Exception as ex:
-            err("Error occured when retrieving monitoring information for the job {} (id={})".format(os.path.basename(job.root_path), job.id), ex)
+            err("Error occured when retrieving monitoring information for the job {} (id={})".format(os.path.basename(job.path), job.id), ex)
             return None
         return job
 
@@ -224,9 +231,11 @@ class JobManager:
         job = Job.from_id(job_id)
         if not job:
             raise RegovarException("Job not found (id={}).".format(job_id))
+        if job.status not in ["waiting", "running", "pause"]:
+            raise RegovarException("Job status is \"{}\". Cannot proceed to the finalization of the job.".format(job.status ))
         # Register outputs files
-        outputs_path = os.path.join(job.root_path, "outputs")
-        logs_path = os.path.join(job.root_path, "logs")
+        outputs_path = os.path.join(job.path, "outputs")
+        logs_path = os.path.join(job.path, "logs")
 
         for f in os.listdir(outputs_path):
             file_path = os.path.join(outputs_path, f)
@@ -260,7 +269,7 @@ class JobManager:
         else:
             self.__finalize_job(job.id, asynch)
         # Deleting file in the filesystem
-        shutil.rmtree(job.root_path, True)
+        shutil.rmtree(job.path, True)
         return job
 
 

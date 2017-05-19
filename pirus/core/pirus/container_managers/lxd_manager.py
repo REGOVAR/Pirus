@@ -52,15 +52,15 @@ class LxdManager(PirusContainerManager):
         if not CONTAINERS_CONFIG or "lxd" not in CONTAINERS_CONFIG.keys() or not CONTAINERS_CONFIG["lxd"]:
             raise RegovarException("No configuration settings found for lxd")
         conf = CONTAINERS_CONFIG["lxd"]
-        lxd_alias = str(uuid.uuid4())
+        lxd_alias = str(pipeline.id)
         root_path = os.path.join(PIPELINES_DIR, lxd_alias)
         old_file_path = pipeline.image_file.path
-        pipeline.image_file.path = os.path.join(root_path, pipeline.name)
+        #pipeline.image_file.path = os.path.join(root_path, pipeline.name)
         
         # 1- Copy file into final folder
         log('Installation of the pipeline package : ' + root_path)
         os.makedirs(root_path)
-        os.rename(old_file_path, pipeline.image_file.path)
+        #os.rename(old_file_path, pipeline.image_file.path)
         os.chmod(pipeline.image_file.path, 0o777)
 
         # 2- Extract pipeline metadata
@@ -131,7 +131,7 @@ class LxdManager(PirusContainerManager):
         pipeline.status = "installing"
         pipeline.documents = json.dumps(documents, sort_keys=True, indent=2)
         pipeline.manifest = json.dumps(metadata, sort_keys=True, indent=2)
-        pipeline.root_path = root_path
+        pipeline.path = root_path
         try:
             pipeline.save()
         except Exception as ex:
@@ -152,6 +152,8 @@ class LxdManager(PirusContainerManager):
 
             pipeline.delete()
             shutil.rmtree(root_path)
+            if "fingerprint" in error:
+                raise RegovarException("This pipeline image is already installed on the server. Installation abord.")
             raise RegovarException("FAILLED Lxd image. ($: {}) : \n{}".format(" ".join(cmd), error))
         else:
             log('Installation of the lxd image.')
@@ -168,7 +170,6 @@ class LxdManager(PirusContainerManager):
                     else:
                         shutil.rmtree(fullpath)
         except Exception as ex:
-            # Notify only admins
             err('FAILLED to clean repository : {}'.format(ex))
         log('Cleaning repository.')
         log('Pipeline is ready !')
@@ -221,7 +222,7 @@ class LxdManager(PirusContainerManager):
                           to finalize it when its done.
         """
         # Setting up the lxc container for the job
-        lxd_container = os.path.basename(job.root_path)
+        lxd_container = os.path.basename(job.path)
         manifest = yaml.load(job.pipeline.manifest)
         lxd_job_cmd = manifest["job"]
         lxd_logs_path = manifest["logs"]
@@ -230,12 +231,12 @@ class LxdManager(PirusContainerManager):
         lxd_db_path = manifest["databases"]
         lxd_image = manifest["lxd_alias"]
         notify_url = NOTIFY_URL.format(job.id)
-        inputs_path = os.path.join(job.root_path, "inputs")
-        outputs_path = os.path.join(job.root_path, "outputs")
-        logs_path = os.path.join(job.root_path, "logs")
+        inputs_path = os.path.join(job.path, "inputs")
+        outputs_path = os.path.join(job.path, "outputs")
+        logs_path = os.path.join(job.path, "logs")
         try:
             # create job's start command file
-            job_file = os.path.join(job.root_path, "start_" + lxd_container + ".sh")
+            job_file = os.path.join(job.path, "start_" + lxd_container + ".sh")
             log(job_file)
             with open(job_file, 'w') as f:
                 f.write("#!/bin/bash\n")
@@ -306,7 +307,7 @@ class LxdManager(PirusContainerManager):
             (Re)Start the job execution. By unfreezing the 
         """
         # Setting up the lxc container for the job
-        lxd_container = os.path.basename(job.root_path)
+        lxd_container = os.path.basename(job.path)
         r, o, e = exec_cmd(["lxc", "start", lxd_container])
         if r != 0:
             err("Error occured when trying to start the job {} (id={})".format(lxd_container, job.id), "$ lxc start\nstdout ====\n{}\nstderr ====\n{}".format(o, e))
@@ -321,7 +322,7 @@ class LxdManager(PirusContainerManager):
         """
             Pause the execution of the job.
         """
-        lxd_container = os.path.basename(job.root_path)
+        lxd_container = os.path.basename(job.path)
         r, o, e = exec_cmd(["lxc", "pause", lxd_container])
         if r != 0:
             err("Error occured when trying to pause the job {} (id={})".format(lxd_container, job.id), "$ lxc pause\nstdout ====\n{}\nstderr ====\n{}".format(o, e))
@@ -334,7 +335,7 @@ class LxdManager(PirusContainerManager):
         """
             Stop the job. The job is canceled and the container is destroyed.
         """
-        lxd_container = os.path.basename(job.root_path)
+        lxd_container = os.path.basename(job.path)
         r, o, e = exec_cmd(["lxc", "delete", lxd_container, "--force"])
         if r != 0:
             err("Error occured when trying to stop the job {} (id={})".format(lxd_container, job.id), "$ lxc delete --force\nstdout ====\n{}\nstderr ====\n{}".format(o, e))
@@ -346,7 +347,7 @@ class LxdManager(PirusContainerManager):
         """
             Provide monitoring information about the container (CPU/RAM used, etc)
         """
-        lxd_container = os.path.basename(job.root_path)
+        lxd_container = os.path.basename(job.path)
         # Result
         result = {}
         # Lxd monitoring data
@@ -371,7 +372,7 @@ class LxdManager(PirusContainerManager):
             Clean temp resources created by the container (log shall be kept), copy outputs file from the container
             to the right place on the server, register them into the database and associates them to the job.
         """
-        lxd_container = os.path.basename(job.root_path)
+        lxd_container = os.path.basename(job.path)
         # Stop container and clear resource
         try:
             # Clean outputs

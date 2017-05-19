@@ -73,6 +73,9 @@ class TestCoreLxdManager(unittest.TestCase):
         self.assertEqual(os.path.isfile(self.IMAGE_FILE_PATH), True)
         self.assertNotEqual(self.IMAGE_FILE_PATH, p.image_file.path)
 
+        # test that documents key is no more present in the manifest
+        self.assertEqual("documents" not in p.manifest, True)
+
 
 
     def test_100_job_CRUD_normal_workflow(self):
@@ -91,11 +94,10 @@ class TestCoreLxdManager(unittest.TestCase):
 
         # Create a new job
         job = core.jobs.new(TestCoreLxdManager.pid, fake_config, asynch=False, auto_notify=False)
-        lxd_name = os.path.basename(job.root_path)
+        lxd_name = os.path.basename(job.path)
         self.assertEqual(job.status, "running")
-        self.assertEqual(os.path.exists(job.root_path), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "inputs", "config.json")), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "err.log")), True)
+        self.assertEqual(os.path.exists(job.path), True)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "inputs", "config.json")), True)
         self.assertEqual(lxd_name in exec_cmd(["lxc", "list"])[1], True)
         self.assertEqual("Status: Running" in exec_cmd(["lxc", "info", lxd_name])[1], True)
         # TODO check config.json : retrieve fake_config with the "job" key and a notification url in "pirus" key
@@ -108,7 +110,7 @@ class TestCoreLxdManager(unittest.TestCase):
         self.assertEqual('Memory (current)' in job.logs_moninitoring.keys(), True)
         self.assertEqual(job.logs_moninitoring['Status'], 'Running')
         self.assertEqual(job.logs_moninitoring['Name'], lxd_name)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs", "out.log")), True)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "logs", "out.log")), True)
         self.assertEqual(len(job.logs), 2)
         olog = job.logs[0]
         self.assertEqual(olog.name, "out.log")
@@ -151,7 +153,7 @@ class TestCoreLxdManager(unittest.TestCase):
         pid = p0.id
         ppath = p0.image_file.path
         iid = p0.image_file_id
-        rpath = p0.root_path
+        rpath = p0.path
         manifest = p0.manifest
         core.pipelines.delete(p0.id, False)  # delete it synchronously to be able to test correctly
 

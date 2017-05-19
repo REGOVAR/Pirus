@@ -18,6 +18,9 @@
 
 
     <style>
+        h1 {
+            margin-top: 100px;
+        }
         code {
             margin-left:-4px;
         }
@@ -34,6 +37,21 @@
         }
         textarea {
             font-family: monospace;
+        }
+
+        /* Loading indicator */
+        .loader {
+            border: 16px solid #f3f3f3;     /* Light grey */
+            border-top: 16px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* JSON highlighting */
@@ -72,7 +90,7 @@
             </div>
             <div id="navbar" class="navbar-collapse collapse" aria-expanded="false" style="height: 1px;">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a data-toggle="tab" href="#home"><i class="glyphicon glyphicon-home"></i> Home</a></li>
+                    <li class="active"><a data-toggle="tab" href="#home"><i class="glyphicon glyphicon-home"></i> Pirus 0.2.0</a></li>
                     <li><a data-toggle="tab" href="#misc"><i class="glyphicon glyphicon-asterisk"></i> Misc</a></li>
                     <li><a data-toggle="tab" href="#file"><i class="glyphicon glyphicon-file"></i> File</a></li>
                     <li><a data-toggle="tab" href="#pipe"><i class="glyphicon glyphicon-book"></i> Pipeline</a></li>
@@ -94,7 +112,7 @@
             <!-- HOME -->
             <!--      -->
             <div id="home" class="tab-pane fade in active">
-                <h1>Hello, </h1>
+                <h1>Welcom to Pirus 0.2.0</h1>
                 <p>This page is for developpers who want to know how to use Pirus via the Rest api.</p>
                 <p>Choose in the top menu bar the "main" section of the API you want to see. The last one "Realtime" is a special tab where all realtime notification are logged. In addition, the color of the <i class="glyphicon glyphicon-flash" id="ws_ico"></i> indicates if the realtime is active or not : <ul>
                     <li><i class="glyphicon glyphicon-flash" style="color:lightgrey"></i> : no websocket connection available;</li>
@@ -108,14 +126,16 @@
                     </ul>
                 </p>
                 <p>Sometime, git issue are link in the description of the endpoint when there issue, bug or feature implementation planned. Be free to have a look to github issue. All help is welcome \o/ !</p>
-                <h1>Changes log</h1>
-                <h2>0.2.0 [Current]</h2>
+
+                <hr/>
+                <h2>Changes log</h2>
+                <h3>0.2.0 [Current]</h3>
                 <ul><li>API online documentation (here you are)</li>
                     <li>First version of endpoints to manage pipelines</li>
                     <li>First version of endpoints to manage databases</li>
                     <li>Rework 0.1.0 existings endpoints to be more complient with core and cli api</li>
                 </ul>
-                <h2>0.1.0</h2>
+                <h3>0.1.0</h3>
                 <ul><li>First version of the API with endpoints to manage file and jobs</li>
                     <li>Websocket implementation for realtime notification (job progress)</li>
                     <li>TUS protocol implementation to allow resumable upload for file</li>
@@ -185,7 +205,7 @@
                         </div>
                     </div>
 
-                    <h1>Result</h1>
+                    <h2>Result</h2>
                     <button onclick="clear_container('misc_result');">Clear</button>
                     <pre id="misc_result"/>
                 </div>
@@ -379,7 +399,7 @@
                             </div>
                         </div>
                     </div>
-                    <h1>Result</h1>
+                    <h2>Result</h2>
                     <button onclick="clear_container('file_result');">Clear</button>
                     <pre id="file_result"/>
                 </div>
@@ -400,7 +420,6 @@
                             <li><a href="#pipe_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> install (quick)</a></li>
                             <li><a href="#pipe_api_04" data-toggle="tab"><i class="glyphicon glyphicon-exclamation-sign"></i> install</a></li>
                             <li><a href="#pipe_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> delete</a></li>
-                            <li><a href="#pipe_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> document</a></li>
                         </ul>
                     </div>
                     <div class="panel-body">
@@ -471,7 +490,7 @@
                                     <div class="col-sm-2"><b>Description</b></div>  
                                     <div class="col-sm-10">
                                         <code>GET /pipeline/install/{file_id}/{container_manager_type}</code><br/>
-                                        <i>Install a pipeline from the image file which have been already uploaded on the server and have the id {file_id}. Note that if the installation ends without error, the file is no more available via the Pirus file api.</i>
+                                        <i>Install a pipeline from the image file which have been already uploaded on the server and have the id {file_id}.</i>
                                     </div>  
                                 </div>
                                 <div class="row form-group">
@@ -547,37 +566,10 @@
                                     </div>  
                                 </div>
                             </div>
-
-                            <!-- GET pipeline's documents -->
-                            <div class="tab-pane fade" id="pipe_api_06">
-                                <div class="row form-group">
-                                    <div class="col-sm-2"><b>Description</b></div>  
-                                    <div class="col-sm-10">
-                                        <code>GET /pipeline/{pipe_id}/{filename}</code><br/>
-                                        <i>Dowload the static document of the pipeline. Return 404 not found if the file or the pipeline doesn't exists.</i>
-                                    </div>  
-                                </div>
-                                <div class="row form-group">
-                                    <div class="col-sm-2"><b>Parameters</b></div>
-                                    <div class="col-sm-10">
-                                        <code>file_id</code><br/>
-                                        <i>The Pirus id of the pipeline.</i><br/><br/>
-                                        <code>filename</code><br/>
-                                        <i>The name of the file. Names of available files for the pipeline can be retrieved with the endpoint : <code>GET /pipeline/{pipe_id}</code>.</i>
-                                    </div>
-                                </div>
-                                <div class="row form-group">
-                                    <div class="col-sm-2"><b>Test</b></div>  
-                                    <div class="col-sm-10">
-                                        <input id="pipe_api_06_query" type="text" placeholder="/pipeline/{pipe_id}/{filename}" value="/pipeline/1/form.json"/>
-                                        <button onclick="generic_exec_from_input('pipe_api_06_query', 'pipe_result');" class="btn btn-primary">Test it</button>
-                                    </div>  
-                                </div>
-                            </div>
                         </div>
                     </div>
 
-                    <h1>Result</h1>
+                    <h2>Result</h2>
                     <button onclick="clear_container('pipe_result');">Clear</button>
                     <pre id="pipe_result"/>
                 </div>
@@ -597,19 +589,17 @@
                             <li><a href="#job_api_02" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> show</a></li>
                             <li><a href="#job_api_03" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> new</a></li>
                             <li><a href="#job_api_04" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> pause</a></li>
-                            <li><a href="#job_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> play</a></li>
-                            <li><a href="#job_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> stop</a></li>
-                            <li><a href="#job_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> finalize</a></li>
-                            <li><a href="#job_api_07" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> logs</a></li>
-                            <li><a href="#job_api_08" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> inputs</a></li>
-                            <li><a href="#job_api_09" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> outputs</a></li>
+                            <li><a href="#job_api_05" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> start</a></li>
+                            <li><a href="#job_api_06" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> cancel</a></li>
+                            <li><a href="#job_api_07" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> finalize</a></li>
+                            <li><a href="#job_api_08" data-toggle="tab"><i class="glyphicon glyphicon-ok"></i> monitoring</a></li>
                         </ul>
                     </div>
 
 
                     <div class="panel-body">
                         <div class="tab-content">
-                            <!-- GET jobs -->
+                            <!-- List jobs -->
                             <div class="tab-pane fade in active" id="job_api_01">
                                 <div class="alert alert-info">
                                     <strong>Warning : </strong> <code style="background:none!important;">order_by</code> have an <a href="https://github.com/REGOVAR/Pirus/issues/92" target="_blank">issue</a> with "desc" ordering and <code style="background:none!important;">filter</code> is <a href="https://github.com/REGOVAR/Pirus/issues/105" target="_blank">not yet implemented</a>.
@@ -645,7 +635,7 @@
                                     </div>  
                                 </div>
                             </div>
-                            <!-- GET job -->
+                            <!-- Show job -->
                             <div class="tab-pane fade" id="job_api_02">
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
@@ -669,7 +659,7 @@
                                     </div>  
                                 </div>
                             </div>
-                            <!-- POST job -->
+                            <!-- New job -->
                             <div class="tab-pane fade" id="job_api_03">
                                 <div class="row form-group">
                                     <div class="col-sm-2"><b>Description</b></div>  
@@ -702,12 +692,148 @@
                                     </div>  
                                 </div>
                             </div>
+                            <!-- Pause job -->
+                            <div class="tab-pane fade" id="job_api_04">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job/{job_id}/pause</code><br/>
+                                        <i>Pause the execution of the job (if this feature is supported by the pipeline).</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>job_id</code><br/>
+                                        <i>The Pirus id of the job.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_04_query" type="text" placeholder="/job/{job_id}/pause" value="/job/1/pause"/>
+                                        <button onclick="generic_exec_from_input('job_api_04_query', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- Start job -->
+                            <div class="tab-pane fade" id="job_api_05">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job/{job_id}/start</code><br/>
+                                        <i>Restart a job which have been paused.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>job_id</code><br/>
+                                        <i>The Pirus id of the job.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_05_query" type="text" placeholder="/job/{job_id}/start" value="/job/1/start"/>
+                                        <button onclick="generic_exec_from_input('job_api_05_query', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- Cancel job -->
+                            <div class="tab-pane fade" id="job_api_06">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job/{job_id}/cancel</code><br/>
+                                        <i>Stop the execution of the job. Then the job status is "canceled" and cannot be start again (a new job shall be created).</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>job_id</code><br/>
+                                        <i>The Pirus id of the job.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_06_query" type="text" placeholder="/job/{job_id}/cancel" value="/job/1/cancel"/>
+                                        <button onclick="generic_exec_from_input('job_api_06_query', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- Finalize job -->
+                            <div class="tab-pane fade" id="job_api_07">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job/{job_id}/finalize</code><br/>
+                                        <i>This action can be done automaticaly by Pirus when the execution of the job is done. But if for some raison, the pipeline is not able to indicate to Pirus that its task is finished, Pirus cannot finalize the job and doing technical tasks like stopping and deleting the virtual machine used for the job. So for these pipeline, the api provide a way to manualy finalize a job.</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>job_id</code><br/>
+                                        <i>The Pirus id of the job.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_07_query" type="text" placeholder="/job/{job_id}/finalize" value="/job/1/finalize"/>
+                                        <button onclick="generic_exec_from_input('job_api_07_query', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
+                            <!-- Monitoring job-->
+                            <div class="tab-pane fade" id="job_api_08">
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Description</b></div>  
+                                    <div class="col-sm-10">
+                                        <code>GET /job/{job_id}/monitoring</code><br/>
+                                        <i>Return job's informations with additional monitoring informations: technical ressources usage (RAM, CPU, ...) and execution's log (only last 100 lines).</i>
+                                    </div>  
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Parameters</b></div>
+                                    <div class="col-sm-10">
+                                        <code>job_id</code><br/>
+                                        <i>The Pirus id of the job.</i>
+                                    </div>
+                                </div>
+                                <div class="row form-group">
+                                    <div class="col-sm-2"><b>Test</b></div>  
+                                    <div class="col-sm-10">
+                                        <input id="job_api_08_query" type="text" placeholder="/job/{job_id}/monitoring" value="/job/1/monitoring"/>
+                                        <button onclick="generic_exec_from_input('job_api_08_query', 'job_result');" class="btn btn-primary">Test it</button>
+                                    </div>  
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <h1>Result</h1>
-                    <button onclick="clear_container('job_result');">Clear</button>
-                    <pre id="job_result"/>
+                    
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">
+                                <h2>Result</h2>
+                                <button onclick="clear_container('job_result');">Clear</button>
+                                <pre id="job_result"/>
+                            </div>
+                            <div class="col">
+                                <h2>Jobs status</h2>
+                                <button onclick="refresh_job_panel();">Force refresh</button>
+                                <ul id="job_panel">
+
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
                 </div>
             </div>
 
@@ -774,7 +900,7 @@
         {
             if (typeof json != 'string') 
             {
-                 json = JSON.stringify(json, undefined, 2);
+                 json = JSON.stringify(json, undefined, 4);
             }
             json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) 
@@ -826,13 +952,14 @@
 
         function generic_exec_from_input(input_id, result_id, verb="GET")
         {
+            $('#' + result_id).html('<div class="loader"></div>');
             $.ajax(
             {
                 url: rootURL + $("#" + input_id).val(),
                 type: verb
-            }).fail(function()
+            }).fail(function(err)
             {
-                alert( "ERROR" );
+                $('#' + result_id).html(err);
             }).done(function(json) 
             {
                 $('#' + result_id).html(syntaxHighlight(json));
@@ -840,6 +967,7 @@
         }
         function generic_exec_static(endpoint, result_id, input_id=false, verb="GET")
         {
+            $('#' + result_id).html('<div class="loader"></div>');
             if (input_id)
             {
                 $("#" + input_id).val(endpoint);
@@ -848,9 +976,9 @@
             {
                 url: rootURL + endpoint,
                 type: verb
-            }).fail(function()
+            }).fail(function(err)
             {
-                alert( "ERROR" );
+                $('#' + result_id).html(err);
             }).done(function(json) 
             {
                 $('#' + result_id).html(syntaxHighlight(json));
@@ -858,15 +986,16 @@
         }
         function generic_exec_body(input_id, body_id, result_id, verb="POST")
         {
+            $('#' + result_id).html('<div class="loader"></div>');
             $.ajax(
             {
                 url: rootURL + $("#" + input_id).val(),
                 type: verb,
                 contentType: 'application/json',
                 data: JSON.stringify($("#" + body_id).val())
-            }).fail(function()
+            }).fail(function(err)
             {
-                alert( "ERROR" );
+                $('#' + result_id).html(err);
             }).done(function(json) 
             {
                 $('#' + result_id).html(syntaxHighlight(json));
@@ -879,6 +1008,7 @@
 
         function exec_file_api_05_i()
         {
+            $('#' + result_id).html('<div class="loader"></div>');
             $.ajax(
             {
                 url: rootURL + "/file/" + pirusFileUpload.url.split("/")[2],
@@ -896,7 +1026,10 @@
 
 
 
-
+        function refresh_job_panel()
+        {
+            alert("todo");
+        }
 
 
 

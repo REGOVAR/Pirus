@@ -88,7 +88,7 @@ def job_init(self, loading_depth=0):
         self.loading_depth = min(2, loading_depth)
 
     files = session().query(JobFile).filter_by(job_id=self.id).all()
-    job_logs_path = os.path.join(str(self.root_path), "logs")
+    job_logs_path = os.path.join(str(self.path), "logs")
     if os.path.exists(job_logs_path) :
         self.logs = [MonitoringLog(os.path.join(job_logs_path, logname)) for logname in os.listdir(job_logs_path) if os.path.isfile(os.path.join(job_logs_path, logname))]
     for f in files:
@@ -195,6 +195,7 @@ def job_load(self, data):
         if "progress_label" in data.keys(): self.progress_label = data['progress_label']
         if "inputs_ids" in data.keys(): self.inputs_ids = data["inputs_ids"]
         if "outputs_ids" in data.keys(): self.outputs_ids = data["outputs_ids"]
+        if "path" in data.keys(): self.path = data["path"]
         self.save()
 
         # delete old file/job links
@@ -251,7 +252,7 @@ def job_count():
 
 
 Job = Base.classes.job
-Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs"]
+Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path"]
 Job.init = job_init
 Job.load_depth = job_load_depth
 Job.from_id = job_from_id

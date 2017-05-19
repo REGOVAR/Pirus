@@ -115,7 +115,7 @@ def pipeline_load(self, data):
         if "image_file_id" in data.keys(): self.image_file_id = data["image_file_id"]
         if "manifest" in data.keys(): self.manifest = data['manifest']
         if "documents" in data.keys(): self.documents = data['documents']
-        if "root_path" in data.keys(): self.root_path = data['root_path']
+        if "path" in data.keys(): self.path = data['path']
         # check to reload dynamics properties
         if self.loading_depth > 0:
             self.load_depth(self.loading_depth)
@@ -154,7 +154,7 @@ def pipeline_count():
 
 
 Pipeline = Base.classes.pipeline
-Pipeline.public_fields = ["id", "name", "type", "status", "description", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "manifest", "documents", "root_path", "jobs_ids", "jobs"]
+Pipeline.public_fields = ["id", "name", "type", "status", "description", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "manifest", "documents", "path", "jobs_ids", "jobs"]
 Pipeline.init = pipeline_init
 Pipeline.load_depth = pipeline_load_depth
 Pipeline.from_id = pipeline_from_id

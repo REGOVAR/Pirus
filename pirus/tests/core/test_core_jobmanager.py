@@ -73,11 +73,11 @@ class TestCoreJobManager(unittest.TestCase):
         job_id = job.id
         self.assertEqual(core.container_managers["FakeManager4Test"].is_init, True)
         self.assertEqual(job.name, "Test job success")
-        self.assertEqual(os.path.exists(job.root_path), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "inputs")), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "outputs")), True)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs")), True)
-        self.assertEqual(os.path.isfile(os.path.join(job.root_path, "inputs/config.json")), True)
+        self.assertEqual(os.path.exists(job.path), True)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "inputs")), True)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "outputs")), True)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "logs")), True)
+        self.assertEqual(os.path.isfile(os.path.join(job.path, "inputs/config.json")), True)
 
         # call all delayed action 
         # FIXME : why assertRaise crash the test :/
@@ -98,11 +98,11 @@ class TestCoreJobManager(unittest.TestCase):
         self.assertEqual(core.container_managers["FakeManager4Test"].is_finalized, True)
 
         core.jobs.delete(job_id, asynch=False)
-        self.assertEqual(os.path.isfile(os.path.join(job.root_path, "inputs/config.json")), False)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "inputs")), False)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "outputs")), False)
-        self.assertEqual(os.path.exists(os.path.join(job.root_path, "logs")), False)
-        self.assertEqual(os.path.exists(job.root_path), False)
+        self.assertEqual(os.path.isfile(os.path.join(job.path, "inputs/config.json")), False)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "inputs")), False)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "outputs")), False)
+        self.assertEqual(os.path.exists(os.path.join(job.path, "logs")), False)
+        self.assertEqual(os.path.exists(job.path), False)
 
 
 

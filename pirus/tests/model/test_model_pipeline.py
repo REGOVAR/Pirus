@@ -17,7 +17,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-TU_PIRUS_PIPELINE_PUBLIC_FIELDS = ["id", "name", "type", "status", "description", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "manifest", "documents", "root_path", "jobs_ids", "jobs"]
+TU_PIRUS_PIPELINE_PUBLIC_FIELDS = ["id", "name", "type", "status", "description", "developers", "installation_date", "version", "pirus_api", "image_file_id", "image_file", "manifest", "documents", "path", "jobs_ids", "jobs"]
 
 
 
@@ -101,10 +101,6 @@ class TestModelPipeline(unittest.TestCase):
         self.assertEqual(len(j), 3)
         self.assertEqual(j["jobs"][0]["id"], 1)
         self.assertEqual(j["jobs"][1]["progress_value"], 0.5)
-
-        # test that documents key is no more present in the manifest
-        self.assertEqual("documents" not in j["manifest"], True)
-        self.assertEqual(j["documents"], '{}')
 
 
 

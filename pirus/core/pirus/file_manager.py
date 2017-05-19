@@ -57,7 +57,7 @@ class FileManager:
             (the file is not yet available, but we can manipulate its pirus metadata)
         """
         pfile = File.new()
-        pfile.name = filename
+        pfile.name = clean_filename(filename)
         pfile.type = os.path.splitext(filename)[1][1:].strip().lower()
         pfile.path = os.path.join(TEMP_DIR, str(uuid.uuid4()))
         pfile.size = int(file_size)
@@ -115,8 +115,10 @@ class FileManager:
             raise RegovarException("Unable to retrieve the pirus file with the provided id : " + file_id)
         # Move file
         old_path = pfile.path
-        new_path = os.path.join(FILES_DIR, str(uuid.uuid4()))
-        os.rename(old_path, new_path)
+        path = os.path.join(FILES_DIR, str(file_id))
+        if not os.path.exists(path): os.makedirs(path)
+        pfile.path = os.path.join(path, pfile.name)
+        os.rename(old_path, pfile.path)
         # If checksum provided, check that file is correct
         file_status = "uploaded"
         if checksum is not None:
@@ -126,13 +128,17 @@ class FileManager:
         # Update file data in database
         pfile.upload_offset = pfile.size
         pfile.status = file_status
-        pfile.path = new_path
         pfile.save()
 
         # Check if the file is an image of a Pipeline. if true, automatically start the install
         pipeline = session().query(Pipeline).filter_by(image_file_id=pfile.id).first()
         if pipeline:
             core.pipelines.install(pipeline.id, pipeline.type)
+        # Check if the file is an input of a job, try to start the job
+        jobs = JobFile.get_jobs_ids(file_id)
+        for job in jobs:
+            if file_id in job.inputs_ids:
+                core.jobs.install(pipeline.id, pipeline.type)
 
 
 
@@ -142,18 +148,20 @@ class FileManager:
             TODO : implementation have to be fixed
         """
         from core.core import core
-        name = str(uuid.uuid4())
-        filepath = os.path.join(FILES_DIR, name)
+        name = clean_filename(os.path.basename(url))
+        file = self.upload_init(name, 0)
         # get request and write file
-        with open(filepath, "bw+") as file:
+        with open(file.path, "bw+") as f:
             try :
                 response = await requests.get(url)
             except Exception as ex:
                 raise RegovarException("Error occured when trying to download a file from the provided url : " + str(url), "", ex)
-            file.write(response.content)
+            f.write(response.content)
+        pfile.size = os.path.getsize(path)
+        pfile.save()
         # save file on the database
-        pirusfile = core.files.register(name, filepath, metadata)
-        return rest_success(pirusfile)
+        pfile = core.files.upload_finish(file.id)
+        return rest_success(pfile)
 
 
 
@@ -166,9 +174,11 @@ class FileManager:
         if not os.path.isfile(path):
             raise RegovarException("File \"{}\" doesn't exists.".format(path))
         pfile = File.new()
-        pfile.name = os.path.basename(path)
+        pfile.name = clean_filename(os.path.basename(path))
         pfile.type = os.path.splitext(pfile.name)[1][1:].strip().lower()
-        pfile.path = os.path.join(FILES_DIR, str(uuid.uuid4()))
+        new_path = os.path.join(FILES_DIR, str(pfile.id))
+        if not os.path.exists(new_path): os.makedirs(new_path)
+        pfile.path = os.path.join(new_path, pfile.name)
         pfile.size = os.path.getsize(path)
         pfile.upload_offset = 0
         pfile.status = "uploading"

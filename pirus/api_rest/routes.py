@@ -47,17 +47,13 @@ app.router.add_route('POST',   "/pipeline/install",                            p
 app.router.add_route('GET',    "/pipeline/{pipe_id}/{filename}",               fileHdl.dl_pipe_file)
 
 app.router.add_route('GET',    "/job",                     jobHdl.get)
-app.router.add_route('POST',   "/job",                     jobHdl.post)
+app.router.add_route('POST',   "/job",                     jobHdl.new)
 app.router.add_route('GET',    "/job/{job_id}",            jobHdl.get_details)
-app.router.add_route('GET',    "/job/{job_id}/out",        jobHdl.get_olog)
-app.router.add_route('GET',    "/job/{job_id}/err",        jobHdl.get_elog)
-app.router.add_route('GET',    "/job/{job_id}/out/tail",   jobHdl.get_olog_tail)
-app.router.add_route('GET',    "/job/{job_id}/err/tail",   jobHdl.get_elog_tail)
-app.router.add_route('GET',    "/job/{job_id}/io",         jobHdl.get_io)
-app.router.add_route('GET',    "/job/{job_id}/pause",      jobHdl.get_pause)
-app.router.add_route('GET',    "/job/{job_id}/play",       jobHdl.get_play)
-app.router.add_route('GET',    "/job/{job_id}/stop",       jobHdl.get_stop)
-app.router.add_route('GET',    "/job/{job_id}/monitoring", jobHdl.get_monitoring)
+app.router.add_route('GET',    "/job/{job_id}/pause",      jobHdl.pause)
+app.router.add_route('GET',    "/job/{job_id}/start",      jobHdl.start)
+app.router.add_route('GET',    "/job/{job_id}/cancel",     jobHdl.cancel)
+app.router.add_route('GET',    "/job/{job_id}/monitoring", jobHdl.monitoring)
+app.router.add_route('GET',    "/job/{job_id}/finalize",   jobHdl.finalize)
 #app.router.add_route('GET',    "/job/{job_id}/{filename}", fileHdl.dl_job_file)
 
 app.router.add_route('GET',    "/file", fileHdl.get)
@@ -74,11 +70,13 @@ app.router.add_route('DELETE', "/file/upload/{file_id}", fileHdl.tus_upload_dele
 app.router.add_route('POST',   "/job/notify/{job_id}", jobHdl.update_status)
 
 
-# DEV/DEBUG - Routes that should be manages directly by NginX
+# Statics root for direct download
+# FIXME - Routes that should be manages directly by NginX
 app.router.add_static('/assets', TEMPLATE_DIR)
-app.router.add_static('/databases', DATABASES_DIR)
-app.router.add_static('/pipelines', PIPELINES_DIR)
-app.router.add_static('/files', FILES_DIR)
+app.router.add_static('/dl/db/', DATABASES_DIR)
+app.router.add_static('/dl/pipe/', PIPELINES_DIR)
+app.router.add_static('/dl/file/', FILES_DIR)
+app.router.add_static('/dl/job/', FILES_DIR)
 
 app.router.add_route('GET',    "/dl/f/{file_id}", fileHdl.dl_file)
 #app.router.add_route('GET',    "/dl/p/{file_id}", fileHdl.dl_pipeline)

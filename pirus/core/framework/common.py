@@ -1,5 +1,6 @@
 #!env/python3
 # coding: utf-8
+import ipdb
 import os
 import datetime
 import logging
@@ -7,6 +8,7 @@ import uuid
 import time
 import asyncio
 import subprocess
+import re
 
 
 from config import LOG_DIR
@@ -86,7 +88,9 @@ def get_pipeline_forlder_name(name:str):
 
 def clean_filename(filename):
     # TODO : clean filename by removing special characters, trimming white spaces, and replacing white space by _
-    return filename
+    rx = re.compile('\W+')
+    res = rx.sub('.', filename).strip('.')
+    return res
 
 
 

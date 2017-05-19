@@ -141,6 +141,54 @@ def process_generic_get(query_string, allowed_fields):
 
 
 
+def format_file_json(file_json):
+    if "path" in file_json.keys():
+        file_json["url"] = "http://{}/dl/file/{}/{}".format(HOST_P, file_json["id"], file_json["name"])
+        file_json.pop("path")
+    return file_json
+
+
+def format_pipeline_json(pipe_json):
+    if "image_file" in pipe_json.keys():
+        pipe_json["image_file"] = format_file_json(pipe_json["image_file"] )
+    if "documents" in pipe_json.keys():
+        docs = []
+        for doc in pipe_json["documents"]:
+            docs.append("http://{}/dl/pipe/{}/{}".format(HOST_P, pipe_json["id"], os.path.basename(doc)))
+        pipe_json["documents"] = docs
+    if "jobs" in pipe_json.keys():
+        jobs = []
+        for job in pipe_json["jobs"]:
+            jobs.append(format_job_json(job))
+        pipe_json["jobs"] = jobs
+    if "path" in pipe_json.keys():
+        pipe_json.pop("path")
+    return pipe_json
+
+
+
+def format_job_json(job_json, include_log_tail=False):
+    if job_json["pipeline"]:
+        job_json["pipeline"] = format_pipeline_json(job_json["pipeline"])
+
+    if job_json["logs"]:
+        if include_log_tail: result.update({"logs_tails": {}})
+        result.update({"logs": []})
+        for log in job_json["logs"]:
+            result["logs"].append("http://{}/dl/job/{}/logs/{}".format(HOST_P, os.path.basename(job_json["path"]), log.name))
+            result["logs_tails"][log.name] = log.tail()
+    if result["inputs"]:
+        inputs = []
+        for file in result["inputs"]:
+            inputs.append(format_file_json(file))
+        result["inputs"] = inputs
+    if result["outputs"]:
+        outputs = []
+        for file in result["outputs"]:
+            outputs.append(format_file_json(file))
+        result["outputs"] = outputs
+    return result
+
 
 
 
@@ -324,7 +372,7 @@ class FileHandler:
         }
         # Return result of the query for PirusFile 
         files = core.files.get(fields, query, order, offset, limit, depth)
-        return rest_success([f.to_json() for f in files], range_data)
+        return rest_success([format_file_json(f.to_json()) for f in files], range_data)
 
 
 
@@ -364,7 +412,7 @@ class FileHandler:
         file = File.from_id(file_id, 2)
         if not file:
             return rest_error("Unable to find the file (id={})".format(file_id))
-        return rest_success(file.to_json(File.public_fields))
+        return rest_success(format_file_json(file.to_json(File.public_fields)))
 
 
 
@@ -416,7 +464,7 @@ class FileHandler:
             return rest_error("No pipeline with id {}".format(pipe_id))
         if filename == None:
             return rest_error("No filename provided")
-        path = os.path.join(pipeline.root_path, filename)
+        path = os.path.join(pipeline.path, filename)
         file = None
         if os.path.isfile(path):
             with open(path, 'br') as content_file:
@@ -465,11 +513,7 @@ class PipelineHandler:
             return rest_error("No pipeline with id ".format(pipe_id))
 
         pipe = pipe.to_json(Pipeline.public_fields)
-        docs = []
-        for doc in pipe["documents"]:
-            docs.append("http://{}/pipeline/{}/{}".format(HOST_P, pipe_id, os.path.basename(doc)))
-        pipe["documents"] = docs
-        return rest_success(pipe)
+        return rest_success(format_pipeline_json(pipe))
 
 
     def install(self, request):
@@ -480,12 +524,15 @@ class PipelineHandler:
         file = File.from_id(file_id)
         if not file:
             return rest_error("Unable to find file with id {}.".format(file_id))
-        if file.status not in ["uploaded", "checked"]:
-            return rest_error("File status is {}, this file cannot be used as pipeline image (status shall be \"uploaded\" or \"checked\"".format(file_id))
-        # TODO install the pipeline
+        if file.status not in ["uploading", "uploaded", "checked"]:
+            return rest_error("File status is {}, this file cannot be used as pipeline image (status shall be \"uploading\", \"uploaded\" or \"checked\"".format(file_id))
+        
         p = core.pipelines.install_init_image_local(file.path, False, {"type" : container_type})
-        if core.pipelines.install(p.id, asynch=False):
-            return rest_success(pipe.to_json())
+        try:
+            if core.pipelines.install(p.id, asynch=False):
+                return rest_success(pipe.to_json())
+        except RegovarException as ex:
+            return rest_error(str(ex))
         return rest_error("Error occured during installation of the pipeline.")
 
 
@@ -558,7 +605,7 @@ class JobHandler:
         job = Job.from_id(job_id, 1)
         if job == None:
             return rest_error("Unable to find the job (id={})".format(job_id))
-        path = os.path.join(job.root_path, filename)
+        path = os.path.join(job.path, filename)
 
         if not os.path.exists(path):
             return rest_error("File not found. {} doesn't exists for the job (id={})".format(filename, job_id))
@@ -631,9 +678,13 @@ class JobHandler:
 
 
 
-    async def post(self, request):
+    async def new(self, request):
         # 1- Retrieve data from request
-        data = await request.json()
+        try:
+            data = await request.json()
+            data = json.loads(data)
+        except Exception as ex:
+            return rest_error("Error occured when retriving json data to start new job. {}".format(ex))
         pipe_id = data["pipeline_id"]
         config = data["config"]
         inputs = data["inputs"]
@@ -647,7 +698,7 @@ class JobHandler:
         return rest_success(job.to_json())
 
 
-    def get_pause(self, request):
+    def pause(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
             core.jobs.pause(job_id)
@@ -656,7 +707,7 @@ class JobHandler:
         return rest_success()
 
 
-    def get_play(self, request):
+    def start(self, request):
         job_id  = request.match_info.get('job_id', -1)
         try:
             core.jobs.play(job_id)
@@ -665,7 +716,7 @@ class JobHandler:
         return rest_success()
 
 
-    def get_stop(self, request):
+    def cancel(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
             core.jobs.stop(job_id)
@@ -674,21 +725,24 @@ class JobHandler:
         return rest_success()
 
 
-    def get_monitoring(self, request):
+    def monitoring(self, request):
         job_id  = request.match_info.get('job_id',  -1)
         try:
             job = core.jobs.monitoring(job_id)
         except Exception as ex:
             return rest_error("Unable to retrieve monitoring info for the jobs with id={}. {}".format(job_id, ex))
-        result = job.to_json()
-        result.update({"pipeline":job.pipeline.to_json()})
-        result.update({"logs": {}})
-        for log in job.logs:
-            result["logs"][log.name] = log.tail()
-        return rest_success(result)
+        if job:
+            rest_success(format_job_json(job.to_json(), True))
+        return rest_error("Unable to get monitoring information for the job {}.".format(job_id))
 
 
-
+    def finalize(self, request):
+        job_id  = request.match_info.get('job_id', -1)
+        try:
+            core.jobs.finalize(job_id, False)
+        except Exception as ex:
+            return rest_error("Unable to finalize the job {}. {}".format(job_id, ex))
+        return rest_success(format_job_json(Job.from_id(job_id)))
 
 
 
