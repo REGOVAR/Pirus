@@ -17,7 +17,7 @@ from core.model import *
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
 # TEST PARAMETER / CONSTANTS
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-TU_PIRUS_JOB_PUBLIC_FIELDS = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path"]
+TU_PIRUS_JOB_PUBLIC_FIELDS = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path", "logs", "name"]
 
 
 
@@ -94,7 +94,7 @@ class TestModelJob(unittest.TestCase):
         # Test export with default fields
         f = Job.from_id(1, 1)
         j = f.to_json()
-        self.assertEqual(len(j), 10)
+        self.assertEqual(len(j), 11)
         json.dumps(j)
 
         # Test export with only requested fields
@@ -106,7 +106,8 @@ class TestModelJob(unittest.TestCase):
         j = f.to_json(["id", "name", "inputs_ids", "inputs"])
         self.assertEqual(len(j), 4)
         self.assertEqual(j["inputs_ids"][0], 3)
-        self.assertEqual(j["inputs"][0].status, "checked")
+        self.assertEqual(f.inputs[0].status, "checked")
+        self.assertEqual(j["inputs"][0]["status"], "checked")
 
 
     def test_CRUD(self):

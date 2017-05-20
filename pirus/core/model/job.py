@@ -158,7 +158,7 @@ def job_to_json(self, fields=None):
     """
     result = {}
     if fields is None:
-        fields = ["id", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids"]
+        fields = ["id", "name", "pipeline_id", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids"]
     for f in fields:
         if f == "start_date" or f == "update_date" :
             result.update({f: eval("self." + f + ".ctime()")})
@@ -258,7 +258,7 @@ def job_count():
 
 
 Job = Base.classes.job
-Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path", "logs"]
+Job.public_fields = ["id", "pipeline_id", "pipeline", "config", "start_date", "update_date", "status", "progress_value", "progress_label", "inputs_ids", "outputs_ids", "inputs", "outputs", "path", "logs", "name"]
 Job.init = job_init
 Job.load_depth = job_load_depth
 Job.from_id = job_from_id

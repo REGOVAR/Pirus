@@ -17,8 +17,8 @@ clear:
 	test $$jobs_dir && rm -rf $$jobs_dir/*
 
 clear_lxd:
-	lxc image list | grep "pirus-pipe-" | awk '{print $2}' | xargs lxc image delete
-	lxc list | grep "pirus-job" | awk '{print $2}' | xargs lxc delete --force
+	lxc list | grep "pirus-job" | awk '{print $$2}' | xargs lxc delete --force
+	lxc image list | grep "pirus-pipe-" | awk '{print $$2}' | xargs lxc image delete
 
 test:
 	database_name=$$(sed -n 's/^\s*DATABASE_NAME\s*=\s*"\([^"]\+\)".*/\1/p' config.py) ; \

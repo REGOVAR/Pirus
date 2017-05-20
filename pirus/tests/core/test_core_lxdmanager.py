@@ -82,7 +82,6 @@ class TestCoreLxdManager(unittest.TestCase):
         """ Check lxd job's normal worklow. """
 
         fake_config = {
-            "name" : "job4test",
             "file1" : "",
             "duration" : 20,
             "crash" : False,
@@ -93,7 +92,7 @@ class TestCoreLxdManager(unittest.TestCase):
 
 
         # Create a new job
-        job = core.jobs.new(TestCoreLxdManager.pid, fake_config, asynch=False, auto_notify=False)
+        job = core.jobs.new(TestCoreLxdManager.pid, "job4test", fake_config, asynch=False, auto_notify=False)
         lxd_name = os.path.basename(job.path)
         self.assertEqual(job.status, "running")
         self.assertEqual(os.path.exists(job.path), True)

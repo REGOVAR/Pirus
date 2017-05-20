@@ -69,7 +69,7 @@ class TestCoreJobManager(unittest.TestCase):
 
 
         # init job 
-        job = core.jobs.new(p.id, {"name" : "Test job success"}, asynch=False)
+        job = core.jobs.new(p.id, "Test job success", {}, asynch=False)
         job_id = job.id
         self.assertEqual(core.container_managers["FakeManager4Test"].is_init, True)
         self.assertEqual(job.name, "Test job success")
@@ -94,8 +94,11 @@ class TestCoreJobManager(unittest.TestCase):
         core.jobs.stop(job_id, asynch=False)
         self.assertEqual(core.container_managers["FakeManager4Test"].is_stoped, True)
 
-        core.jobs.finalize(job_id, asynch=False)
-        self.assertEqual(core.container_managers["FakeManager4Test"].is_finalized, True)
+        with self.assertRaises(RegovarException):
+            core.jobs.finalize(job_id, asynch=False)
+        job = core.jobs.monitoring(job_id)
+        self.assertEqual(job.status, "canceled")
+        self.assertEqual(core.container_managers["FakeManager4Test"].is_finalized, False)
 
         core.jobs.delete(job_id, asynch=False)
         self.assertEqual(os.path.isfile(os.path.join(job.path, "inputs/config.json")), False)
