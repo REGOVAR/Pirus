@@ -17,7 +17,7 @@ import requests
 from config import *
 from core.framework.common import *
 from core.model import *
-from core.pirus import *
+from core.managers import *
 
 
 

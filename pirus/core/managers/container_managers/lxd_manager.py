@@ -12,7 +12,7 @@ import shutil
 from config import *
 from core.framework.common import *
 
-from core.pirus.container_managers.pirus_container_manager import PirusContainerManager
+from core.managers.container_managers.pirus_container_manager import PirusContainerManager
 from core.model import *
 
 

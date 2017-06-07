@@ -397,7 +397,7 @@ function init_run(pipe_id)
     // 1- retrieve pipe-config
     $.ajax(
     {
-        url: rootURL + "/pipeline/" + pipe_id + "/form.json",
+        url: rootURL + "/dl/pipe/" + pipe_id + "/form.json",
         type: "GET"
     }).fail(function()
     {
