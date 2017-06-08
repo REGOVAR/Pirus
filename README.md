@@ -1,6 +1,6 @@
 # Pirus-Server
 
-Pirus is an application launcher service which allow user to run pipeline code from a remote REST client. Each pipeline are provided as plugin made by the community. Pirus runs code in a LXC container to keep your server safe.   
+Pirus is an application launcher service which allow user to run pipeline code from a remote REST client. Each pipeline are provided as plugin made by the community. Actually Pirus runs code in a LXC container to keep your server safe, but other technologies like Docker or Biobox, may be used (interface need to be implemented).
 
 The latest version of the installation guide is at [docs/en/users/installation_guide.md](docs/en/users/installation_guide.md).
 
